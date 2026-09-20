@@ -1,0 +1,1918 @@
+{
+ "note": "Uniswap v3 pool coverage per Stock Token, scanned against WETH and USDG at fee tiers 100/500/3000/10000. A pool is counted only when liquidity() > 0. Uniswap v4 is NOT covered by this scan and holds the majority of equity DEX liquidity on this chain, so these numbers are a FLOOR.",
+ "method": "factory.getPool(token,quote,fee) -> pool.liquidity()>0; stores the deepest pool per token with quote orientation",
+ "factory": "0x1f7d7550b1b028f7571e69a784071f0205fd2efa",
+ "quotes": {
+  "WETH": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+  "USDG": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+ },
+ "feeTiers": [
+  100,
+  500,
+  3000,
+  10000
+ ],
+ "scannedAt": "2026-09-19T10:40:01Z",
+ "tokens": {
+  "CRM": [],
+  "P": [],
+  "CIEN": [],
+  "ON": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xfce637eead7d62d9ed27f81d9767de03e9e534cf",
+    "liquidity": "83562314235762819",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "APLD": [],
+  "AEHR": [],
+  "TEAM": [],
+  "QBTS": [],
+  "SATS": [],
+  "FIX": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x745104601f86be0b2392c916442a922f2923fa6c",
+    "liquidity": "64455896464",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "MTSI": [],
+  "SMCI": [],
+  "DELL": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x61346cd249a6453fba2ada35f210376ac0b4957c",
+    "liquidity": "72439346316724168275",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xc30c89cb7815a1488b7998d15eec73961707fc5a",
+    "liquidity": "106829038940580678",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "MXL": [],
+  "RUN": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x320ffc07584f5f3cdf68986d2f97b7dd9aed3cb0",
+    "liquidity": "4997225727504764",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xe6d0f53073041e12bc46759519499764a4b92d13",
+    "liquidity": "1062988362865659",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "WDAY": [],
+  "SPCX": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0xc3c9f0171490ef0f4536fe493f3b0ebb5ee0cb5e",
+    "liquidity": "26827482460156239570131",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xc61284332117c3fb23a2a56cceffd07f7af60029",
+    "liquidity": "21222717757082462922",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xeb07d9587efd1778dfb9c385ec43ef6d5f9fe401",
+    "liquidity": "761105234217109239",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xfbb32c09488e3fc33fe6fd84fe6ae442b4d13a31",
+    "liquidity": "47545614345591135",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 100,
+    "pool": "0x87c58b43537005189cfc7b512d818dc9125e94fc",
+    "liquidity": "38680902050250",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "GLXY": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xc67c2d200e0b7e5d99f4cfbede8cb09b48892f2c",
+    "liquidity": "548350265907587816",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "CRWD": [],
+  "AVGO": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x5b7c404f1d7d77f9f3885ab13d7764f8a173028c",
+    "liquidity": "29781351806342914",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "SPY": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0xddcbba3666f578e3f09516f21ff85bfee859ab5e",
+    "liquidity": "12286134606329246010573",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xa7bb1ac63bbab0c44316e6c8c455213441689167",
+    "liquidity": "1091085738977930749",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xa43b424bc609495aed4bcd88d654934b510b0ad9",
+    "liquidity": "33530277077637809",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "CCL": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb19ace635ef3a28b85bfb01bae97d0de80750680",
+    "liquidity": "153641420183544065",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "GLD": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x98996e833ea35ec17c3645ca7b6dd40d188564c4",
+    "liquidity": "4137577210442799491758",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0x26250ba84465454bc731f710e46f1f32b167d66b",
+    "liquidity": "386009592992893811228",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x3f82cba4969c75f7b2f0dce9af3ac8a44c107099",
+    "liquidity": "45991058175706584427",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x7a6a053eccf1446a2633e05aa6d40d09381997ec",
+    "liquidity": "4199409791684352783",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xba2f1ed4ceb2169d538d1e614d847e83c5a55913",
+    "liquidity": "2137140370771213557",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x32cb909acf78354e08aa45639ff5cd33767e730a",
+    "liquidity": "7307902988708868",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "SNOW": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xe0ca1dfc1161500fb410c8181f7cc33860ffb16b",
+    "liquidity": "15650590940109465",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "FICO": [],
+  "PR": [],
+  "QQQ": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xa40d00a55d43ba2d188039dcf88bd68f4f133e78",
+    "liquidity": "1103075742048364565056",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xd60a5d14db690b7afad71f76b108071d7175597d",
+    "liquidity": "4840419213087923401",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xebd78dcfc8a6b3a696f1e191ad1ff321f9579f79",
+    "liquidity": "8974903107762475",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "WYFI": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x2a3063e34c60253abb23c2442f4cdfbc5cbd02c2",
+    "liquidity": "261560944176737910",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xe7071e2fe49f86fbbe701053f98a73eb4124a6bd",
+    "liquidity": "442987536881",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NNE": [],
+  "GE": [],
+  "SNAP": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x84d251cedecdb949ca392e7bd9dd26481ab91088",
+    "liquidity": "272418206399345795924",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0ebd4650c9e641e9745b5a508a2d46935dfe753e",
+    "liquidity": "475487864611168680",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "SKHY": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x60e7b5a09c723525eefd5a02a1116e9bfe79dff1",
+    "liquidity": "161304785108561602709",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x5f2a5025feb93a4c44da4e3b37e4fd3fb0ab5171",
+    "liquidity": "46137636707681815",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x3b0028f88fdeb46150420ad9a0784844c5f6fab2",
+    "liquidity": "399274751596580",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "CBRS": [],
+  "FUTU": [],
+  "TSM": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x91280db3392ea92c08d8134b5760fb4798b69547",
+    "liquidity": "573832672218991306662",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x07e8ea83d4c1340774c8965125e26e12bf943bf1",
+    "liquidity": "78061258244738894",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "NU": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0e3faed512e7909758eb924e6919e0057bd6b45e",
+    "liquidity": "793721848251906798",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb6d047637151f6de1d02028acdd187aa9cb7afe3",
+    "liquidity": "61306468848526512",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "INTC": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x1b375a9c30ac43391aefae1bcf3a988d92458725",
+    "liquidity": "278374848818107624270",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x2e5a92f5013a64661a49312111be2e8abd33f56a",
+    "liquidity": "517413280132620675",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "MSFT": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xeb60bcd1d920ad6e102690ccfc6fb488899e1510",
+    "liquidity": "727449966220387781",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x2ea9292113514ed84fd16aa4ad1e416537e39c8c",
+    "liquidity": "112985518521",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "RCAT": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x64710a70839585af718e1b1faef9e7f1665f1116",
+    "liquidity": "63990363350460408",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "RGTI": [],
+  "TTWO": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xe69fe23b708362ef5817048f16e4171e0831341c",
+    "liquidity": "1708520345397430449",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xd9ab4b7fae6dc2f7020134ec744a8f53ef3e5e24",
+    "liquidity": "121440705947153210",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xd715802a12a73ceafe7579912a28d65d2ab5cc57",
+    "liquidity": "5416510563856",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "META": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xa4bdb396a69617eb7f70e2cc1ef526f7340b1b0d",
+    "liquidity": "11958179579406279171590",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x107a7cb40d8665360ba10e59471af06150a50922",
+    "liquidity": "174580634170493269",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x6fd62e9843ad2ac2c4fbf2b62647953ea29b3537",
+    "liquidity": "376879933379092",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "VICR": [],
+  "TSEM": [],
+  "RDDT": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0xa541143f20d7b0643123064abf25f423e375b531",
+    "liquidity": "8222863806701104186852",
+    "tokenIsToken0": true,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x714187eed11d8fc9500ff6798734c8bb63a8a19b",
+    "liquidity": "272990668048846121224",
+    "tokenIsToken0": true,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa8744e76aed23b05f0126335e7bd38f7935d19fe",
+    "liquidity": "1526937479745043481",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x1a774e182159d2880dbc646eb89a8defe569f97c",
+    "liquidity": "33197029299556982",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "GLW": [],
+  "UPS": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x3ab74c45dcecc6a62898204dd42143a816b44cb1",
+    "liquidity": "224781204124764450",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x5c67a84ec5494ffe24e217b28debb96341014c86",
+    "liquidity": "26554036359617618",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "PANW": [],
+  "LHX": [],
+  "FLY": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x3594f65fe47577202c17bafb18e5096b44dcee6d",
+    "liquidity": "374483135911907",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "SNDK": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x995c1ad5eb998b1bdd89f515c4bb64760c411b62",
+    "liquidity": "154497014265720741485",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa1e1c9519cd5ae47e9a935645e1a7b935b944559",
+    "liquidity": "15717388861653524",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0x0654e1e709987c57812a726a0a4ce61db4ca149e",
+    "liquidity": "594360041790272",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   }
+  ],
+  "BA": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xc6517047b189c72d3baa9ef37d1d28f27a63638a",
+    "liquidity": "294615972000508158",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xbf3904cad0e63a4796cf806c21f2c1528b8ebe06",
+    "liquidity": "3011972660122712",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "INTU": [],
+  "ELF": [],
+  "AMZN": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x8ac92da74ab5f3b1d024dc1943ad7e15dc4179ef",
+    "liquidity": "2479358815197084398",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "NFLX": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x59895c0302f41aeaa129d2fa2442cec01e7ef45e",
+    "liquidity": "237029167724493668",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xea75ea625d83ae276b9ae8b0a3dc205916ee65cf",
+    "liquidity": "18828519820604292",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "CRCL": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x754ddd4bf8e8635b4301a7f4af2ea7a82ab6cea7",
+    "liquidity": "4951149176728919438054",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x654e4143e82a5824445ade0824351c2a9acd95a8",
+    "liquidity": "1308280628833823520",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "USAR": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x04391780f519b7d3ba59c9590459d76e23d225c4",
+    "liquidity": "349936747696246473",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "VST": [],
+  "CSCO": [],
+  "FISV": [],
+  "GOOGL": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x8c2b4303fa0b99d07a5d3e9411497a277e65b673",
+    "liquidity": "12235692136257005847041",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 100,
+    "pool": "0x8fb9301586f27e2cff85312f7c1d0f16c6167cde",
+    "liquidity": "8344395285346973228",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0x34d0dc122cf9a8eb296fc5e0d3a233625d7d19b7",
+    "liquidity": "4168722231916773302",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x553e9a453425cd9b90919f317061fbc3794cc57a",
+    "liquidity": "4944349550014296",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "BB": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x183304567485e97e68835708f572aaa0e0e71d08",
+    "liquidity": "435199309298942591496",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xc424e56e816f148a8b30ccbde2128e04d21f51e9",
+    "liquidity": "131950446402803556",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "CVNA": [],
+  "AXTI": [],
+  "MOD": [],
+  "LULU": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0f4227d27082b3bca6818381b9ea6460275e49f4",
+    "liquidity": "264218233496805637",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x19757223628da89569f9a2488af6c45cb9824ea1",
+    "liquidity": "1511254405927146",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "LMT": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x54f160bea60ec5207918c539d86e0b906b4da297",
+    "liquidity": "15097317132976511",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "INFQ": [],
+  "SGOV": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x7f310e3d05e575bd449e4484ef5da15863ea43b1",
+    "liquidity": "2691559398458589204977",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xfab520051f96f4d2a32c22b6a3dd7fffdf231bfe",
+    "liquidity": "90517562038190554746",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0x6ba50150b17ffd0972915aaf04ffd5e8f4fa49b4",
+    "liquidity": "11928582579621697466",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "OUST": [],
+  "IREN": [],
+  "MRNA": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xae6d85e96bee054417d8d627b310a945484415be",
+    "liquidity": "90624967159994293052",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xb40196272a6d2eb5edf6d93bc4dc39856ad95e0e",
+    "liquidity": "149001737423318976",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa34d0667334074df2d5bfd259e79e6b9cf1fa8bf",
+    "liquidity": "92771908798947896",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "LRCX": [],
+  "BND": [],
+  "CEG": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xc9529b7dc74bf15da6cee01a282908e8c7ab6ba3",
+    "liquidity": "58364262539065277",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "ALAB": [],
+  "TEM": [],
+  "BULL": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x0a393801fea32a50be77dab6c8bbb503db3a4663",
+    "liquidity": "23809402521117618491",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   }
+  ],
+  "UNH": [],
+  "CLOV": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xbdfbc71db927fd566080ac21c6a2a89ae061f940",
+    "liquidity": "82566807952411",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "BABA": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xa57ab582b310dd6f9e934ea1eeea152741545e6a",
+    "liquidity": "338965324348938565",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x9eda4bcb3ebfede532f3cae3864fc0cefff782aa",
+    "liquidity": "2684835415285719",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0x368ddd38861d31435d764fc54df7d16481e3590b",
+    "liquidity": "185574682021",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "SIMO": [],
+  "WDC": [],
+  "CLSK": [],
+  "PLTR": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x61be5bfbaf17ae28bf68006103b2e78fe6112638",
+    "liquidity": "180831954781614030487",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x851680416a4f4e1c463d45171d61acddbc8554c0",
+    "liquidity": "301352070161719390",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "MU": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x301f48ec369bb3bfa0bc04d44a79037aa0ee2340",
+    "liquidity": "1097209780827273805934",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xfd4911302ba5c25d153a6912b394a72d0a9601f2",
+    "liquidity": "51463245986006865337",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xd057b1bc54917855bbee58ead58647f47cab35e5",
+    "liquidity": "519657576101101358",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "ASTS": [],
+  "POWL": [],
+  "VTI": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb78dd1a97fa544c65d7d1f12453ecaaf1e05c36d",
+    "liquidity": "175534014176410706",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "RKLB": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa9888de1b9d64a93eaeb495a39fe9b3d00654928",
+    "liquidity": "289890822195",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "TER": [],
+  "CRWV": [],
+  "CLS": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xaea7d4e856a1fc2bd23c7ea26a3433464de0428f",
+    "liquidity": "134556858892",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "FIG": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xca5904c0a9d42f0ec1bf760fdf779907877144fd",
+    "liquidity": "541056044910607728",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "AMD": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x5ca1b5e6cb510b3bf53e7cd8f7d9b5a71b4a4dc0",
+    "liquidity": "111667955341361738483",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x48d284a2a4d3dc1b3da08231fe44317e7e7aa51f",
+    "liquidity": "51397080460701340",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xd6af1dcb75cdae4f2efc403a58ef023a51edc686",
+    "liquidity": "5074153843390830",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "EWY": [],
+  "SLS": [],
+  "CRDO": [],
+  "SMH": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xf9d5f058099707f60740c09bf67b32967971dc63",
+    "liquidity": "101108331130",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "VRT": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb15e0e29161917d36bbbc496ae482dce2c77c875",
+    "liquidity": "141508527217",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NOW": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x00ed6c6954edf77ffa945696f1eacf08edcc8d3a",
+    "liquidity": "166008841225",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "XLK": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xe20463635ceeea8e30a315ffc4d4e81c80e53147",
+    "liquidity": "183566154110",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "AMBA": [],
+  "NVDA": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0x62ab521f71431f78ac374cdbadc6cda3c8916b6c",
+    "liquidity": "19548183266704083329668",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xc0be1cb0f674d9737c72b2a63fc542361185b807",
+    "liquidity": "3040208238016635163274",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x8b6a6416a5d1040efcfa6234da6aa1265dfe123e",
+    "liquidity": "101346130355879538089",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xd4eb21209c4d6093f80b5b84f5c45cc093ea14a3",
+    "liquidity": "28529529108086868846",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xb944cec30bd4175855215d767adc81f39e5f7e2b",
+    "liquidity": "57322225759800163",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "JOBY": [],
+  "QUBT": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0xb0b255ecf93ee03e69b6780cb85da769c0c5e0ea",
+    "liquidity": "453435598745884674993",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x227bbce9a81b3694b01754298a983be3f9e44a93",
+    "liquidity": "706419343116940180",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x2e2a857c08ad6c09f1d1ec4fdb4cc7cd06cf17f4",
+    "liquidity": "52707254070016005",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "USO": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x02175608f1b5e6b5ed221ccfdc7be197d111d915",
+    "liquidity": "3103878062811170742",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x6ed11c7dfd8e2ca5620eed29a7b9b53ae90dd0d2",
+    "liquidity": "34970655896822708",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "PWR": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x5cc24380a863119148723d2970ab712e4949b12c",
+    "liquidity": "100829680013",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "F": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x4dbac19e895322ac5b93abad9008691632bffc05",
+    "liquidity": "1350948707031625537",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x01948e834623aa859ffdc0d299dd15e7c9d7486f",
+    "liquidity": "39103911091281035",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "ZS": [],
+  "COIN": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x6707aeac7d0e519b083219d27bb427364363183a",
+    "liquidity": "11581150934088326970937",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   }
+  ],
+  "XOM": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x6af79a2c154e7eea9c87b38617d5f0b598b690fb",
+    "liquidity": "179269176984",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NBIS": [],
+  "SHY": [],
+  "SMR": [],
+  "SOUN": [],
+  "POET": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa1c781ed62ac2d0283f50ff5a843647a56ddd80a",
+    "liquidity": "128574111670570696",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "APP": [],
+  "AAOI": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x078c1690865964838ae346077046750846a552d1",
+    "liquidity": "217194980874",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "LITE": [],
+  "AEIS": [],
+  "KTOS": [],
+  "AMAT": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa255bafb65f9c79047ec74814e456e53713c8cb3",
+    "liquidity": "103661259578",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "MRVL": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x5201ea77c950abb8d3706a20bf3b83d872e4a98b",
+    "liquidity": "134673798942374172911",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xb5e892f0fc6daadda5b927266fe7907e623e4843",
+    "liquidity": "23609885553300907",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x06cc0b96be1fa1d754ce2e1228f5d8c616f795b0",
+    "liquidity": "14064354535570131",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "JBL": [],
+  "LLY": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x666ba98ab094793e276215448f2485fd8e3c3ce5",
+    "liquidity": "1291352204010405773150",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xf4274130137eee20bad928b593d992716516ceb9",
+    "liquidity": "316296393672796033",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xf212d02146a897f5f686e9d629f6a73da534324a",
+    "liquidity": "125195833246642994",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xd2038788ebe1e0bfd7c0a6112f09778f3aeaeca6",
+    "liquidity": "65641337518592884",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "QCOM": [],
+  "JNJ": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x9ffb2cd935ebbf9f02494e9ef43fee2e9a761972",
+    "liquidity": "22889725847244847195",
+    "tokenIsToken0": true,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x7f0ace18d1dced47063cf26e649bc8ab14d09e67",
+    "liquidity": "130056990740264785",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x8d39388ef11bb78843130bd74ab0e5d89fa76b30",
+    "liquidity": "12466247053399264",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "KSS": [],
+  "ANET": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x6369190700480ae579a331adfcdb7967255186dd",
+    "liquidity": "165420780907",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "CTSH": [],
+  "PL": [],
+  "IONQ": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xbc44b11f569d3feed9b4088f5a3fc569d2e3c77f",
+    "liquidity": "369095908455",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "TE": [],
+  "SHOP": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x18a1afa849a6940870c2163b7ecbcc85d455ad99",
+    "liquidity": "36897756091303455",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NVTS": [],
+  "PATH": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x85e93fa4a14b266643b8c9bace0312425815e72e",
+    "liquidity": "601559455889",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "UMC": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xd95a760934ddf6818176d51c12e89520dd7bac44",
+    "liquidity": "432620957989",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "ORCL": [],
+  "COHR": [],
+  "GEV": [],
+  "AUR": [],
+  "IBM": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x7502f81aef932e82ccf240f023dd989689a3ef65",
+    "liquidity": "16539379733280331754",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x8cd848ce18b829c5c769aff27164078bb52e0e97",
+    "liquidity": "202257393896881267",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa0a79bc62fc822f3bcdf0ebbc586031781c53a5b",
+    "liquidity": "36867745696858900",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NAVN": [],
+  "INOD": [],
+  "AAPL": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0x8bb3514e2204e1cdf3ac149efee7ff04d91b719f",
+    "liquidity": "3986845730893579389402",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xaae0d815ee56e4092a5e5c2911e676fea50b2d6d",
+    "liquidity": "1679084644687138725",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x783c9bbb765047cfdd2b84b92b2ca9f11d34b7ed",
+    "liquidity": "96427627307321128",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x3714aa8105de1f384481b425788af413748c1837",
+    "liquidity": "172161551175904",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "AMC": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0xcf38764ae8c92222af4358a701871a6235cfc7b7",
+    "liquidity": "8328586262430259866002",
+    "tokenIsToken0": true,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xaa34fea710a1a737840329051d81d3b0b7c564d5",
+    "liquidity": "11980274977361727660",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xc97894fc00c6eeb060838559d905b4c2253fd429",
+    "liquidity": "711698025586966",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "RIVN": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xf9e71558eef115b6c8fbfc9ad5fda00033e9d69c",
+    "liquidity": "409204734853083702",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb30a75b200d98a600a3766869344928e35823e23",
+    "liquidity": "296559745257281731",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "GME": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0xc6bcc95043dc48c204bb2d57fb264a10efe0a607",
+    "liquidity": "2146539428360992613000",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xe9713f453adb9245b19559790c96f470a18f2fdf",
+    "liquidity": "2418868881533849368",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xe2b46c905e12ab8e2f864e4821a4325884c1b126",
+    "liquidity": "2229771787240553140",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0a0675689c2ad2a3ade86539bcbd27b6c0764e9d",
+    "liquidity": "46911961461013414",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "MPWR": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x56ad01ae395869ae9c491a007c36be3b839a14a6",
+    "liquidity": "65306894038",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "PENG": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x1cd650500fa6f07646361f5f508aa6fbf7ddad36",
+    "liquidity": "48403149895256572",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "NET": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xa9caebb1b2fb2b954f192572b309aef1caf6a330",
+    "liquidity": "40287780719485304",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x06abd56348164c673058dd5750812b059c054ca5",
+    "liquidity": "2823267923274175",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "SCHD": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x359555e1fa3f28d5a25091dd9f6d350cb66566cf",
+    "liquidity": "421629349511",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "LUNR": [],
+  "MSTR": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0x70504a6fafdbfb75fe971faa4dd716e79ac5624c",
+    "liquidity": "3755419745748906646294",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x055036f511567711e0b2e127a1a468802bb93065",
+    "liquidity": "155120569606600511188",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x17578c0e0d15da44f31677263114f71ae76653ea",
+    "liquidity": "255838794614912274",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x2c08bcef714bc8124972b7181494fc598e8ed111",
+    "liquidity": "528762522422453",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "ABCL": [],
+  "AXON": [],
+  "TSLA": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xa953ca88ff430e9487c60ca34d757414f4efda07",
+    "liquidity": "3267236807063667741094",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xf4acdaeeb7022862a763c9b1b885e11191c889e3",
+    "liquidity": "694685311976934724",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0xc4f0172d6ac8dd294dd1137d047d5e1893760236",
+    "liquidity": "26020985256244407",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb349fb08c2712f3a70bad40a4d006b68d67e888b",
+    "liquidity": "134194425290370",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "EWT": [],
+  "FTNT": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x4f2e6b13f5b9595caee276e14f9f457e17484503",
+    "liquidity": "194644826743",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "HPE": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xe0e25884a3b690b1699732de475b2281600b0934",
+    "liquidity": "8516670903080875",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x9bd9061794310d98b7b8f2abeb8056225bc73bee",
+    "liquidity": "347696306264",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "VSAT": [],
+  "ADBE": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xd25e11e45f42660668acc3db09dfe56f890f2e58",
+    "liquidity": "146880564486",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "XNDU": [],
+  "DDOG": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x8fbf4c8e6ee5a95f0d23ef7a065fe266fc59f680",
+    "liquidity": "11313166780679723",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xb9a8b0a8a724f0813cef2c9bfef102087a33753e",
+    "liquidity": "170904446196",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "RDW": [],
+  "BE": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xe3eca0fa4a9bd2c90852c94fe4a756da11300489",
+    "liquidity": "25561590594072210901",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x1bad145c8f06444e0df81c28257cd20231bd1f16",
+    "liquidity": "181614416865446103",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "DJT": [
+   {
+    "quote": "WETH",
+    "fee": 500,
+    "pool": "0x95def4ea143630d64caa8f55f7570d8023f20265",
+    "liquidity": "2789243305887314061487",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x81b4caac5d313ea0c831c4d16f8c23937602dcf1",
+    "liquidity": "1640705922900571005573",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x31a89afd92f9397465649ad03226c52292fc1ae5",
+    "liquidity": "5733001013228394829",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "OKLO": [],
+  "ZM": [],
+  "FLNC": [],
+  "SLV": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xca2734c70e3c348edcda36a6478c9275a0ff0c90",
+    "liquidity": "367501811476519538223",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x8cb787e6c315d464775289bad00fdd67d53ecb3d",
+    "liquidity": "1348166644601527662",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x0fa7bc480885dcf58ad2ef63ec7289cf2481d51c",
+    "liquidity": "27690797984773636",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 500,
+    "pool": "0x37ed4621d1eb3abc9e551a888e6aaf0a41f7be8e",
+    "liquidity": "984816726956523",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "SOFI": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xea9368e1c88bce7f04d16919eb131778a0df826a",
+    "liquidity": "562198243509",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "DOCN": [],
+  "WULF": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x0c72e22d7a3ef8bb845478e5d77aec87789defc6",
+    "liquidity": "2078506395723262",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "COST": [
+   {
+    "quote": "WETH",
+    "fee": 10000,
+    "pool": "0xc478a811a0002be4321a142d5446247456b1cb05",
+    "liquidity": "164051673271898731879",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0a2121a50a09ed0796ae81f9c53ff9398355a398",
+    "liquidity": "469710375591212053",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xdb073638f94a384b8b7a647d73274decac9e7ca5",
+    "liquidity": "487029526263231",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "TTD": [],
+  "HWM": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xdaab22b473029a8f8f00cbe3a33de82dbbeb6ec9",
+    "liquidity": "157476689007",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "HIMS": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xeb576c467d69e084a0fdc6ddf744467804634650",
+    "liquidity": "2917820606593041939245",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xc8c90d3a1c1a24967e773ac2ad0d456ba3e31f64",
+    "liquidity": "8851981752663800210",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x18e2380689f425e0999f119553ac1f1c3b943e5f",
+    "liquidity": "2203033566097611",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "CELH": [],
+  "RBLX": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0x6d25417718a8d6c529130a8ccc4bfbf0a18219d3",
+    "liquidity": "3976125800811951592258",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x2ef5945cd5664876b6481fdacfaa2942995a4da8",
+    "liquidity": "716617744995125496",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x1bdb8e3a79cb1a7f228808739311e23098d33d43",
+    "liquidity": "289839925296634026",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "SPMO": [],
+  "AMKR": [],
+  "ONTO": [],
+  "SOXX": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x0663e66c880e27a5ce3c4c25234ab64ead7dff67",
+    "liquidity": "22653576602786842",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0x563a3154bc09d2a2364b9a2a5766148f4e89be77",
+    "liquidity": "105739532041",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "ASML": [
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xedb22516b14eb2d1c86927db373b0e8bf70f5cd1",
+    "liquidity": "13433372223373749",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xce79c1b7b5f9ae1aab3b1796e7fcd2f5f24cf265",
+    "liquidity": "3890093874195927",
+    "tokenIsToken0": true,
+    "quoteDecimals": 6
+   }
+  ],
+  "HII": [],
+  "AVAV": [],
+  "INDA": [
+   {
+    "quote": "WETH",
+    "fee": 3000,
+    "pool": "0xf5b37a305e7304a70067be356ee611ac29f706eb",
+    "liquidity": "73513223241199537769",
+    "tokenIsToken0": false,
+    "quoteDecimals": 18
+   },
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0x2171c94d8073c4913f4653a0766d18aa8a29d1f6",
+    "liquidity": "32085682056548762",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "MDB": [],
+  "PFE": [
+   {
+    "quote": "USDG",
+    "fee": 3000,
+    "pool": "0xc7d573fcda6d2107c97fb582ae18411f9db32e7f",
+    "liquidity": "668408744919545495",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   },
+   {
+    "quote": "USDG",
+    "fee": 10000,
+    "pool": "0xa26df7296ef5dfc727f3bc6f1e9050e6b62e6abf",
+    "liquidity": "1089857963382206",
+    "tokenIsToken0": false,
+    "quoteDecimals": 6
+   }
+  ],
+  "KLAC": [],
+  "IBRX": []
+ }
+}

@@ -1,103 +1,48 @@
 "use client";
 
-import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { hardhat } from "viem/chains";
-import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
-import { FaucetButton, RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
-import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-eth";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-type HeaderMenuLink = {
-  label: string;
-  href: string;
-  icon?: React.ReactNode;
-};
-
-export const menuLinks: HeaderMenuLink[] = [
-  {
-    label: "Home",
-    href: "/",
-  },
-  {
-    label: "Debug Contracts",
-    href: "/debug",
-    icon: <BugAntIcon className="h-4 w-4" />,
-  },
-];
-
-export const HeaderMenuLinks = () => {
-  const pathname = usePathname();
-
-  return (
-    <>
-      {menuLinks.map(({ label, href, icon }) => {
-        const isActive = pathname === href;
-        return (
-          <li key={href} className="h-full">
-            <Link
-              href={href}
-              passHref
-              className={`${
-                isActive ? "bg-base-300" : ""
-              } hover:bg-base-300 focus:!bg-base-300 h-full px-4 text-sm gap-2 flex items-center whitespace-nowrap`}
-            >
-              {icon}
-              <span>{label}</span>
-            </Link>
-          </li>
-        );
-      })}
-    </>
-  );
-};
-
-/**
- * Site header
- */
 export const Header = () => {
-  const { targetNetwork } = useTargetNetwork();
-  const isLocalNetwork = targetNetwork.id === hardhat.id;
-
-  const burgerMenuRef = useRef<HTMLDetailsElement>(null);
-  useOutsideClick(burgerMenuRef, () => {
-    burgerMenuRef?.current?.removeAttribute("open");
-  });
-
+  const pathname = usePathname();
   return (
-    <div className="sticky lg:static top-0 navbar bg-base-100 min-h-16 shrink-0 justify-between z-20 border-b-2 border-base-300 p-0 sm:px-2">
-      <div className="navbar-start w-auto self-stretch">
-        <details className="dropdown" ref={burgerMenuRef}>
-          <summary className="ml-1 btn btn-ghost lg:hidden hover:bg-transparent">
-            <Bars3Icon className="h-1/2" />
-          </summary>
-          <ul
-            className="menu menu-compact dropdown-content mt-3 p-2 shadow-lg bg-base-100 w-52"
-            onClick={() => {
-              burgerMenuRef?.current?.removeAttribute("open");
-            }}
-          >
-            <HeaderMenuLinks />
-          </ul>
-        </details>
-        <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
-          <div className="flex relative w-10 h-10">
-            <Image alt="SE2 logo" className="cursor-pointer" fill src="/logo.svg" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold leading-tight">Basqit</span>
-            <span className="text-xs">Baskets built from real stocks</span>
-          </div>
+    <header className="bq-header">
+      <div className="bq-header-inner">
+        <Link href="/" className="bq-brand">
+          <Image src="/basqit-icon.svg" width={38} height={38} alt="" />
+          <span>
+            basqit<span className="bq-brand-period">.</span>
+          </span>
         </Link>
-        <ul className="hidden lg:flex lg:flex-nowrap h-full m-0 p-0 list-none">
-          <HeaderMenuLinks />
-        </ul>
+        <nav aria-label="Main navigation" className="bq-nav">
+          <Link
+            className={pathname === "/" ? "bq-nav-active" : ""}
+            aria-current={pathname === "/" ? "page" : undefined}
+            href="/"
+          >
+            Portfolio
+          </Link>
+          <Link
+            className={pathname === "/corporate-events" ? "bq-nav-active" : ""}
+            aria-current={pathname === "/corporate-events" ? "page" : undefined}
+            href="/corporate-events"
+          >
+            Corporate events
+          </Link>
+          <Link
+            className={pathname === "/atlas" ? "bq-nav-active" : ""}
+            aria-current={pathname === "/atlas" ? "page" : undefined}
+            href="/atlas"
+          >
+            Explore assets
+          </Link>
+        </nav>
+        <div className="bq-header-wallet">
+          <ConnectButton showBalance={false} chainStatus="none" accountStatus="address" />
+        </div>
       </div>
-      <div className="navbar-end grow mr-4">
-        <RainbowKitCustomConnectButton />
-        {isLocalNetwork && <FaucetButton />}
-      </div>
-    </div>
+    </header>
   );
 };

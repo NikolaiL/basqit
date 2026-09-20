@@ -7,14 +7,14 @@ import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
 export const metadata = getMetadata({
   title: "Basqit",
-  description: "Baskets built from real stocks",
+  description: "Your Stock Token balances and corporate events, in one place.",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   return (
-    <html suppressHydrationWarning className={``}>
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider enableSystem>
+        <ThemeProvider attribute="data-theme" defaultTheme="light" forcedTheme="light" enableSystem={false}>
           <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
         </ThemeProvider>
       </body>
