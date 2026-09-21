@@ -1,19 +1,25 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { StockDiscovery } from "~~/components/discover/StockDiscovery";
 import { type DiscoveryAsset, discoveryCatalog } from "~~/services/discover/catalog";
-import { shareSelection } from "~~/services/discover/share";
+import { shareOrigin, shareSelection } from "~~/services/discover/share";
 
 type Search = { theme?: string; similar?: string; stocks?: string };
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
   const params = await searchParams;
+  const requestHeaders = await headers();
+  const origin = shareOrigin(
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  );
   const { theme, symbols } = shareSelection(params.theme, params.stocks);
   const title = theme ? `${theme} · My stock mood` : "Find your stock mood";
   const description = symbols.length
     ? `${symbols.join(" · ")}. Explore this stock selection and find your own mood with Basqit.`
     : "Turn an idea into a stock selection. What’s your stock mood?";
   const query = new URLSearchParams({ theme, stocks: symbols.join(",") });
-  const image = { url: `/discover/og?v=2&${query}`, width: 1200, height: 630, alt: title };
+  const image = { url: `${origin}/discover/og?v=3&${query}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,

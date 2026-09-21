@@ -8,13 +8,10 @@ import logos from "~~/services/discover/logos.json";
 import { shareSelection } from "~~/services/discover/share";
 
 export const runtime = "nodejs";
-let images: Promise<{ symbol: string; src: string | null }[]> | undefined;
-function catalogImages() {
-  return (images ??= Promise.all(
-    Object.entries(logos).map(async ([symbol, file]) => {
-      const data = await readFile(path.join(process.cwd(), "public", file)).catch(() => null);
-      return { symbol, src: data ? `data:image/png;base64,${data.toString("base64")}` : null };
-    }),
+let field: Promise<string> | undefined;
+function stockField() {
+  return (field ??= readFile(path.join(process.cwd(), "public/og/stock-field.png")).then(
+    data => `data:image/png;base64,${data.toString("base64")}`,
   ));
 }
 
@@ -23,8 +20,16 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("theme"),
     request.nextUrl.searchParams.get("stocks"),
   );
-  const catalog = await catalogImages();
-  const selected = symbols.map(symbol => catalog.find(item => item.symbol === symbol)!);
+  const [background, selected] = await Promise.all([
+    stockField(),
+    Promise.all(
+      symbols.map(async symbol => {
+        const file = (logos as Record<string, string>)[symbol];
+        const data = await readFile(path.join(process.cwd(), "public", file)).catch(() => null);
+        return { symbol, src: data ? `data:image/png;base64,${data.toString("base64")}` : null };
+      }),
+    ),
+  ]);
   const headline = theme || "What’s your stock mood?";
   return new ImageResponse(
     <div
@@ -148,41 +153,15 @@ export async function GET(request: NextRequest) {
           </div>
         )}
       </div>
-      {catalog.map(({ symbol, src }, index) => {
-        const column = index % 39;
-        const row = Math.floor(index / 39);
-        return (
-          <div
-            key={symbol}
-            style={{
-              display: "flex",
-              position: "absolute",
-              left: 10 + column * 29 + (row % 2) * 12,
-              top: 448 + row * 27 + ((column * 17 + row * 7) % 23),
-              width: 66,
-              height: 66,
-              borderRadius: 33,
-              background: "white",
-              border: "1px solid #e5e0ef",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: `rotate(${((index * 13) % 37) - 18}deg)`,
-              boxShadow: "0 4px 10px rgba(40,24,80,0.10)",
-            }}
-          >
-            {src ? (
-              <img src={src} alt="" width={43} height={43} style={{ objectFit: "contain" }} />
-            ) : (
-              <div style={{ fontSize: 12 }}>{symbol}</div>
-            )}
-          </div>
-        );
-      })}
+      <img src={background} alt="" width={1200} height={198} style={{ position: "absolute", left: 0, top: 432 }} />
     </div>,
     {
       width: 1200,
       height: 630,
-      headers: { "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800" },
+      headers: {
+        "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800",
+        "Vercel-CDN-Cache-Control": "public, s-maxage=604800, stale-while-revalidate=604800",
+      },
     },
   );
 }

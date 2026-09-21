@@ -94,6 +94,7 @@ export function StockDiscovery({
     if (!query) return;
     const url = new URL("/discover", window.location.origin);
     url.searchParams.set("theme", query);
+    url.searchParams.set("card", "3");
     if (matches.length) url.searchParams.set("stocks", matches.map(match => match.symbol).join(","));
     if (source) url.searchParams.set("similar", source);
     const text = `My stock mood: “${query}”${matches.length ? ` — ${matches.map(match => match.symbol).join(", ")}` : ""}. What’s yours?`;
