@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Address } from "@scaffold-ui/components";
+import { QuoteDetails } from "./QuoteDetails";
+import { CheckIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import { robinhoodChain } from "~~/services/atlas/client";
-import { amount } from "~~/services/portfolio/format";
+import { amount, money } from "~~/services/portfolio/format";
 
 export type CatalogAsset = {
   symbol: string;
@@ -14,7 +15,51 @@ export type CatalogAsset = {
   decimals: number | null;
   isin: string | null;
   status: string;
+  price?: string | null;
+  priceAt?: string;
 };
+
+function CopyTokenAddress({ address, symbol }: { address: string; symbol: string }) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(address);
+      clearTimeout(timer.current);
+      setError(false);
+      setCopied(true);
+      timer.current = setTimeout(() => setCopied(false), 3000);
+    } catch {
+      setError(true);
+      setCopied(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="bq-token-copy-row">
+        <code title={address} aria-label={address}>
+          {address.slice(0, 6)}…{address.slice(-4)}
+        </code>
+        <button
+          type="button"
+          className={`btn btn-ghost btn-square bq-token-copy ${copied ? "bq-token-copied" : ""}`}
+          aria-label={copied ? `${symbol} address copied` : `Copy ${symbol} token address`}
+          title={copied ? "Copied" : "Copy address"}
+          onClick={() => void copy()}
+        >
+          {copied ? <CheckIcon key="copied" aria-hidden="true" /> : <DocumentDuplicateIcon aria-hidden="true" />}
+        </button>
+      </div>
+      <span className={error ? "bq-wallet-error" : "sr-only"} role="status">
+        {error ? "Could not copy. Select and copy the address manually." : copied ? "Address copied" : ""}
+      </span>
+    </>
+  );
+}
 
 export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
   const [search, setSearch] = useState("");
@@ -52,6 +97,24 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
               </div>
               <span className="badge badge-outline">{asset.status}</span>
             </div>
+            <div className="bq-asset-price">
+              <span>Reference price / token</span>
+              <strong>{asset.price ? money(asset.price) : "—"}</strong>
+              <QuoteDetails symbol={asset.symbol} address={asset.address} />
+              {asset.priceAt && (
+                <small>
+                  Quote generated{" "}
+                  {new Date(asset.priceAt).toLocaleString("en-GB", {
+                    timeZone: "UTC",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  UTC
+                </small>
+              )}
+            </div>
             <div className="bq-asset-equivalent">
               <span>1 token represents</span>
               <strong title={asset.multiplier ?? undefined}>
@@ -71,12 +134,7 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
             </dl>
             <div className="bq-asset-address">
               <span>Token contract</span>
-              <Address
-                address={asset.address}
-                chain={robinhoodChain}
-                blockExplorerAddressLink={`${robinhoodChain.blockExplorers.default.url}/token/${asset.address}`}
-              />
-              <code>{asset.address}</code>
+              <CopyTokenAddress address={asset.address} symbol={asset.symbol} />
             </div>
             <div className="bq-asset-links">
               <a
@@ -101,8 +159,9 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
         </div>
       )}
       <p className="bq-data-note">
-        Issuer catalog · cached up to 5 minutes. Active is the asset’s catalog status, not confirmation that trading is
-        open.
+        Issuer catalog · cached up to 5 minutes. Reference prices use underlying bid/ask midpoint × multiplier, not an
+        executable quote. Quote generation time does not establish market freshness. Active is the asset’s catalog
+        status, not confirmation that trading is open.
       </p>
     </>
   );

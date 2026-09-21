@@ -25,18 +25,18 @@ export const Header = () => {
             Portfolio
           </Link>
           <Link
+            className={pathname === "/atlas" ? "bq-nav-active" : ""}
+            aria-current={pathname === "/atlas" ? "page" : undefined}
+            href="/atlas"
+          >
+            Assets
+          </Link>
+          <Link
             className={pathname === "/corporate-events" ? "bq-nav-active" : ""}
             aria-current={pathname === "/corporate-events" ? "page" : undefined}
             href="/corporate-events"
           >
             Corporate events
-          </Link>
-          <Link
-            className={pathname === "/atlas" ? "bq-nav-active" : ""}
-            aria-current={pathname === "/atlas" ? "page" : undefined}
-            href="/atlas"
-          >
-            Explore assets
           </Link>
         </nav>
         <div className="bq-header-wallet">

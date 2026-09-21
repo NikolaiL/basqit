@@ -17,7 +17,6 @@ import {
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { useStockActions, useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
 import { robinhoodChain } from "~~/services/atlas/client";
-import { demoActions, demoPortfolio } from "~~/services/portfolio/demo";
 import { amount, dividendHistory, money } from "~~/services/portfolio/format";
 import type { CorporateAction } from "~~/services/portfolio/types";
 
@@ -190,16 +189,13 @@ function EventRow({ event }: { event: CorporateAction }) {
 export function PortfolioDashboard({
   page = "portfolio",
   initialToken = "",
-  initialDemo = false,
 }: {
   page?: "portfolio" | "events";
   initialToken?: string;
-  initialDemo?: boolean;
 }) {
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const [demo, setDemo] = useState(initialDemo);
   const [watchedAddress, setWatchedAddress] = useState<`0x${string}`>();
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<"holdings" | "all">(eventsPage ? "all" : "holdings");
@@ -208,10 +204,10 @@ export function PortfolioDashboard({
   const [eventLimit, setEventLimit] = useState(20);
   const loadMoreRef = useRef<HTMLButtonElement>(null);
   const address = watchedAddress ?? connectedAddress;
-  const walletQuery = useStockPortfolio(!demo && (!eventsPage || scope === "holdings") ? address : undefined);
+  const walletQuery = useStockPortfolio(!eventsPage || scope === "holdings" ? address : undefined);
   const actionsQuery = useStockActions();
-  const portfolio = demo ? demoPortfolio : walletQuery.data;
-  const actions = demo ? demoActions : (actionsQuery.data?.actions ?? []);
+  const portfolio = walletQuery.data;
+  const actions = actionsQuery.data?.actions ?? [];
   const holdings = portfolio?.holdings ?? [];
   const symbols = new Set(holdings.map(h => h.symbol));
   const visibleHoldings = holdings.filter(h => `${h.symbol} ${h.name}`.toLowerCase().includes(search.toLowerCase()));
@@ -224,7 +220,7 @@ export function PortfolioDashboard({
   const events = scopedEvents.filter(event => eventStatus === "all" || event.status === eventStatus);
   const relevantEvents = actions.filter(event => symbols.has(event.symbol));
   const pending = relevantEvents.filter(event => event.status === "CORPORATE_ACTION_STATUS_IN_PROGRESS");
-  const loading = !demo && !!address && walletQuery.isPending;
+  const loading = !!address && walletQuery.isPending;
   const hasPortfolio = !!portfolio;
 
   useEffect(() => {
@@ -241,7 +237,7 @@ export function PortfolioDashboard({
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [eventsPage, eventLimit, events.length, eventToken, eventStatus, scope, demo]);
+  }, [eventsPage, eventLimit, events.length, eventToken, eventStatus, scope]);
 
   return (
     <div className="bq-dashboard">
@@ -258,22 +254,10 @@ export function PortfolioDashboard({
         <div className="bq-heading-actions">
           <button
             type="button"
-            className="btn btn-ghost bq-secondary"
-            onClick={() => {
-              setDemo(!demo);
-              setEventToken("");
-              setEventStatus("all");
-              setSearch("");
-            }}
-          >
-            {demo ? "Exit example" : "Explore an example"}
-          </button>
-          <button
-            type="button"
             aria-label={eventsPage ? "Refresh corporate events" : "Refresh portfolio and events"}
             title={eventsPage ? "Refresh corporate events" : "Refresh balances and events"}
             className="btn btn-square bq-secondary"
-            disabled={demo || walletQuery.isFetching || actionsQuery.isFetching}
+            disabled={walletQuery.isFetching || actionsQuery.isFetching}
             onClick={() => {
               if (address && (!eventsPage || scope === "holdings")) void walletQuery.refetch();
               void actionsQuery.refetch();
@@ -284,33 +268,15 @@ export function PortfolioDashboard({
         </div>
       </div>
 
-      {demo && (
-        <div role="status" className="bq-preview-banner">
-          <span>
-            <strong>Example portfolio</strong> Illustrative balances, values and events. Not your wallet or live market
-            data.
-          </span>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDemo(false)}>
-            View my wallet
-          </button>
-        </div>
-      )}
-
       {(!eventsPage || scope === "holdings") && (
         <>
           <div className="bq-wallet-bar">
             <div className="bq-wallet-label">
               <WalletIcon />
               <span>
-                {demo
-                  ? "Preview mode"
-                  : watchedAddress
-                    ? "Watching wallet"
-                    : connectedAddress
-                      ? "Connected wallet"
-                      : "No wallet connected"}
+                {watchedAddress ? "Watching wallet" : connectedAddress ? "Connected wallet" : "No wallet connected"}
               </span>
-              {!demo && address && <Address address={address} chain={robinhoodChain} />}
+              {address && <Address address={address} chain={robinhoodChain} />}
             </div>
             <span className="bq-network">
               <span />
@@ -318,7 +284,7 @@ export function PortfolioDashboard({
             </span>
           </div>
 
-          {!demo && !address && (
+          {!address && (
             <div className="bq-connect-panel card">
               <div>
                 <h2>A clearer view of your holdings.</h2>
@@ -331,16 +297,15 @@ export function PortfolioDashboard({
           )}
 
           <WalletWatchlist
-            selected={demo ? undefined : watchedAddress}
+            selected={watchedAddress}
             connected={connectedAddress}
             onSelect={address => {
               setWatchedAddress(address);
-              setDemo(false);
               setSearch("");
             }}
           />
 
-          {!demo && walletQuery.isError && (
+          {walletQuery.isError && (
             <div role="alert" className="alert bq-error">
               <span>{walletQuery.error.message}</span>
               <button
@@ -352,7 +317,7 @@ export function PortfolioDashboard({
               </button>
             </div>
           )}
-          {!demo && portfolio && portfolio.failed > 0 && (
+          {portfolio && portfolio.failed > 0 && (
             <div role="status" className="alert bq-warning">
               Partial snapshot: {portfolio.failed} asset reads were unavailable. Missing balances are not treated as
               zero.
@@ -380,7 +345,7 @@ export function PortfolioDashboard({
                   "—"
                 )}
               </div>
-              <p>{demo ? "Illustrative value · USD" : "Indicative value · not a sell quote"}</p>
+              <p>Indicative value · not a sell quote</p>
               <div className="bq-value-bottom">
                 <span className="bq-dot" />
                 {portfolio?.unpriced
@@ -401,9 +366,7 @@ export function PortfolioDashboard({
                 <CalendarDaysIcon />
               </span>
               <div className="bq-card-label">Events in progress</div>
-              <strong>
-                {hasPortfolio && (demo || actionsQuery.data) ? pending.length.toString().padStart(2, "0") : "—"}
-              </strong>
+              <strong>{hasPortfolio && actionsQuery.data ? pending.length.toString().padStart(2, "0") : "—"}</strong>
               <p>For your current holdings</p>
             </div>
           </section>
@@ -470,23 +433,21 @@ export function PortfolioDashboard({
                           <td>
                             <strong>{holding.valueUsd === null ? "Unavailable" : money(holding.valueUsd)}</strong>
                             <span className="bq-cell-sub">
-                              {demo
-                                ? "Example value"
-                                : holding.priceAt
-                                  ? `Data ${new Date(holding.priceAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                                  : "No reference price"}
+                              {holding.priceAt
+                                ? `Data ${new Date(holding.priceAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                                : "No reference price"}
                             </span>
                           </td>
                           <td>
                             <Link
                               className="link bq-dividend-link"
-                              href={`/corporate-events?token=${encodeURIComponent(holding.symbol)}${demo ? "&demo=1" : ""}`}
+                              href={`/corporate-events?token=${encodeURIComponent(holding.symbol)}`}
                               aria-label={`View ${holding.symbol} dividend history`}
                             >
                               Dividend history
                             </Link>
                             <span className="bq-cell-sub">
-                              {!demo && !actionsQuery.data
+                              {!actionsQuery.data
                                 ? "Awaiting event data"
                                 : `${dividendHistory(actions, holding.symbol).length} reported`}
                             </span>
@@ -513,7 +474,7 @@ export function PortfolioDashboard({
                     ? "Try another company name or ticker."
                     : hasPortfolio
                       ? "This view checks the issuer’s Stock Token catalog on Robinhood Chain."
-                      : "Connect a wallet, look up an address, or explore the example."}
+                      : "Connect a wallet or look up an address."}
                 </p>
               </div>
             )}
@@ -565,7 +526,7 @@ export function PortfolioDashboard({
                     setEventLimit(20);
                   }}
                 >
-                  {demo ? "Example events" : "All Stock Tokens"}
+                  All Stock Tokens
                 </button>
               </div>
               <select
@@ -604,21 +565,18 @@ export function PortfolioDashboard({
             </div>
             {eventToken && (
               <p className="bq-history-note">
-                {demo
-                  ? "Illustrative history."
-                  : "Available issuer records; a complete historical archive is not guaranteed."}{" "}
-                Rates are per underlying share, not your wallet payout. In-progress events are not completed
-                distributions.
+                Available issuer records; a complete historical archive is not guaranteed. Rates are per underlying
+                share, not your wallet payout. In-progress events are not completed distributions.
               </p>
             )}
-            {!demo && actionsQuery.isError ? (
+            {actionsQuery.isError ? (
               <div role="alert" className="bq-empty">
                 <p>{actionsQuery.error.message}</p>
                 <button className="btn btn-sm" onClick={() => void actionsQuery.refetch()}>
                   Retry events
                 </button>
               </div>
-            ) : !demo && actionsQuery.isPending ? (
+            ) : actionsQuery.isPending ? (
               <div className="bq-empty" role="status">
                 Loading issuer events…
               </div>
@@ -693,12 +651,10 @@ export function PortfolioDashboard({
         </section>
       )}
       <div className="bq-data-note">
-        {demo
-          ? "All example balances and events are illustrative."
-          : portfolio
-            ? `Balances at block ${portfolio.blockNumber} · ${portfolio.scanned} assets checked · Updated ${new Date(portfolio.fetchedAt).toLocaleTimeString()}`
-            : "Balances are read from Robinhood Chain. Corporate events come from the issuer’s public API."}{" "}
-        {!demo && portfolio && "Reference prices are separate snapshots, not executable quotes."}
+        {portfolio
+          ? `Balances at block ${portfolio.blockNumber} · ${portfolio.scanned} assets checked · Updated ${new Date(portfolio.fetchedAt).toLocaleTimeString()}`
+          : "Balances are read from Robinhood Chain. Corporate events come from the issuer’s public API."}{" "}
+        {portfolio && "Reference prices are separate snapshots, not executable quotes."}
       </div>
     </div>
   );

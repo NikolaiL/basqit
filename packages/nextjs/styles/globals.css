@@ -244,22 +244,6 @@ summary {
   width: 17px;
   height: 17px;
 }
-.bq-preview-banner {
-  background: #fff6df;
-  color: #765109;
-  border: 1px solid #f0dfb7;
-  border-radius: 10px;
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  margin: 0 0 16px;
-}
-.bq-preview-banner strong {
-  margin-right: 12px;
-}
 .bq-wallet-bar {
   display: flex;
   align-items: center;
@@ -917,11 +901,6 @@ summary {
     flex-direction: column;
     align-items: flex-start;
   }
-  .bq-preview-banner {
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1.7;
-  }
   .bq-overview {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -1228,7 +1207,7 @@ summary {
 }
 .bq-asset-equivalent strong {
   color: var(--bq-ink);
-  font-size: 26px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 .bq-asset-metadata {
@@ -1286,4 +1265,76 @@ summary {
   .bq-catalog-toolbar label {
     width: 100%;
   }
+}
+
+.bq-token-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bq-token-copy-row code {
+  flex: 1;
+  min-width: 0;
+  user-select: text;
+}
+.bq-token-copy {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  color: var(--bq-muted);
+}
+.bq-token-copy svg {
+  width: 20px;
+  height: 20px;
+}
+.bq-token-copied {
+  color: #16803c;
+  background: #edf9f0;
+}
+.bq-token-copied svg {
+  animation: bq-copy-check 180ms ease-out;
+}
+@keyframes bq-copy-check {
+  from {
+    transform: scale(0.65);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.bq-token-copy-row code {
+  white-space: nowrap;
+}
+
+.bq-asset-price {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 24px;
+  color: var(--bq-muted);
+  font-size: 12px;
+}
+.bq-asset-price strong {
+  color: var(--bq-ink);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.bq-asset-price small {
+  font-size: 11px;
+}
+.bq-asset-equivalent {
+  padding: 14px 0;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.bq-quote-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }

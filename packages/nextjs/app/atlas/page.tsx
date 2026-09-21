@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { isAddress } from "viem";
+import { isAddress, parseUnits } from "viem";
 import { AssetCatalog, type CatalogAsset } from "~~/components/atlas/AssetCatalog";
 import type { RawAsset } from "~~/services/atlas/types";
-import { decimalPattern } from "~~/services/portfolio/format";
+import { decimalPattern, tokenValue } from "~~/services/portfolio/format";
 
 export const metadata = { title: "Explore assets" };
 export const dynamic = "force-dynamic";
@@ -51,6 +51,49 @@ export default async function AtlasPage() {
     assets.sort((a, b) => a.symbol.localeCompare(b.symbol));
   } catch {
     unavailable = true;
+  }
+  // The catalog needs every quote: one cached bulk request avoids per-card requests.
+  if (assets.length) {
+    try {
+      const response = await fetch("https://api.robinhood.com/rhj/prices", {
+        next: { revalidate: 15 },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new Error("Prices unavailable");
+      const payload = await response.json();
+      if (!Array.isArray(payload.quotes)) throw new Error("Invalid quotes");
+      for (const asset of assets) {
+        const quote = payload.quotes.find(
+          (q: {
+            tokenSymbol?: string;
+            currency?: string;
+            deployments?: { chainId?: number; contractAddress?: string }[];
+          }) =>
+            q?.tokenSymbol === asset.symbol &&
+            q.currency === "USD" &&
+            Array.isArray(q.deployments) &&
+            q.deployments.some(
+              d =>
+                d?.chainId === 4663 &&
+                typeof d.contractAddress === "string" &&
+                d.contractAddress.toLowerCase() === asset.address.toLowerCase(),
+            ),
+        );
+        if (
+          !quote ||
+          !asset.multiplier ||
+          typeof quote.bid !== "string" ||
+          typeof quote.ask !== "string" ||
+          typeof quote.generatedAt !== "string" ||
+          !Number.isFinite(Date.parse(quote.generatedAt))
+        )
+          continue;
+        asset.price = tokenValue(10n ** 18n, 18, parseUnits(asset.multiplier, 18), quote.bid, quote.ask);
+        asset.priceAt = quote.generatedAt;
+      }
+    } catch {
+      /* A price outage must not hide the token catalog. */
+    }
   }
   return (
     <div className="bq-dashboard">
