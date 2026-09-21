@@ -57,3 +57,16 @@ export function dividendEstimate(current: string, rate: string, bid: string, ask
     price,
   };
 }
+
+// Display only: transaction amounts and editable inputs retain their original precision.
+export function compactAmount(value: string | null) {
+  if (value === null || value.trim() === "") return "Unavailable";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "Unavailable";
+  const rounded = number.toLocaleString("en-US", { maximumSignificantDigits: 4 });
+  return rounded.replace(
+    /0\.(0{4,})([1-9]\d*)$/,
+    (_, zeros: string, digits: string) =>
+      `0.0${String(zeros.length).replace(/\d/g, digit => "₀₁₂₃₄₅₆₇₈₉"[Number(digit)])}${digits}`,
+  );
+}

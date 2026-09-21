@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FundingPanel } from "./FundingPanel";
 import { SwapConfetti } from "./SwapConfetti";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance } from "~~/hooks/scaffold-eth/useStockTrade";
 import { robinhoodChain } from "~~/services/atlas/client";
-import { amount as formatAmount } from "~~/services/portfolio/format";
 import { type QuoteState, watchQuote } from "~~/services/trading/autoQuote";
 import { type TradeAsset, USDG, ZEROX_ENABLED, balancePercentage } from "~~/services/trading/quote";
 
@@ -124,7 +125,7 @@ export function TradeDialog({
       className="modal"
       aria-labelledby="trade-title"
       onCancel={e => {
-        if (lock.current && !hash) e.preventDefault();
+        if ((lock.current || busy) && !hash) e.preventDefault();
         else onClose();
       }}
     >
@@ -153,17 +154,31 @@ export function TradeDialog({
             </button>
           </div>
         </div>
+        {side === "buy" && !hash && (
+          <FundingPanel
+            disabled={!!busy}
+            onBusy={setBusy}
+            onFunded={value => {
+              setInput({ key: inputKey, percentage: 100, manual: value });
+              setRefresh(v => v + 1);
+            }}
+          />
+        )}
         <section className="bq-swap-panel" aria-label="You pay">
           <div className="bq-swap-caption">
             <span>You pay</span>
             <span title={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}>
-              {!address
-                ? "Connect wallet"
-                : balance.isError
-                  ? "Balance unavailable"
-                  : balance.data
-                    ? `Balance: ${formatAmount(formatUnits(balance.data.balance, balance.data.decimals), 6)}`
-                    : "Loading balance…"}
+              {!address ? (
+                "Connect wallet"
+              ) : balance.isError ? (
+                "Balance unavailable"
+              ) : balance.data ? (
+                <>
+                  Balance: <TokenAmount value={formatUnits(balance.data.balance, balance.data.decimals)} />
+                </>
+              ) : (
+                "Loading balance…"
+              )}
             </span>
           </div>
           <div className="bq-swap-amount-row">
@@ -236,11 +251,13 @@ export function TradeDialog({
               aria-busy={loading}
               title={currentQuote ? formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals) : undefined}
             >
-              {loading
-                ? "…"
-                : currentQuote && !expired
-                  ? formatAmount(formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals), 8)
-                  : "—"}
+              {loading ? (
+                "…"
+              ) : currentQuote && !expired ? (
+                <TokenAmount value={formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals)} />
+              ) : (
+                "—"
+              )}
             </output>
           </div>
         </section>
@@ -277,25 +294,29 @@ export function TradeDialog({
               <div>
                 <dt>Minimum received</dt>
                 <dd>
-                  {formatUnits(BigInt(currentQuote.minBuyAmount), currentQuote.buyDecimals)} {buySymbol}
+                  <TokenAmount value={formatUnits(BigInt(currentQuote.minBuyAmount), currentQuote.buyDecimals)} />{" "}
+                  {buySymbol}
                 </dd>
               </div>
               <div>
                 <dt>Basqit fee · {currentQuote.basqitFee.bps / 100}%</dt>
                 <dd>
-                  {formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)} {buySymbol}
+                  <TokenAmount value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)} />{" "}
+                  {buySymbol}
                 </dd>
               </div>
               {currentQuote.providerFee && (
                 <div>
                   <dt>0x fee</dt>
                   <dd>
-                    {formatUnits(
-                      BigInt(currentQuote.providerFee.amount),
-                      currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
-                        ? currentQuote.buyDecimals
-                        : currentQuote.sellDecimals,
-                    )}{" "}
+                    <TokenAmount
+                      value={formatUnits(
+                        BigInt(currentQuote.providerFee.amount),
+                        currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
+                          ? currentQuote.buyDecimals
+                          : currentQuote.sellDecimals,
+                      )}
+                    />{" "}
                     {currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
                       ? buySymbol
                       : sellSymbol}

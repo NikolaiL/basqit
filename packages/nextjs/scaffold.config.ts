@@ -16,7 +16,7 @@ export const DEFAULT_ALCHEMY_API_KEY = "IZYEU2cWBgnFmgiTAgpWD";
 
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [robinhoodChain, chains.foundry],
+  targetNetworks: [robinhoodChain, chains.foundry, chains.mainnet, chains.base, chains.arbitrum, chains.optimism],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))
   pollingInterval: 3000,
   // This is ours Alchemy's default API key.

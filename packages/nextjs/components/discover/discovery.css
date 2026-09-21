@@ -393,25 +393,6 @@
 .bq-batch-buy {
   width: min(100% - 24px, 520px);
 }
-.bq-batch-amount {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: var(--color-base-200);
-  border-radius: 16px;
-}
-.bq-batch-amount input {
-  width: 100%;
-  min-width: 0;
-  font-size: 24px;
-  font-weight: 700;
-  text-align: right;
-  background: transparent;
-}
-.bq-batch-amount > span {
-  white-space: nowrap;
-}
 .bq-batch-legs {
   margin: 16px 0;
 }

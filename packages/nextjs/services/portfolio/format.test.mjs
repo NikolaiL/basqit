@@ -1,4 +1,4 @@
-import { actionDate, amount, dividendEstimate, dividendHistory, tokenValue } from "./format.ts";
+import { actionDate, amount, compactAmount, dividendEstimate, dividendHistory, tokenValue } from "./format.ts";
 import assert from "node:assert/strict";
 
 // 2 tokens × 4 shares/token × $100 mid = $800; no double multiplier.
@@ -32,3 +32,15 @@ assert.equal(dividendEstimate("1", "1", "101", "99"), null);
 assert.equal(dividendEstimate("bad", "1", "99", "101"), null);
 assert.deepEqual(dividendEstimate("1", "0", "100", "100"), { after: "1", price: "100" });
 console.log("Dividend scenario checks passed.");
+
+assert.equal(compactAmount("0.032814615330437867"), "0.03281");
+assert.equal(compactAmount("7.384081"), "7.384");
+assert.equal(compactAmount("0.000001234567"), "0.0₅1235");
+assert.equal(compactAmount("0.000000000000000001"), "0.0₁₇1");
+assert.equal(compactAmount("-0.000001234567"), "-0.0₅1235");
+assert.equal(compactAmount("0.0000999999"), "0.0001");
+assert.equal(compactAmount("123456"), "123,500");
+assert.equal(compactAmount("0"), "0");
+assert.equal(compactAmount(null), "Unavailable");
+assert.equal(compactAmount("NaN"), "Unavailable");
+console.log("Four significant digits, zero subscripts and rounding checks passed.");

@@ -1638,3 +1638,72 @@ summary {
   object-fit: contain;
   padding: 5px;
 }
+
+.bq-funding {
+  border-block: 1px solid var(--bq-border, #e5e5ee);
+  margin-block: 12px;
+}
+.bq-funding-content {
+  padding: 12px 0;
+  display: grid;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+
+.bq-batch-amount {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-base-200);
+  border-radius: 16px;
+}
+.bq-batch-amount input {
+  width: 100%;
+  min-width: 0;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: right;
+  background: transparent;
+}
+.bq-batch-amount > span {
+  white-space: nowrap;
+}
+
+.bq-batch-amount:focus-within,
+.bq-swap-amount-row:focus-within {
+  outline: 3px solid #a9a3f6;
+  outline-offset: 2px;
+  border-radius: 16px;
+}
+.bq-batch-amount input:focus,
+.bq-batch-amount input:focus-visible,
+.bq-swap-amount.input:focus,
+.bq-swap-amount.input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.bq-token-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bq-usdg-balance {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bq-wallet-usdg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+}
+.bq-wallet-usdg .bq-funding {
+  margin: 0;
+  border: 0;
+}
+.bq-wallet-usdg .bq-funding > button {
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 12px;
+}

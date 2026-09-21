@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Address } from "@scaffold-ui/components";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import {
   ArrowPathIcon,
@@ -15,8 +16,10 @@ import {
   WalletIcon,
 } from "@heroicons/react/24/outline";
 import { StockLogo } from "~~/components/StockLogo";
+import { TokenAmount } from "~~/components/TokenAmount";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
+import { USDGBalance } from "~~/components/trading/USDGBalance";
 import { useStockActions, useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
 import { robinhoodChain } from "~~/services/atlas/client";
 import { amount, dividendHistory, money } from "~~/services/portfolio/format";
@@ -195,6 +198,7 @@ export function PortfolioDashboard({
   page?: "portfolio" | "events";
   initialToken?: string;
 }) {
+  const queryClient = useQueryClient();
   const [trade, setTrade] = useState<TradeSelection>();
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
@@ -265,6 +269,7 @@ export function PortfolioDashboard({
             onClick={() => {
               if (address && (!eventsPage || scope === "holdings")) void walletQuery.refetch();
               void actionsQuery.refetch();
+              if (!eventsPage) void queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
             }}
           >
             <ArrowPathIcon className={walletQuery.isFetching || actionsQuery.isFetching ? "bq-spinning" : ""} />
@@ -281,6 +286,7 @@ export function PortfolioDashboard({
                 {watchedAddress ? "Watching wallet" : connectedAddress ? "Connected wallet" : "No wallet connected"}
               </span>
               {address && <Address address={address} chain={robinhoodChain} />}
+              {address && !eventsPage && <USDGBalance address={address} />}
             </div>
             <span className="bq-network">
               <span />
@@ -429,11 +435,15 @@ export function PortfolioDashboard({
                             </div>
                           </td>
                           <td>
-                            <strong>{amount(holding.balance, 6)}</strong>
+                            <strong>
+                              <TokenAmount value={holding.balance} />
+                            </strong>
                             <span className="bq-cell-sub">tokens</span>
                           </td>
                           <td>
-                            <strong>{amount(holding.shareEquivalent, 6)}</strong>
+                            <strong>
+                              <TokenAmount value={holding.shareEquivalent} />
+                            </strong>
                             <span className="bq-cell-sub">
                               {holding.multiplier ? `× ${amount(holding.multiplier, 6)}` : "Multiplier unavailable"}
                             </span>
@@ -505,14 +515,14 @@ export function PortfolioDashboard({
                         <div>
                           <dt>Token balance</dt>
                           <dd>
-                            {amount(holding.balance, 6)}
+                            <TokenAmount value={holding.balance} />
                             <span className="bq-cell-sub">tokens</span>
                           </dd>
                         </div>
                         <div>
                           <dt>Share equivalent</dt>
                           <dd>
-                            {amount(holding.shareEquivalent, 6)}
+                            <TokenAmount value={holding.shareEquivalent} />
                             <span className="bq-cell-sub">
                               {holding.multiplier ? `× ${amount(holding.multiplier, 6)}` : "Multiplier unavailable"}
                             </span>

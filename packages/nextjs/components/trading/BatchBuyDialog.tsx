@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FundingPanel } from "./FundingPanel";
 import { SwapConfetti } from "./SwapConfetti";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
+import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance } from "~~/hooks/scaffold-eth/useStockTrade";
 import { robinhoodChain } from "~~/services/atlas/client";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
@@ -140,7 +142,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       className="modal"
       onCancel={event => {
         event.preventDefault();
-        if (!lock.current) onClose();
+        if (!lock.current && !busy) onClose();
       }}
     >
       <div className="modal-box bq-batch-buy">
@@ -155,6 +157,15 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             ? `One total, split equally across ${selected.length} selected ${selected.length === 1 ? "stock" : "stocks"}.`
             : "Select at least one stock to continue."}
         </p>
+        {!hash && (
+          <FundingPanel
+            disabled={!!busy}
+            onBusy={setBusy}
+            onFunded={value => {
+              setInput({ key: inputKey, percentage: 100, manual: value });
+            }}
+          />
+        )}
         <label className="bq-batch-amount">
           <span>Total USDG</span>
           <input
@@ -171,11 +182,15 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         </label>
         <small>
           Balance:{" "}
-          {balance.data
-            ? `${formatUnits(balance.data.balance, balance.data.decimals)} USDG`
-            : address
-              ? "Loading…"
-              : "Connect wallet"}
+          {balance.data ? (
+            <>
+              <TokenAmount value={formatUnits(balance.data.balance, balance.data.decimals)} /> USDG
+            </>
+          ) : address ? (
+            "Loading…"
+          ) : (
+            "Connect wallet"
+          )}
         </small>
         <input
           type="range"
@@ -227,14 +242,18 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                 <span>
                   <strong>{asset.symbol}</strong>
                   <br />
-                  {leg
-                    ? `${formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} USDG`
-                    : excluded.includes(asset.address)
-                      ? "—"
-                      : "Equal share"}
+                  {leg ? (
+                    <>
+                      <TokenAmount value={formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} /> USDG
+                    </>
+                  ) : excluded.includes(asset.address) ? (
+                    "—"
+                  ) : (
+                    "Equal share"
+                  )}
                 </span>
                 <span className="text-right">
-                  {leg ? formatUnits(BigInt(leg.buyAmount), leg.buyDecimals) : "—"}
+                  {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
                   <br />
                   <small>{excluded.includes(asset.address) ? "Excluded" : `${asset.symbol} after fees`}</small>
                 </span>
@@ -251,9 +270,10 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           <p>Slippage: 0.5% per stock. ETH required for network fees.</p>
           {quote?.legs.map((leg, i) => (
             <p key={leg.buyToken}>
-              {selected[i].symbol}: minimum {formatUnits(BigInt(leg.minBuyAmount), leg.buyDecimals)} · Basqit fee{" "}
-              {leg.basqitFee.bps / 100}% ({formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)}{" "}
-              {selected[i].symbol})
+              {selected[i].symbol}: minimum{" "}
+              <TokenAmount value={formatUnits(BigInt(leg.minBuyAmount), leg.buyDecimals)} /> · Basqit fee{" "}
+              {leg.basqitFee.bps / 100}% (
+              <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)} /> {selected[i].symbol})
             </p>
           ))}
         </details>
