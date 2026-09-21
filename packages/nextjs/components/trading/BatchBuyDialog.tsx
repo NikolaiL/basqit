@@ -12,7 +12,7 @@ import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance } from "~~/hooks/scaffold-eth/useStockTrade";
 import { robinhoodChain } from "~~/services/atlas/client";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
-import type { BatchQuote } from "~~/services/trading/batch";
+import { type BatchQuoteResponse, mergeQuoteErrors } from "~~/services/trading/batch";
 import { USDG, balancePercentage } from "~~/services/trading/quote";
 
 export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; onClose: () => void }) {
@@ -24,6 +24,9 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const balance = useTradeBalance(USDG, address && isAddress(address) ? (address as `0x${string}`) : undefined);
   const dialog = useRef<HTMLDialogElement>(null);
   const lock = useRef(false);
+  const [errorCache, setErrorCache] = useState<{ wallet?: string; errors: Record<string, string> }>({ errors: {} });
+  const cachedErrors = errorCache.wallet === address ? errorCache.errors : {};
+  const [retryVersion, setRetryVersion] = useState(0);
   const [excluded, setExcluded] = useState<string[]>([]);
   const selected = assets.filter(asset => !excluded.includes(asset.address));
   const [input, setInput] = useState<{ key: string; percentage: number; manual?: string }>();
@@ -76,16 +79,18 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const quotes = useQuery<BatchQuote>({
-    queryKey: ["batch-buy", tokens, address, chainId, debounced],
+  const quotes = useQuery<BatchQuoteResponse>({
+    queryKey: ["batch-buy", tokens, address, chainId, debounced, retryVersion],
     enabled: ready,
     retry: false,
     staleTime: 0,
     gcTime: 0,
     refetchOnWindowFocus: false,
     refetchInterval: query =>
-      ready && !query.state.error && query.state.data ? Math.max(1000, query.state.data.expiresAt - now) : false,
-    queryFn: async ({ signal }): Promise<BatchQuote> => {
+      ready && !query.state.error && query.state.data?.quote
+        ? Math.max(1000, query.state.data.quote.expiresAt - now)
+        : false,
+    queryFn: async ({ signal }): Promise<BatchQuoteResponse> => {
       const params = new URLSearchParams({ tokens, taker: address!, amount: debounced });
       const response = await fetch(`/api/swap/batch?${params}`, { signal, cache: "no-store" });
       const result = await response.json();
@@ -93,7 +98,24 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       return result;
     },
   });
-  const quote = amount === debounced ? quotes.data : undefined;
+  const response = amount === debounced ? quotes.data : undefined;
+  const quote = response?.quote;
+  useEffect(() => {
+    if (!response || quotes.isFetching || busy || hash) return;
+    setErrorCache(previous => ({
+      wallet: address,
+      errors: mergeQuoteErrors(previous.wallet === address ? previous.errors : {}, response.results),
+    }));
+    const failed = response.results.filter(result => result.error).map(result => result.token.toLowerCase());
+    if (failed.length)
+      setExcluded(previous => [
+        ...new Set([
+          ...previous,
+          ...assets.filter(asset => failed.includes(asset.address.toLowerCase())).map(asset => asset.address),
+        ]),
+      ]);
+  }, [response, quotes.isFetching, busy, hash, address, assets]);
+  const failedAssets = assets.filter(asset => cachedErrors[asset.address.toLowerCase()]);
   const approval = quote?.legs.some(leg => BigInt(leg.allowance) < BigInt(quote.sellAmount));
   const usable = ready && !!quote && !quotes.isFetching && !quotes.isError && now < quote.expiresAt;
   async function execute() {
@@ -107,8 +129,9 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         await trade.approve(quote);
         setBusy("Refreshing all quotes…");
         const refreshed = await quotes.refetch();
-        if (refreshed.error || !refreshed.data) throw new Error("Approval confirmed. Refresh the quote to continue.");
-        executable = refreshed.data;
+        if (refreshed.error || !refreshed.data?.quote)
+          throw new Error("Approval confirmed. Refresh the quote to continue.");
+        executable = refreshed.data.quote;
         if (
           executable.sellAmount !== quote.sellAmount ||
           executable.legs.length !== quote.legs.length ||
@@ -220,29 +243,39 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         </div>
         <div className="bq-batch-legs">
           {assets.map(asset => {
-            const leg = quote?.legs.find(item => item.buyToken.toLowerCase() === asset.address.toLowerCase());
+            const result = response?.results.find(item => item.token.toLowerCase() === asset.address.toLowerCase());
+            const leg = result?.quote;
+            const failure = result?.error ?? cachedErrors[asset.address.toLowerCase()];
             return (
-              <label className="bq-discover-buy-row" key={asset.address}>
-                <input
-                  type="checkbox"
-                  className="checkbox checkbox-primary checkbox-sm"
-                  aria-label={`Include ${asset.symbol}`}
-                  checked={!excluded.includes(asset.address)}
-                  disabled={!!busy || !!hash}
-                  onChange={event => {
-                    setExcluded(previous =>
-                      event.target.checked
-                        ? previous.filter(address => address !== asset.address)
-                        : [...previous, asset.address],
-                    );
-                    setError("");
-                  }}
-                />
+              <label className={`bq-discover-buy-row ${failure ? "bq-buy-unavailable" : ""}`} key={asset.address}>
+                {failure ? (
+                  <span aria-hidden="true" />
+                ) : (
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-primary checkbox-sm"
+                    aria-label={`Include ${asset.symbol}`}
+                    checked={!excluded.includes(asset.address)}
+                    disabled={!!busy || !!hash}
+                    onChange={event => {
+                      setExcluded(previous =>
+                        event.target.checked
+                          ? previous.filter(address => address !== asset.address)
+                          : [...previous, asset.address],
+                      );
+                      setError("");
+                    }}
+                  />
+                )}
                 <StockLogo symbol={asset.symbol} size={32} />
                 <span>
                   <strong>{asset.symbol}</strong>
                   <br />
-                  {leg ? (
+                  {failure ? (
+                    <small className="bq-buy-error" title={failure} role="status">
+                      Unavailable · excluded
+                    </small>
+                  ) : leg ? (
                     <>
                       <TokenAmount value={formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} /> USDG
                     </>
@@ -252,15 +285,34 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                     "Equal share"
                   )}
                 </span>
-                <span className="text-right">
-                  {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
-                  <br />
-                  <small>{excluded.includes(asset.address) ? "Excluded" : `${asset.symbol} after fees`}</small>
-                </span>
+                {!failure && (
+                  <span className="text-right">
+                    {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
+                    <br />
+                    <small>{excluded.includes(asset.address) ? "Excluded" : "After fees"}</small>
+                  </span>
+                )}
               </label>
             );
           })}
         </div>
+        {!!failedAssets.length && (
+          <div className="bq-batch-failures" role="status">
+            <p>{failedAssets.length} unavailable · excluded from total</p>
+            <button
+              type="button"
+              className="btn btn-ghost w-full"
+              disabled={!!busy || !!hash || quotes.isFetching}
+              onClick={() => {
+                setRetryVersion(value => value + 1);
+                setExcluded(previous => previous.filter(token => !failedAssets.some(asset => asset.address === token)));
+                setError("");
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <details>
           <summary>Purchase details</summary>
           <p>
@@ -313,7 +365,11 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                   : `Buy ${selected.length} ${selected.length === 1 ? "stock" : "stocks"}`)}
             </button>
             {quotes.isError && (
-              <button className="btn btn-ghost w-full" onClick={() => void quotes.refetch()}>
+              <button
+                className="btn btn-ghost w-full"
+                disabled={!!busy || quotes.isFetching}
+                onClick={() => void quotes.refetch()}
+              >
                 Retry quote
               </button>
             )}

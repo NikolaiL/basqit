@@ -1707,3 +1707,34 @@ summary {
   padding: 2px 8px;
   font-size: 12px;
 }
+
+.bq-buy-unavailable > span:nth-child(3) {
+  grid-column: 3 / -1;
+}
+.bq-buy-error {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bq-muted);
+}
+.bq-batch-failures {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 11px;
+  color: var(--bq-muted);
+}
+
+.bq-batch-failures p {
+  margin: 0;
+}
+.bq-batch-failures .btn {
+  width: auto;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 11px;
+  color: var(--bq-brand);
+}

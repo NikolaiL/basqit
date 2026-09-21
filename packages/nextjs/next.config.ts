@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["rhh.ngrok.dev"],
+  allowedDevOrigins: ["rhh.ngrok.dev", "basqit.ngrok.dev"],
   reactStrictMode: true,
   devIndicators: false,
   typescript: {

@@ -7,7 +7,7 @@ registerHooks({
     return next(specifier.startsWith("./") && !/\.[a-z]+$/.test(specifier) ? `${specifier}.ts` : specifier, context);
   },
 });
-const { combineBuys, splitAmount } = await import("./batch.ts");
+const { combineBuys, splitAmount, quoteEachStock, mergeQuoteErrors } = await import("./batch.ts");
 const { USDG } = await import("./quote.ts");
 const { V3_ROUTER, V3_QUOTER, v3Abi, directCalldata } = await import("./uniswap.ts");
 const account = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6";
@@ -43,6 +43,40 @@ assert.throws(() => combineBuys([{ ...a, balance: "1" }, b]));
 assert.throws(() => combineBuys([{ ...a, expiresAt: 0 }, b]));
 assert.throws(() => combineBuys([{ ...a, transaction: { ...a.transaction, to: recipient } }, b]));
 console.log("Batch allocation, bounds, totals and fee calls passed");
+const cachedFailures = mergeQuoteErrors({}, [{ token: "0xAB", quote: null, error: "No pool" }]);
+assert.deepEqual(mergeQuoteErrors(cachedFailures, [{ token: "0xCD", quote: {}, error: null }]), { "0xab": "No pool" });
+assert.deepEqual(mergeQuoteErrors(cachedFailures, [{ token: "0xab", quote: {}, error: null }]), {});
+assert.deepEqual(mergeQuoteErrors(cachedFailures, [{ token: "0xab", quote: null, error: "RPC error" }]), {
+  "0xab": "RPC error",
+});
+
+// Individual route failures preserve every input and do not stop subsequent pairs.
+let active = 0,
+  peak = 0;
+const partial = await quoteEachStock(["a", "b", "c", "d", "e"], async (token, index) => {
+  active++;
+  peak = Math.max(peak, active);
+  await new Promise(resolve => setTimeout(resolve, 1));
+  active--;
+  if (token === "b" || token === "d") throw new Error(`No pool: ${token}`);
+  return { buyToken: token, sellAmount: String(index) };
+});
+assert.deepEqual(
+  partial.map(row => row.token),
+  ["a", "b", "c", "d", "e"],
+);
+assert.deepEqual(
+  partial.filter(row => row.error).map(row => row.error),
+  ["No pool: b", "No pool: d"],
+);
+assert.equal(partial[4].quote.sellAmount, "4");
+assert.equal(peak, 2);
+const none = await quoteEachStock(["a", "b"], async () => {
+  throw new Error("RPC unavailable");
+});
+assert.ok(none.every(row => row.quote === null && row.error === "RPC unavailable"));
+console.log("Per-stock errors preserve successful quotes, order and bounded concurrency.");
+
 if (process.argv.includes("--fork")) {
   const client = createPublicClient({ transport: http("http://127.0.0.1:8557") });
   assert.match(await client.request({ method: "web3_clientVersion" }), /anvil/i);

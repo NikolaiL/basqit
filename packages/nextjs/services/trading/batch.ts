@@ -3,6 +3,42 @@ import { USDG } from "./quote";
 import { V3_ROUTER, v3Abi } from "./uniswap";
 import { decodeFunctionData, encodeFunctionData } from "viem";
 
+export type BatchResult = { token: string; quote: TradeQuote | null; error: string | null };
+export type BatchQuoteResponse = { results: BatchResult[]; quote: BatchQuote | null };
+
+export function mergeQuoteErrors(previous: Record<string, string>, results: BatchResult[]) {
+  const next = { ...previous };
+  for (const result of results) {
+    const key = result.token.toLowerCase();
+    if (result.error) next[key] = result.error;
+    else if (result.quote) delete next[key];
+  }
+  return next;
+}
+
+export async function quoteEachStock(tokens: string[], quote: (token: string, index: number) => Promise<TradeQuote>) {
+  const results: BatchResult[] = [];
+  // Bound RPC fan-out; one failed route must not discard the other results.
+  for (let i = 0; i < tokens.length; i += 2) {
+    results.push(
+      ...(await Promise.all(
+        tokens.slice(i, i + 2).map(async (token, offset) => {
+          try {
+            return { token, quote: await quote(token, i + offset), error: null };
+          } catch (error) {
+            return {
+              token,
+              quote: null,
+              error: error instanceof Error ? error.message : "Quote unavailable. Retry later.",
+            };
+          }
+        }),
+      )),
+    );
+  }
+  return results;
+}
+
 export type BatchQuote = ExecutionQuote & { legs: TradeQuote[] };
 
 export function splitAmount(total: bigint, count: number) {

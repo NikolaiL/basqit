@@ -381,21 +381,100 @@
 }
 
 .bq-discover-buy-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px 32px minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 0;
+  border-radius: 0;
 }
 .bq-discover-buy-row > span {
-  flex: 1;
   min-width: 0;
 }
 .bq-batch-buy {
-  width: min(100% - 24px, 520px);
+  width: min(100% - 24px, 480px);
+  padding: 24px;
+}
+.bq-batch-buy .bq-discover-detail-heading {
+  margin-bottom: 4px;
+}
+.bq-batch-buy .bq-discover-detail-heading h2 {
+  font-size: 21px;
+  margin: 0;
+}
+.bq-batch-buy > p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bq-muted);
+  margin: 4px 0 12px;
+}
+.bq-batch-buy .bq-batch-amount {
+  padding: 10px 14px;
+}
+.bq-batch-buy .bq-batch-amount > span {
+  font-size: 13px;
+}
+.bq-batch-buy > small {
+  font-size: 11px;
+  color: var(--bq-muted);
+}
+.bq-batch-buy .bq-funding {
+  border: 0;
+  margin: 4px 0;
+}
+.bq-batch-buy .bq-funding > button {
+  min-height: 36px;
+  font-size: 12px;
+}
+.bq-batch-buy .bq-swap-presets .btn {
+  min-height: 36px;
+  font-size: 12px;
+}
+.bq-batch-buy > details {
+  margin: 8px 0 12px;
+  font-size: 12px;
+  color: var(--bq-muted);
+}
+.bq-batch-buy > details summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.bq-discover-buy-row strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+.bq-discover-buy-row small {
+  font-size: 11px;
+  color: var(--bq-muted);
+}
+.bq-discover-buy-row .text-right > .bq-token-amount {
+  font-weight: 600;
+  font-size: 14px;
+}
+.bq-discover-buy-row.bq-buy-unavailable {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+}
+.bq-discover-buy-row.bq-buy-unavailable strong {
+  color: var(--bq-muted);
 }
 .bq-batch-legs {
-  margin: 16px 0;
+  margin: 8px 0;
 }
 .bq-batch-legs .text-right {
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .bq-batch-buy {
+    padding: 18px;
+  }
+  .bq-discover-buy-row {
+    gap: 8px;
+  }
 }

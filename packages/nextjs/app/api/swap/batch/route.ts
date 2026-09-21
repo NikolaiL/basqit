@@ -3,7 +3,7 @@ import { GET as quoteStock } from "../route";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { atlasClient } from "~~/services/atlas/client";
-import { combineBuys, splitAmount } from "~~/services/trading/batch";
+import { combineBuys, quoteEachStock, splitAmount } from "~~/services/trading/batch";
 import { type TradeQuote, USDG } from "~~/services/trading/quote";
 
 export async function GET(request: NextRequest) {
@@ -27,30 +27,23 @@ export async function GET(request: NextRequest) {
     const decimals = await atlasClient.readContract({ address: USDG, abi: tradeTokenAbi, functionName: "decimals" });
     if ((amount.split(".")[1]?.length ?? 0) > decimals) throw new Error(`Use at most ${decimals} decimal places.`);
     const allocations = splitAmount(parseUnits(amount, decimals), tokens.length);
-    const legs: TradeQuote[] = [];
-    // Bound RPC fan-out while reusing the existing catalog, fee and liquidity validations.
-    for (let i = 0; i < tokens.length; i += 2) {
-      legs.push(
-        ...(await Promise.all(
-          tokens.slice(i, i + 2).map(async (token, offset) => {
-            const url = new URL("/api/swap", request.url);
-            url.search = new URLSearchParams({
-              token,
-              taker,
-              amount: formatUnits(allocations[i + offset], decimals),
-              side: "buy",
-              provider: "uniswap",
-            }).toString();
-            const response = await quoteStock(new NextRequest(url));
-            const quote = await response.json();
-            if (!response.ok)
-              throw new Error(quote.error ?? "One stock has no available route. No purchases were submitted.");
-            return quote as TradeQuote;
-          }),
-        )),
-      );
-    }
-    return reply(combineBuys(legs));
+    const results = await quoteEachStock(tokens, async (token, index) => {
+      const url = new URL("/api/swap", request.url);
+      url.search = new URLSearchParams({
+        token,
+        taker,
+        amount: formatUnits(allocations[index], decimals),
+        side: "buy",
+        provider: "uniswap",
+      }).toString();
+      const response = await quoteStock(new NextRequest(url));
+      const quote = await response.json();
+      if (!response.ok) throw new Error(quote.error ?? "No available route for this stock.");
+      return quote as TradeQuote;
+    });
+    // Partial results are review-only. Excluding failed stocks requests a fresh allocation and quote.
+    const quote = results.every(result => result.quote) ? combineBuys(results.map(result => result.quote!)) : null;
+    return reply({ results, quote });
   } catch (error) {
     return reply({ error: error instanceof Error ? error.message : "Batch quote unavailable." }, 503);
   }
