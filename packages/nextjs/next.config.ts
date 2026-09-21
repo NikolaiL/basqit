@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["rhh.ngrok.dev", "basqit.ngrok.dev"],
   reactStrictMode: true,
+  outputFileTracingIncludes: { "/discover/og": ["./public/stock-logos/*.png"] },
   devIndicators: false,
   typescript: {
     ignoreBuildErrors: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true",

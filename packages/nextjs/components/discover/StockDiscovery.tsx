@@ -11,19 +11,27 @@ import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
 import { surpriseIdeas } from "~~/services/discover/prompts";
 
+const noSharedSymbols: string[] = [];
 const ideas = ["AI Companies", "Tech Giants", "Biotech", "Semiconductors", "Clean Energy", "Space & Satellites"];
 
 export function StockDiscovery({
   assets,
   initialTheme,
   similar,
+  sharedSymbols = noSharedSymbols,
 }: {
   assets: DiscoveryAsset[];
   initialTheme: string;
   similar?: string;
+  sharedSymbols?: string[];
 }) {
   const [theme, setTheme] = useState(initialTheme);
-  const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>();
+  const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>(() => ({
+    theme: normalizeTheme(initialTheme) ?? "",
+    matches: sharedSymbols
+      .filter(symbol => assets.some(asset => asset.symbol === symbol))
+      .map(symbol => ({ symbol, score: 0 })),
+  }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
@@ -42,6 +50,10 @@ export function StockDiscovery({
     setShareStatus("");
     setSelected(undefined);
     if (!query) {
+      setLoading(false);
+      return;
+    }
+    if (query === normalizeTheme(initialTheme) && sharedSymbols.length && retry === 0) {
       setLoading(false);
       return;
     }
@@ -66,7 +78,7 @@ export function StockDiscovery({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, retry, source]);
+  }, [query, retry, source, initialTheme, sharedSymbols]);
 
   function choose(symbol: string) {
     setSelected(symbol);
@@ -82,6 +94,7 @@ export function StockDiscovery({
     if (!query) return;
     const url = new URL("/discover", window.location.origin);
     url.searchParams.set("theme", query);
+    if (matches.length) url.searchParams.set("stocks", matches.map(match => match.symbol).join(","));
     if (source) url.searchParams.set("similar", source);
     const text = `My stock mood: “${query}”${matches.length ? ` — ${matches.map(match => match.symbol).join(", ")}` : ""}. What’s yours?`;
     if (target === "x") {
