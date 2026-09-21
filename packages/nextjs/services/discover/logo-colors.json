@@ -1,0 +1,782 @@
+{
+  "CRM": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "P": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "CIEN": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "ON": {
+    "colors": ["cyan", "orange"],
+    "dominantColor": "cyan"
+  },
+  "APLD": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "AEHR": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "TEAM": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "QBTS": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SATS": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "FIX": {
+    "colors": ["cyan", "blue", "pink"],
+    "dominantColor": "cyan"
+  },
+  "MTSI": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "SMCI": {
+    "colors": ["green", "blue"],
+    "dominantColor": "green"
+  },
+  "DELL": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "MXL": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "RUN": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "WDAY": {
+    "colors": ["blue", "orange"],
+    "dominantColor": "blue"
+  },
+  "SPCX": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "GLXY": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "CRWD": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "AVGO": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "SPY": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CCL": {
+    "colors": ["red", "blue"],
+    "dominantColor": "red"
+  },
+  "GLD": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SNOW": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "FICO": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "PR": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "QQQ": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "WYFI": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "NNE": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "GE": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SNAP": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "SKHY": {
+    "colors": ["orange", "red"],
+    "dominantColor": "orange"
+  },
+  "CBRS": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "FUTU": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "TSM": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "NU": {
+    "colors": ["purple"],
+    "dominantColor": "purple"
+  },
+  "INTC": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "MSFT": {
+    "colors": ["red", "green", "cyan", "orange"],
+    "dominantColor": "red"
+  },
+  "RCAT": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "RGTI": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "TTWO": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "META": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "VICR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "TSEM": {
+    "colors": ["cyan", "blue", "green"],
+    "dominantColor": "cyan"
+  },
+  "RDDT": {
+    "colors": ["orange", "red"],
+    "dominantColor": "orange"
+  },
+  "GLW": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "UPS": {
+    "colors": ["orange", "brown"],
+    "dominantColor": "orange"
+  },
+  "PANW": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "LHX": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "FLY": {
+    "colors": ["yellow"],
+    "dominantColor": "yellow"
+  },
+  "SNDK": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "BA": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "INTU": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "ELF": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "AMZN": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "NFLX": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "CRCL": {
+    "colors": ["blue", "cyan", "green"],
+    "dominantColor": "blue"
+  },
+  "USAR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "VST": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CSCO": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "FISV": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "GOOGL": {
+    "colors": ["blue", "green", "red", "yellow"],
+    "dominantColor": "blue"
+  },
+  "BB": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CVNA": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "AXTI": {
+    "colors": ["red", "orange"],
+    "dominantColor": "red"
+  },
+  "MOD": {
+    "colors": ["blue", "red"],
+    "dominantColor": "blue"
+  },
+  "LULU": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "LMT": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "INFQ": {
+    "colors": ["blue", "cyan"],
+    "dominantColor": "blue"
+  },
+  "SGOV": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "OUST": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "IREN": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "MRNA": {
+    "colors": ["red", "cyan"],
+    "dominantColor": "red"
+  },
+  "LRCX": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "BND": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "CEG": {
+    "colors": ["blue", "green", "orange"],
+    "dominantColor": "blue"
+  },
+  "ALAB": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "TEM": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "BULL": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "UNH": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "CLOV": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "BABA": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "SIMO": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "WDC": {
+    "colors": ["blue", "cyan"],
+    "dominantColor": "blue"
+  },
+  "CLSK": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "PLTR": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "MU": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "ASTS": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "POWL": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "VTI": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "RKLB": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "TER": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CRWV": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CLS": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "FIG": {
+    "colors": ["red", "orange", "blue", "green", "cyan"],
+    "dominantColor": "red"
+  },
+  "AMD": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "EWY": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "SLS": {
+    "colors": ["blue", "cyan"],
+    "dominantColor": "blue"
+  },
+  "CRDO": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SMH": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "VRT": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "NOW": {
+    "colors": ["cyan", "green"],
+    "dominantColor": "cyan"
+  },
+  "XLK": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "AMBA": {
+    "colors": ["green", "cyan", "blue"],
+    "dominantColor": "green"
+  },
+  "NVDA": {
+    "colors": ["yellow", "green"],
+    "dominantColor": "yellow"
+  },
+  "JOBY": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "QUBT": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "USO": {
+    "colors": ["green", "blue", "yellow", "orange"],
+    "dominantColor": "green"
+  },
+  "PWR": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "F": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "ZS": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "COIN": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "XOM": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "NBIS": {
+    "colors": ["green", "blue"],
+    "dominantColor": "green"
+  },
+  "SHY": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "SMR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SOUN": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "POET": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "APP": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "AAOI": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "LITE": {
+    "colors": ["green", "orange", "red", "pink", "cyan"],
+    "dominantColor": "green"
+  },
+  "AEIS": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "KTOS": {
+    "colors": ["pink"],
+    "dominantColor": "pink"
+  },
+  "AMAT": {
+    "colors": ["blue", "cyan"],
+    "dominantColor": "blue"
+  },
+  "MRVL": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "JBL": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "LLY": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "QCOM": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "JNJ": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "KSS": {
+    "colors": ["pink"],
+    "dominantColor": "pink"
+  },
+  "ANET": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "CTSH": {
+    "colors": ["blue", "cyan"],
+    "dominantColor": "blue"
+  },
+  "PL": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "IONQ": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "TE": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "SHOP": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "NVTS": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "PATH": {
+    "colors": ["red", "cyan"],
+    "dominantColor": "red"
+  },
+  "UMC": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "ORCL": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "COHR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "GEV": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "AUR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "IBM": {
+    "colors": ["gray"],
+    "dominantColor": "gray"
+  },
+  "NAVN": {
+    "colors": ["purple", "blue"],
+    "dominantColor": "purple"
+  },
+  "INOD": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "AAPL": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "AMC": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "RIVN": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "GME": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "MPWR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "PENG": {
+    "colors": ["yellow"],
+    "dominantColor": "yellow"
+  },
+  "NET": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "SCHD": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "LUNR": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "MSTR": {
+    "colors": ["orange"],
+    "dominantColor": "orange"
+  },
+  "ABCL": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "AXON": {
+    "colors": ["black", "gray"],
+    "dominantColor": "black"
+  },
+  "TSLA": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "EWT": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "FTNT": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "HPE": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "VSAT": {
+    "colors": ["green", "cyan", "yellow", "blue"],
+    "dominantColor": "green"
+  },
+  "ADBE": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "XNDU": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "DDOG": {
+    "colors": ["purple"],
+    "dominantColor": "purple"
+  },
+  "RDW": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "BE": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "DJT": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "OKLO": {
+    "colors": ["gray"],
+    "dominantColor": "gray"
+  },
+  "ZM": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "FLNC": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "SLV": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "SOFI": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "DOCN": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "WULF": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "COST": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "TTD": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "HWM": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "HIMS": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "CELH": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "RBLX": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "SPMO": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "AMKR": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "ONTO": {
+    "colors": ["red"],
+    "dominantColor": "red"
+  },
+  "SOXX": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "ASML": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "HII": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "AVAV": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "INDA": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "MDB": {
+    "colors": ["green"],
+    "dominantColor": "green"
+  },
+  "QNT": {
+    "colors": ["black"],
+    "dominantColor": "black"
+  },
+  "PFE": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  },
+  "KLAC": {
+    "colors": ["cyan"],
+    "dominantColor": "cyan"
+  },
+  "IBRX": {
+    "colors": ["blue"],
+    "dominantColor": "blue"
+  }
+}

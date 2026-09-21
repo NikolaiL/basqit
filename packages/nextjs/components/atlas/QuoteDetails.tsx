@@ -20,7 +20,8 @@ export function QuoteDetails({ symbol, address }: { symbol: string; address: str
   const query = useQuery({
     queryKey: ["quote-details", symbol, address],
     enabled: visible,
-    staleTime: 60000,
+    staleTime: 15000,
+    refetchInterval: visible ? 15000 : false,
     retry: false,
     queryFn: async ({ signal }) => {
       const response = await fetch(`/api/stocks/details?symbol=${encodeURIComponent(symbol)}`, { signal });

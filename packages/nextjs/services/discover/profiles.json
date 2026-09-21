@@ -1,0 +1,782 @@
+{
+  "CRM": {
+    "website": "https://www.salesforce.com/eu/?ir=1&bc=OTH",
+    "description": "Salesforce is the #1 Agentic AI CRM, helping companies become Agentic Enterprises where humans and agents drive success together through a unified AI, data, and Customer 360 platform."
+  },
+  "P": {
+    "website": "https://www.everpuredata.com/",
+    "description": "Simplify enterprise AI, cloud, and data storage with the Everpure platform. Reduce cost and risk, improve resilience, and move faster with built-in efficiency."
+  },
+  "CIEN": {
+    "website": "https://ciena.com",
+    "description": ""
+  },
+  "ON": {
+    "website": "https://onsemi.com",
+    "description": ""
+  },
+  "APLD": {
+    "website": "https://www.applieddigital.com/",
+    "description": "Discover the epicenter of AI innovation at Applied Digital, where our purpose-built data centers are engineered for peak performance. Revolutionize accelerated computing with our state-of-the-art design and power-centric facilities."
+  },
+  "AEHR": {
+    "website": "https://www.aehr.com/",
+    "description": "Aehr Test Systems is the leader in wafer level burn-in for silicon carbide (SiC), gallium nitride (GaN), optical photonics, and memory integrated circuits."
+  },
+  "TEAM": {
+    "website": "https://www.atlassian.com/",
+    "description": "Atlassian's team collaboration software like Jira, Confluence and Trello help teams organize, discuss, and complete shared work."
+  },
+  "QBTS": {
+    "website": "https://www.dwavequantum.com/",
+    "description": "Unlike other quantum systems that are years away from practical use, D-Wave's annealing quantum computing technology is ready for real-world applications today."
+  },
+  "SATS": {
+    "website": "https://echostar.com",
+    "description": "EchoStar Corporation (Nasdaq: ECHO) is a global fully integrated communications and content delivery leader and provider of technology, spectrum, and connectivity."
+  },
+  "FIX": {
+    "website": "https://comfortsystemsusa.com",
+    "description": ""
+  },
+  "MTSI": {
+    "website": "https://www.macom.com/",
+    "description": "MACOM designs and manufactures high-performance semiconductor products for the Telecommunications, Industrial and Defense, and Data Center industries."
+  },
+  "SMCI": {
+    "website": "https://supermicro.com",
+    "description": ""
+  },
+  "DELL": {
+    "website": "https://dell.com",
+    "description": ""
+  },
+  "MXL": {
+    "website": "https://www.maxlinear.com/",
+    "description": ""
+  },
+  "RUN": {
+    "website": "https://www.sunrun.com/",
+    "description": "Join 1 million+ homes powered by Sunrun. Get reliable home battery storage & solar energy to lower your electric bills. Call (833) 324-5886 for an instant quote!"
+  },
+  "WDAY": {
+    "website": "https://www.workday.com/",
+    "description": "Experience a new way to work with Sana and agentic AI from Workday."
+  },
+  "SPCX": {
+    "website": "https://www.spacex.com/",
+    "description": "SpaceX designs, manufactures and launches advanced rockets and spacecraft. The company was founded in 2002 to revolutionize space technology, with the ultimate goal of enabling people to live on other planets."
+  },
+  "GLXY": {
+    "website": "https://www.galaxy.com/",
+    "description": "Galaxy builds the economy that runs on code \u2014 investing across digital assets moving onchain and the AI data centers powering the future of finance."
+  },
+  "CRWD": {
+    "website": "https://www.crowdstrike.com/en-us/",
+    "description": "CrowdStrike is a global cybersecurity leader with an advanced cloud-native platform for protecting endpoints, cloud workloads, identities and data."
+  },
+  "AVGO": {
+    "website": "https://www.broadcom.com/",
+    "description": "Broadcom delivers semiconductors and infrastructure software for global enterprises\u2019 most complex, mission-critical needs."
+  },
+  "SPY": {
+    "website": "https://www.ssga.com/gr/en_gb/institutional",
+    "description": "SPDR S&P 500 ETF Trust. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "CCL": {
+    "website": "https://www.carnivalcorp.com/",
+    "description": ""
+  },
+  "GLD": {
+    "website": "https://www.ssga.com/gr/en_gb/institutional",
+    "description": "SPDR Gold Trust. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "SNOW": {
+    "website": "https://snowflake.com",
+    "description": ""
+  },
+  "FICO": {
+    "website": "https://www.fico.com/",
+    "description": ""
+  },
+  "PR": {
+    "website": "https://permianres.com",
+    "description": "Permian Resources is an independent oil & natural gas company focused on generating outsized returns through the acquisition, optimization & development of oil & liquids-rich natural gas assets."
+  },
+  "QQQ": {
+    "website": "https://www.invesco.com/corporate/en/home.html",
+    "description": "Invesco QQQ. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "WYFI": {
+    "website": "https://www.whitefiber.com/",
+    "description": "High-performance Infrastructure solutions for AI/ML."
+  },
+  "NNE": {
+    "website": "https://nanonuclearenergy.com",
+    "description": ""
+  },
+  "GE": {
+    "website": "https://www.geaerospace.com/",
+    "description": "GE Aerospace is mobilizing a new era of growth in aerospace, aviation, and defense engineering. Explore GE Aerospace's commercial and general propulsion powers."
+  },
+  "SNAP": {
+    "website": "https://www.snap.com/",
+    "description": "We believe the camera presents the greatest opportunity to improve the way people live and communicate."
+  },
+  "SKHY": {
+    "website": "https://www.skhynix.com/",
+    "description": ""
+  },
+  "CBRS": {
+    "website": "https://www.cerebras.ai/",
+    "description": "Cerebras powers the world's fastest AI inference on the biggest wafer chip. Cerebras CS-4 delivers up to 30x faster inference than GPUs."
+  },
+  "FUTU": {
+    "website": "https://futuholdings.com",
+    "description": "Futu Holdings is an advanced technology company transforming the investing experience by offering a fully digitalized brokerage platform, Futubull. We strive to re-define traditional investing with proprietary technologies and a relentless focus on user experience, providing a gateway to building the world's leading digital financial institution."
+  },
+  "TSM": {
+    "website": "https://tsmc.com",
+    "description": ""
+  },
+  "NU": {
+    "website": "https://nubank.com.br/",
+    "description": "Saiba mais sobre o Nubank - sua vida financeira sem complica\u00e7\u00f5es, asteriscos ou letras mi\u00fadas."
+  },
+  "INTC": {
+    "website": "https://intel.com",
+    "description": ""
+  },
+  "MSFT": {
+    "website": "https://microsoft.com",
+    "description": ""
+  },
+  "RCAT": {
+    "website": "https://redcat.red",
+    "description": "Defining the Future of All Domain Operations Our mission is to provide critical situational awareness and enhance the effectiveness and safety of military and security operations domestically and globally. Explore [\u2026]"
+  },
+  "RGTI": {
+    "website": "https://www.rigetti.com/",
+    "description": "Practical quantum computing. Delivered over the cloud."
+  },
+  "TTWO": {
+    "website": "https://www.take2games.com/",
+    "description": "Take-Two Interactive Software is a leading game publisher, creating games through its labels, Rockstar Games, 2K, Private Division, and Social Point."
+  },
+  "META": {
+    "website": "https://www.meta.com/",
+    "description": "Shop AI glasses, take photos, play music, and talk to AI. Explore Meta wearable tech for everyday life. Ray-Ban Meta, Oakley Meta & Quest 3S starting at $224."
+  },
+  "VICR": {
+    "website": "https://www.vicorpower.com/",
+    "description": "A better way to deliver power: Vicor is a leading, global power technology company, focused on advancing power delivery with modular power components."
+  },
+  "TSEM": {
+    "website": "https://towersemi.com",
+    "description": ""
+  },
+  "RDDT": {
+    "website": "https://redditinc.com",
+    "description": "Homepage - Reddit"
+  },
+  "GLW": {
+    "website": "https://corning.com",
+    "description": ""
+  },
+  "UPS": {
+    "website": "https://www.ups.com/",
+    "description": ""
+  },
+  "PANW": {
+    "website": "https://www.paloaltonetworks.com/",
+    "description": "Implement Zero Trust, Secure your Network, Cloud workloads, Hybrid Workforce, Leverage Threat Intelligence & Security Consulting. Cybersecurity Services & Education for CISO\u2019s, Head of Infrastructure, Network Security Engineers, Cloud Architects & SOC Managers"
+  },
+  "LHX": {
+    "website": "https://www.l3harris.com/",
+    "description": "At L3Harris, we anticipate and mitigate risk with agile end-to-end solutions that meet our customers' mission-critical needs across all domains."
+  },
+  "FLY": {
+    "website": "https://fireflyspace.com",
+    "description": "Firefly Aerospace develops launch vehicles, lunar landers and orbital spacecraft for Earth-to-Moon space missions."
+  },
+  "SNDK": {
+    "website": "https://www.sandisk.com/",
+    "description": ""
+  },
+  "BA": {
+    "website": "https://www.boeing.com:443/",
+    "description": "Discover news and information about The Boeing Company, a leading global aerospace company that develops, manufactures and services commercial airplanes, defense products and space systems."
+  },
+  "INTU": {
+    "website": "https://intuit.com",
+    "description": ""
+  },
+  "ELF": {
+    "website": "https://www.elfbeauty.com/",
+    "description": "e.l.f. Beauty is a bold disruptor with a kind heart. We stand with every eye, lip, face, paw and fin. We\u2019re making the best of beauty accessible to everyone."
+  },
+  "AMZN": {
+    "website": "https://www.amazon.com/",
+    "description": ""
+  },
+  "NFLX": {
+    "website": "https://www.netflix.com/gr-en/",
+    "description": "Watch Netflix movies & TV shows online or stream right to your smart TV, game console, PC, Mac, mobile, tablet and more."
+  },
+  "CRCL": {
+    "website": "https://www.circle.com/",
+    "description": "Build onchain with a trusted full-stack platform including Arc, CPN, and USDC. Power payments, trading, and access to the agentic economy."
+  },
+  "USAR": {
+    "website": "https://usare.com",
+    "description": ""
+  },
+  "VST": {
+    "website": "https://vistracorp.com",
+    "description": "Vistra is a premier Texas-based energy company focused on the competitive energy and power generation markets."
+  },
+  "CSCO": {
+    "website": "https://cisco.com",
+    "description": ""
+  },
+  "FISV": {
+    "website": "https://www.fiserv.com/",
+    "description": "Fiserv is a global fintech and payments company with solutions for banking, global commerce, merchant acquiring, billing and payments, and point-of-sale."
+  },
+  "GOOGL": {
+    "website": "https://abc.xyz",
+    "description": ""
+  },
+  "BB": {
+    "website": "https://www.blackberry.com/en",
+    "description": "Learn how BlackBerry operates through two divisions \u2014 BlackBerry Secure Communications and QNX \u2014 delivering mission\u2011critical security and embedded software."
+  },
+  "CVNA": {
+    "website": "https://carvana.com",
+    "description": ""
+  },
+  "AXTI": {
+    "website": "https://www.axt.com/",
+    "description": "AXT (NASDAQ: AXTI) manufactures high-purity indium phosphide (InP), gallium arsenide (GaAs), and germanium (Ge) substrates with proprietary VGF crystal growth \u2014 one of only three high-quality InP suppliers worldwide."
+  },
+  "MOD": {
+    "website": "https://modine.com",
+    "description": ""
+  },
+  "LULU": {
+    "website": "https://lululemon.com",
+    "description": ""
+  },
+  "LMT": {
+    "website": "https://lockheedmartin.com",
+    "description": "Lockheed Martin is a leading global security, defense and aerospace contractor, ensuring those we serve always stay ahead of ready."
+  },
+  "INFQ": {
+    "website": "https://infleqtion.com",
+    "description": ""
+  },
+  "SGOV": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares 0-3 Month Treasury Bond. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "OUST": {
+    "website": "https://ouster.com",
+    "description": "Discover Ouster's digital lidar sensors, transforming autonomy in vehicles, robotics, and smart cities. Explore our cutting-edge technology today."
+  },
+  "IREN": {
+    "website": "https://iren.com",
+    "description": "Explore IREN's 100% renewable-powered data centers offering AI Cloud, GPU clusters, colocation, and build-to-suit infrastructure for scalable compute workloads."
+  },
+  "MRNA": {
+    "website": "https://www.modernatx.com/",
+    "description": "Learn how we\u2019re changing the world of medicine. Discover career opportunities, our product pipeline, and browse media resources. Meet Moderna."
+  },
+  "LRCX": {
+    "website": "https://lamresearch.com",
+    "description": ""
+  },
+  "BND": {
+    "website": "https://investor.vanguard.com/corporate-portal",
+    "description": "Vanguard Total Bond Market ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "CEG": {
+    "website": "https://www.constellationenergy.com/",
+    "description": "Discover how Constellation's strategy and purpose makes us the nation's largest producer of clean, reliable energy for homes, businesses and industries."
+  },
+  "ALAB": {
+    "website": "https://asteralabs.com",
+    "description": ""
+  },
+  "TEM": {
+    "website": "https://tempus.com",
+    "description": ""
+  },
+  "BULL": {
+    "website": "https://www.webull.com:443/",
+    "description": "Start investing with Webull's intuitive platform for stocks, options, and ETFs. Join now for free trading tools and community insights."
+  },
+  "UNH": {
+    "website": "https://www.unitedhealthgroup.com/",
+    "description": "UnitedHealth Group helps people live healthier lives and helps make the health system work better for everyone."
+  },
+  "CLOV": {
+    "website": "https://www.cloverhealth.com/",
+    "description": "With most plans at $0/month, Clover is a Medicare Advantage plan giving members more coverage for less cost, including dental, vision, hearing & more."
+  },
+  "BABA": {
+    "website": "https://www.alibabagroup.com/en-US/",
+    "description": "Alibaba Group\u2019s mission is to make it easy to do business anywhere. We enable businesses to transform the way they market, sell and operate and improve their efficiencies. We provide the technology infrastructure and marketing reach to help merchants, brands, retailers and other businesses to leverage the power of new technology to engage with their users and customers and operate in a more efficient way."
+  },
+  "SIMO": {
+    "website": "https://siliconmotion.com",
+    "description": ""
+  },
+  "WDC": {
+    "website": "https://www.westerndigital.com/",
+    "description": ""
+  },
+  "CLSK": {
+    "website": "https://www.cleanspark.com/",
+    "description": "CleanSpark is a large-scale digital infrastructure developer."
+  },
+  "PLTR": {
+    "website": "https://www.palantir.com/",
+    "description": "We build software that empowers organizations to effectively integrate their data, decisions, and operations."
+  },
+  "MU": {
+    "website": "https://www.micron.com/",
+    "description": "Micron is a global leader in memory and storage, powering AI and compute-intensive applications from cloud to edge with innovative semiconductor solutions."
+  },
+  "ASTS": {
+    "website": "https://ast-science.com",
+    "description": "The SpaceMobile Network Our BlueBird satellites provide full broadband directly to standard smartphones without specialized hardware or phone modifications. Make video calls, browse the web, and use your apps at 4G and 5G speeds from anywhere on Earth. How it Works How You Connect Limitless Possibilities Partnering for a Connected Planet We have partnered with nearly [\u2026]"
+  },
+  "POWL": {
+    "website": "https://www.powellind.com/",
+    "description": "Powell Industries is an electrical engineering and manufacturing company based in Houston, TX, with operations across the U.S., Canada, and the U.K."
+  },
+  "VTI": {
+    "website": "https://investor.vanguard.com/corporate-portal",
+    "description": "Vanguard Morningstar Total Stock Market ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "RKLB": {
+    "website": "https://rocketlabcorp.com",
+    "description": "Rocket Lab provides launch services, spacecraft design and manufacturing, satellite components and flight software."
+  },
+  "TER": {
+    "website": "https://teradyne.com",
+    "description": ""
+  },
+  "CRWV": {
+    "website": "https://coreweave.com",
+    "description": "CoreWeave is the force multiplier that empowers pioneers with momentum, magnitude, and mastery\u2014enabling them to innovate with confidence. Explore the #1 AI Cloud."
+  },
+  "CLS": {
+    "website": "https://www.celestica.com/",
+    "description": "Celestica is a technology leader with deep expertise in design, engineering, and manufacturing, driving customer success and market advancements across high-growth markets."
+  },
+  "FIG": {
+    "website": "https://www.figma.com/",
+    "description": "Figma is the canvas where design, code, and AI come together. From first idea to shipped product \u2014 go from concept to production with your whole team, in one place."
+  },
+  "AMD": {
+    "website": "https://www.amd.com/en.html",
+    "description": "AMD delivers leadership high-performance and adaptive computing solutions to advance data center AI, AI PCs, intelligent edge devices, gaming, & beyond."
+  },
+  "EWY": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares MSCI South Korea fund. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "SLS": {
+    "website": "https://sellaslifesciences.com",
+    "description": "SELLAS is late-stage clinical biopharmaceutical company, focused on development of novel therapies for a broad range of cancer indications."
+  },
+  "CRDO": {
+    "website": "https://credosemi.com",
+    "description": ""
+  },
+  "SMH": {
+    "website": "https://vaneck.com",
+    "description": "VanEck Semiconductor ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "VRT": {
+    "website": "https://www.vertiv.com/en-emea/",
+    "description": "Vertiv is a global leader in critical digital infrastructure for applications in data centers, communication networks, and commercial and industrial environments."
+  },
+  "NOW": {
+    "website": "https://servicenow.com",
+    "description": ""
+  },
+  "XLK": {
+    "website": "https://www.ssga.com/gr/en_gb/institutional",
+    "description": "State Street Technology Select Sector SPDR ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "AMBA": {
+    "website": "https://ambarella.com",
+    "description": ""
+  },
+  "NVDA": {
+    "website": "https://www.nvidia.com/en-eu/",
+    "description": "NVIDIA invents the GPU and drives advances in AI, HPC, gaming, creative design, autonomous vehicles, and robotics."
+  },
+  "JOBY": {
+    "website": "https://www.jobyaviation.com/",
+    "description": "Experience Joby Aviation\u2019s all-electric air taxi: vertical take-off and landing, seamless door to door travel, all from our app."
+  },
+  "QUBT": {
+    "website": "https://quantumcomputinginc.com",
+    "description": "Putting photons to work"
+  },
+  "USO": {
+    "website": "https://www.uscfinvestments.com/",
+    "description": "United States Oil Fund. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "PWR": {
+    "website": "https://www.quantaservices.com/",
+    "description": "Quanta has built the largest craft labor force in North America by uniting over 200 operating companies to tackle the most complex infrastructure challenges in the world."
+  },
+  "F": {
+    "website": "https://ford.com",
+    "description": ""
+  },
+  "ZS": {
+    "website": "https://www.zscaler.com:443/",
+    "description": "Zscaler is a leading cloud enterprise security provider helping global businesses adopt zero trust for secure digital transformation."
+  },
+  "COIN": {
+    "website": "https://coinbase.com",
+    "description": ""
+  },
+  "XOM": {
+    "website": "https://corporate.exxonmobil.com",
+    "description": "ExxonMobil scientists are pioneering new research & technologies to reduce emissions. Learn how we are responsibly meeting the world's energy needs."
+  },
+  "NBIS": {
+    "website": "https://nebius.com",
+    "description": "Build and scale faster on the purpose-built AI cloud, engineered from silicon to API."
+  },
+  "SHY": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares 1-3 Year Treasury Bond ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "SMR": {
+    "website": "https://www.nuscalepower.com/",
+    "description": "We are the global leaders in SMR nuclear technology with our groundbreaking NuScale Power Module."
+  },
+  "SOUN": {
+    "website": "https://www.soundhound.com/",
+    "description": "SoundHound AI's OASYS platform powers voice-native AI agents that resolve service, operations, and commerce conversations for enterprise brands."
+  },
+  "POET": {
+    "website": "https://www.poet-technologies.com/",
+    "description": "Explore POET Technologies\u2019 innovative opto-electronic solutions driving the future of AI and telecommunications.\u201d"
+  },
+  "APP": {
+    "website": "https://applovin.com/en",
+    "description": "Reach over a billion daily users in mobile games. AppLovin helps consumer brands and gaming apps scale their business profitably."
+  },
+  "AAOI": {
+    "website": "https://ao-inc.com",
+    "description": "AOI is a leading provider of optical components for the telecom, FTTH, sensing, datacenter, wireless, and cable access industries."
+  },
+  "LITE": {
+    "website": "https://www.lumentum.com/",
+    "description": "Discover how Lumentum enables innovation through optical and photonic technologies for cloud networking, 3D sensing, lasers, and advanced manufacturing."
+  },
+  "AEIS": {
+    "website": "https://www.advancedenergy.com/en-us/",
+    "description": ""
+  },
+  "KTOS": {
+    "website": "https://kratosdefense.com",
+    "description": ""
+  },
+  "AMAT": {
+    "website": "https://appliedmaterials.com",
+    "description": ""
+  },
+  "MRVL": {
+    "website": "https://marvell.com",
+    "description": ""
+  },
+  "JBL": {
+    "website": "https://jabil.com",
+    "description": "Jabil is a trusted partner for the world's leading brands, offering engineering, supply chain, and manufacturing solutions."
+  },
+  "LLY": {
+    "website": "https://lilly.com",
+    "description": ""
+  },
+  "QCOM": {
+    "website": "https://www.qualcomm.com/",
+    "description": "Learn how Qualcomm transforms industries with leading edge AI, high-performance, low-power computing and unrivaled connectivity."
+  },
+  "JNJ": {
+    "website": "https://www.jnj.com/",
+    "description": ""
+  },
+  "KSS": {
+    "website": "https://corporate.kohls.com",
+    "description": ""
+  },
+  "ANET": {
+    "website": "https://www.arista.com/",
+    "description": ""
+  },
+  "CTSH": {
+    "website": "https://www.cognizant.com/",
+    "description": "The most impactful AI isn\u2019t bought\u2014it\u2019s built. We bridge the gap between the AI that\u2019s out there, and the AI your business needs."
+  },
+  "PL": {
+    "website": "https://www.planet.com:443/",
+    "description": "Discover how Planet's daily satellite imagery and insights empower global decisions and actions with a multidimensional view of our changing planet."
+  },
+  "IONQ": {
+    "website": "https://www.ionq.com/",
+    "description": "IonQ delivers trapped ion quantum computing systems, cloud access, and enterprise solutions for real-world quantum applications."
+  },
+  "TE": {
+    "website": "https://t1energy.com",
+    "description": "T1 Energy builds domestic solar and battery supply chains through advanced American manufacturing. Scalable, reliable, and low-cost energy for America."
+  },
+  "SHOP": {
+    "website": "https://www.shopify.com/",
+    "description": "Try Shopify free. Build or grow your business fast with AI. Get more than ecommerce software with tools to manage every part of your business."
+  },
+  "NVTS": {
+    "website": "https://navitassemi.com",
+    "description": ""
+  },
+  "PATH": {
+    "website": "https://www.uipath.com/",
+    "description": "Transform enterprise operations with the UiPath Platform\u2122 for business orchestration and automation, enabling AI agents, robots, and people to deliver secure, compliant outcomes at scale."
+  },
+  "UMC": {
+    "website": "https://umc.com",
+    "description": ""
+  },
+  "ORCL": {
+    "website": "https://oracle.com",
+    "description": ""
+  },
+  "COHR": {
+    "website": "https://www.coherent.com/",
+    "description": "Learn how Coherent empowers innovations and breakthrough technologies for the industrial, communications, electronics, and instrumentation markets."
+  },
+  "GEV": {
+    "website": "https://www.gevernova.com/",
+    "description": "GE Vernova is accelerating the path to more reliable, affordable, and sustainable energy through our innovative portfolio of electrification and decarbonization technologies."
+  },
+  "AUR": {
+    "website": "https://aurora.tech",
+    "description": "Step inside the world of self-driving freight, powered by the Aurora Driver. Delivering the benefits of self-driving technology safely, quickly, and broadly."
+  },
+  "IBM": {
+    "website": "https://www.ibm.com/us-en",
+    "description": "For more than a century, IBM has been a global technology innovator, leading advances in AI, automation and hybrid cloud solutions that help businesses grow."
+  },
+  "NAVN": {
+    "website": "https://navan.com",
+    "description": "Streamline your corporate travel management and expense processes in one app. Save time, gain efficiency, and reduce costs with this powerful, all-in-one solution."
+  },
+  "INOD": {
+    "website": "https://innodata.com",
+    "description": ""
+  },
+  "AAPL": {
+    "website": "https://www.apple.com/",
+    "description": "Discover the innovative world of Apple and shop everything iPhone, iPad, Apple Watch, Mac, and Apple TV, plus explore accessories, entertainment, and expert device support."
+  },
+  "AMC": {
+    "website": "https://amctheatres.com",
+    "description": ""
+  },
+  "RIVN": {
+    "website": "https://rivian.com",
+    "description": "Discover Rivian's long-range electric vehicles, innovative EV trucks, SUVs and vans built for adventure. Join the movement towards a sustainable future."
+  },
+  "GME": {
+    "website": "https://gamestop.com",
+    "description": ""
+  },
+  "MPWR": {
+    "website": "https://monolithicpower.com",
+    "description": ""
+  },
+  "PENG": {
+    "website": "https://www.penguinsolutions.com/en-us",
+    "description": "Penguin Solutions designs, builds, deploys, and manages large, complex AI factory platforms globally, harnessing the power of accelerated computing at scale."
+  },
+  "NET": {
+    "website": "https://www.cloudflare.com/",
+    "description": "Welcome to Cloudflare - Powering the next generation of applications"
+  },
+  "SCHD": {
+    "website": "https://schwabassetmanagement.com",
+    "description": "Schwab US Dividend Equity ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "LUNR": {
+    "website": "https://intuitivemachines.com",
+    "description": ""
+  },
+  "MSTR": {
+    "website": "https://strategy.com",
+    "description": ""
+  },
+  "ABCL": {
+    "website": "https://www.abcellera.com/",
+    "description": "We are advancing differentiated antibody drug programs with first-in-class and best-in-class potential across multiple indications and modalities."
+  },
+  "AXON": {
+    "website": "https://www.axon.com/",
+    "description": "The Axon Network connects people, devices, and apps to protect life in all regards From our TASER smart devices, to police body cameras, to our industry leading cloud based evidence management software, we are the world\u2019s premier public safety company and are committed to delivering safe, secure solutions for law enforcement, militaries, and citizens alike We are Axon"
+  },
+  "TSLA": {
+    "website": "https://tesla.com",
+    "description": ""
+  },
+  "EWT": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares MSCI Taiwan Capped ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "FTNT": {
+    "website": "https://www.fortinet.com/",
+    "description": "Fortinet delivers cybersecurity everywhere you need it. We secure the entire digital attack surface from devices, data, and apps and from data center to home office."
+  },
+  "HPE": {
+    "website": "https://hpe.com",
+    "description": ""
+  },
+  "VSAT": {
+    "website": "https://www.viasat.com/",
+    "description": "Viasat is a global communications company connecting homes, businesses, governments & militaries with satellite internet, connectivity solutions, & additional services."
+  },
+  "ADBE": {
+    "website": "https://adobe.com",
+    "description": ""
+  },
+  "XNDU": {
+    "website": "https://xanadu.ai",
+    "description": "Xanadu is a Canadian quantum computing company with the mission to build quantum computers that are useful and available to people everywhere."
+  },
+  "DDOG": {
+    "website": "https://www.datadoghq.com/",
+    "description": "See inside any stack, any app, at any scale, anywhere."
+  },
+  "RDW": {
+    "website": "https://rdw.com/",
+    "description": "Redwire is the Mission Partner of Choice for Civil, Commercial, and National Security Space."
+  },
+  "BE": {
+    "website": "https://bloomenergy.com",
+    "description": ""
+  },
+  "DJT": {
+    "website": "https://tmtgcorp.com",
+    "description": "At Trump Media, our mission is to end Big Tech\u2019s assault on free speech by opening up the Internet and giving people their voices back. We\u2019re achieving our mission through our social media platform Truth Social, our streaming service Truth+, and our forthcoming financial services and FinTech brand Truth.Fi."
+  },
+  "OKLO": {
+    "website": "https://oklo.com",
+    "description": "Oklo Inc. is developing fast fission power plants to deliver clean, reliable, affordable energy at scale, establishing a domestic supply chain for\u2026"
+  },
+  "ZM": {
+    "website": "https://www.zoom.com/",
+    "description": "Modernize workflows with Zoom's trusted collaboration tools: including video meetings, Zoom Chat, VoIP phone, webinars, whiteboard, contact center, and events."
+  },
+  "FLNC": {
+    "website": "https://fluenceenergy.com",
+    "description": ""
+  },
+  "SLV": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares Silver Trust. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "SOFI": {
+    "website": "https://sofi.com",
+    "description": ""
+  },
+  "DOCN": {
+    "website": "https://www.digitalocean.com/",
+    "description": "Run AI products in production with a unified stack for agents, inference, and cloud\u2014built for control, performance, and economics at scale."
+  },
+  "WULF": {
+    "website": "https://www.terawulf.com/",
+    "description": "Energy infrastructure for next-generation AI and high-performance computing. TeraWulf delivers scalable, power-secured infrastructure for AI and HPC growth."
+  },
+  "COST": {
+    "website": "https://www.costco.com/",
+    "description": "Shop Costco.com for electronics, computers, furniture, outdoor living, appliances, jewelry and more. Enjoy low warehouse prices on name-brands products delivered to your door"
+  },
+  "TTD": {
+    "website": "https://www.thetradedesk.com/",
+    "description": "From brand building to performance marketing, our omnichannel platform was built with one goal: helping you reach yours."
+  },
+  "HWM": {
+    "website": "https://www.howmet.com/",
+    "description": "A global leader in engineered metal products, Howmet Aerospace is poised to transform the aerospace, defense and commercial transportation industries."
+  },
+  "HIMS": {
+    "website": "https://forhims.com",
+    "description": ""
+  },
+  "CELH": {
+    "website": "https://celsiusholdingsinc.com",
+    "description": ""
+  },
+  "RBLX": {
+    "website": "https://about.roblox.com/",
+    "description": "Roblox is a global platform where millions of people gather together every day to imagine, create, and share experiences with each other in immersive, user-generated 3D worlds."
+  },
+  "SPMO": {
+    "website": "https://www.invesco.com/corporate/en/home.html",
+    "description": "Invesco S&P 500 Momentum ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "AMKR": {
+    "website": "https://amkor.com",
+    "description": "World's largest US-based semiconductor packaging & test services provider. Advanced OSAT solutions for global chip manufacturers."
+  },
+  "ONTO": {
+    "website": "https://ontoinnovation.com",
+    "description": "Onto Innovation is a leader in semiconductor manufacturing software & solutions that solve the most difficult yield, device performance, quality, & reliability issues."
+  },
+  "SOXX": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares Semiconductor ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "ASML": {
+    "website": "https://www.asml.com/en",
+    "description": "ASML gives the world's leading chipmakers the power to mass produce patterns on silicon, helping to make computer chips smaller, faster and greener."
+  },
+  "HII": {
+    "website": "https://www.hii.com/",
+    "description": "America's largest shipbuilder with 140+ years advancing U.S. national security \u2014 delivering powerful naval vessels, unmanned systems, and all-domain defense technologies."
+  },
+  "AVAV": {
+    "website": "https://www.avinc.com/",
+    "description": "AV is a leading manufacturer of Unmanned Aircraft Systems, Unmanned Aerial Vehicles, Loitering Munition Systems, and Unmanned Ground Vehicles used for surveillance and reconnaissance by the United States Military, U.S. allies and Commercial Industries. AV also manufactures High-Altitude Pseudo-Satellites."
+  },
+  "INDA": {
+    "website": "https://www.blackrock.com/corporate/global-directory#ishares",
+    "description": "iShares MSCI India ETF. Fund / ETF. See the provider for fund holdings and objectives."
+  },
+  "MDB": {
+    "website": "https://www.mongodb.com/",
+    "description": "Get your ideas to market faster with a flexible, AI-ready database. MongoDB makes working with data easy."
+  },
+  "QNT": {
+    "website": "https://www.quantinuum.com/",
+    "description": "Our trapped ion quantum computers and software solutions are the highest performing in the industry, enabling our users to solve industry's most complex problems."
+  },
+  "PFE": {
+    "website": "https://www.pfizer.com/",
+    "description": ""
+  },
+  "KLAC": {
+    "website": "https://www.kla.com/",
+    "description": "KLA is a leader in process control using advanced inspection tools, metrology systems, and computational analytics. Keep Looking Ahead."
+  },
+  "IBRX": {
+    "website": "https://immunitybio.com",
+    "description": ""
+  }
+}

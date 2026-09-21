@@ -1,27 +1,19 @@
 import { actionDate, decimalPattern, dividendEstimate, tokenValue } from "./format";
 import { matchMultiplier } from "./multiplier-history";
 import { readMultiplierHistory } from "./multiplier-rpc";
+import { readTokenData as readJson } from "./token-data";
 import type { ActionsResponse, CorporateAction, Holding, Portfolio } from "./types";
 import { type Address, formatUnits, isAddress, parseUnits } from "viem";
 import { stockTokenContract } from "~~/contracts/externalContracts";
 import { atlasClient } from "~~/services/atlas/client";
 
-const ORIGIN = "https://api.robinhood.com/rhj";
 const CHAIN_ID = 4663;
-
-async function readJson(path: string, revalidate: number): Promise<Record<string, unknown>> {
-  const response = await fetch(`${ORIGIN}/${path}`, { next: { revalidate }, signal: AbortSignal.timeout(12000) });
-  if (!response.ok) throw new Error("Stock Token data is temporarily unavailable. Please try again.");
-  const data = await response.json();
-  if (!data || typeof data !== "object") throw new Error("Unexpected Stock Token response.");
-  return data;
-}
 
 const string = (value: unknown) => (typeof value === "string" ? value : "");
 const decimal = (value: unknown) => (typeof value === "string" && decimalPattern.test(value) ? value : null);
 
 export async function getActions(): Promise<ActionsResponse> {
-  const payload = await readJson("corporate-actions", 3600);
+  const payload = await readJson("corporate-actions");
   if (!Array.isArray(payload.corpActions)) throw new Error("Corporate events are temporarily unavailable.");
   const actions: CorporateAction[] = payload.corpActions.flatMap(row => {
     if (!row || typeof row !== "object" || !string(row.tokenSymbol) || !string(row.id)) return [];
@@ -88,7 +80,7 @@ export async function getActions(): Promise<ActionsResponse> {
   }
   // Optional projections must not hide corporate events during a catalog/price outage.
   try {
-    const catalog = await readJson("assets", 300);
+    const catalog = await readJson("assets");
     if (Array.isArray(catalog.assets)) {
       await Promise.all(
         actions.map(async action => {
@@ -128,7 +120,7 @@ export async function getActions(): Promise<ActionsResponse> {
           if (action.type !== "CORPORATE_ACTION_TYPE_CASH_DIVIDEND" || action.rate === null) return;
           if (!/^[A-Za-z0-9.\-]{1,20}$/.test(action.symbol)) return;
           try {
-            const prices = await readJson(`prices/${encodeURIComponent(action.symbol)}`, 15);
+            const prices = await readJson(`prices/${encodeURIComponent(action.symbol)}`);
             const quote = Array.isArray(prices.quotes)
               ? prices.quotes.find(
                   q =>
@@ -168,7 +160,7 @@ export async function getActions(): Promise<ActionsResponse> {
 }
 
 export async function getPortfolio(owner: Address): Promise<Portfolio> {
-  const payload = await readJson("assets", 300);
+  const payload = await readJson("assets");
   if (!Array.isArray(payload.assets) || payload.assets.length === 0)
     throw new Error("The asset catalog is unavailable.");
   const seen = new Set<string>();
@@ -230,7 +222,7 @@ export async function getPortfolio(owner: Address): Promise<Portfolio> {
       let valueUsd: string | null = null;
       let priceAt: string | null = null;
       try {
-        const prices = await readJson(`prices/${encodeURIComponent(asset.symbol)}`, 15);
+        const prices = await readJson(`prices/${encodeURIComponent(asset.symbol)}`);
         const quote = Array.isArray(prices.quotes)
           ? prices.quotes.find(
               q =>

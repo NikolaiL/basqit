@@ -14,7 +14,9 @@ import {
   Squares2X2Icon,
   WalletIcon,
 } from "@heroicons/react/24/outline";
+import { StockLogo } from "~~/components/StockLogo";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
+import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import { useStockActions, useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
 import { robinhoodChain } from "~~/services/atlas/client";
 import { amount, dividendHistory, money } from "~~/services/portfolio/format";
@@ -193,6 +195,7 @@ export function PortfolioDashboard({
   page?: "portfolio" | "events";
   initialToken?: string;
 }) {
+  const [trade, setTrade] = useState<TradeSelection>();
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -241,6 +244,7 @@ export function PortfolioDashboard({
 
   return (
     <div className="bq-dashboard">
+      {trade && <TradeDialog selection={trade} onClose={() => setTrade(undefined)} />}
       <div className="bq-page-heading">
         <div>
           <div className="bq-eyebrow">YOUR STOCK TOKENS, IN ONE PLACE</div>
@@ -280,7 +284,7 @@ export function PortfolioDashboard({
             </div>
             <span className="bq-network">
               <span />
-              Robinhood Chain · read only
+              Robinhood Chain · wallet balances
             </span>
           </div>
 
@@ -378,6 +382,9 @@ export function PortfolioDashboard({
                   Your holdings <span className="bq-count">{holdings.length}</span>
                 </h2>
                 <p>Token balances and their underlying share equivalents.</p>
+                <Link className="link" href="/atlas">
+                  Buy another asset →
+                </Link>
               </div>
               <label className="input bq-search">
                 <MagnifyingGlassIcon />
@@ -389,7 +396,7 @@ export function PortfolioDashboard({
                 />
               </label>
             </div>
-            <div className="bq-table-scroll">
+            <div className="bq-table-scroll bq-holdings-desktop">
               <table className="table bq-holdings-table">
                 <thead>
                   <tr>
@@ -398,22 +405,23 @@ export function PortfolioDashboard({
                     <th>SHARE EQUIVALENT</th>
                     <th>REFERENCE VALUE</th>
                     <th>DIVIDENDS</th>
+                    <th>TRADE</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading
                     ? [0, 1, 2].map(i => (
                         <tr key={i}>
-                          <td colSpan={5}>
+                          <td colSpan={6}>
                             <div className="skeleton bq-row-skeleton" />
                           </td>
                         </tr>
                       ))
-                    : visibleHoldings.map((holding, i) => (
+                    : visibleHoldings.map(holding => (
                         <tr key={holding.address}>
                           <td>
                             <div className="bq-asset">
-                              <span className={`bq-token-icon bq-token-${i % 4}`}>{holding.symbol.slice(0, 2)}</span>
+                              <StockLogo symbol={holding.symbol} />
                               <div>
                                 <strong>{holding.symbol}</strong>
                                 <span>{holding.name}</span>
@@ -452,10 +460,103 @@ export function PortfolioDashboard({
                                 : `${dividendHistory(actions, holding.symbol).length} reported`}
                             </span>
                           </td>
+                          <td>
+                            <div className="bq-trade-buttons">
+                              <button
+                                className="btn btn-sm btn-primary"
+                                onClick={() => setTrade({ asset: holding, side: "buy" })}
+                              >
+                                Buy
+                              </button>
+                              <button
+                                className="btn btn-sm bq-secondary"
+                                onClick={() => setTrade({ asset: holding, side: "sell" })}
+                              >
+                                Sell
+                              </button>
+                            </div>
+                            <Link
+                              className="link bq-cell-sub"
+                              href={`/discover?similar=${encodeURIComponent(holding.symbol)}`}
+                            >
+                              Find similar stocks →
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                 </tbody>
               </table>
+            </div>
+            <div className="bq-holdings-cards">
+              {loading
+                ? [0, 1, 2].map(i => (
+                    <div key={i} className="skeleton bq-holding-skeleton" aria-label="Loading holding" />
+                  ))
+                : visibleHoldings.map(holding => (
+                    <article className="bq-holding-card" key={holding.address} aria-label={`${holding.symbol} holding`}>
+                      <div className="bq-asset">
+                        <StockLogo symbol={holding.symbol} />
+                        <div>
+                          <strong>{holding.symbol}</strong>
+                          <span>{holding.name}</span>
+                        </div>
+                      </div>
+                      <dl className="bq-holding-metrics">
+                        <div>
+                          <dt>Token balance</dt>
+                          <dd>
+                            {amount(holding.balance, 6)}
+                            <span className="bq-cell-sub">tokens</span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Share equivalent</dt>
+                          <dd>
+                            {amount(holding.shareEquivalent, 6)}
+                            <span className="bq-cell-sub">
+                              {holding.multiplier ? `× ${amount(holding.multiplier, 6)}` : "Multiplier unavailable"}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="bq-holding-value">
+                          <dt>Reference value</dt>
+                          <dd>
+                            {holding.valueUsd === null ? "Unavailable" : money(holding.valueUsd)}
+                            <span className="bq-cell-sub">
+                              {holding.priceAt
+                                ? `Data ${new Date(holding.priceAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                                : "No reference price"}
+                            </span>
+                          </dd>
+                        </div>
+                      </dl>
+                      <div className="bq-holding-history">
+                        <Link
+                          className="link bq-dividend-link"
+                          href={`/corporate-events?token=${encodeURIComponent(holding.symbol)}`}
+                          aria-label={`View ${holding.symbol} dividend history`}
+                        >
+                          Dividend history
+                        </Link>
+                        <span className="bq-cell-sub">
+                          {!actionsQuery.data
+                            ? "Awaiting event data"
+                            : `${dividendHistory(actions, holding.symbol).length} reported`}
+                        </span>
+                      </div>
+                      <div className="bq-trade-buttons">
+                        <button className="btn btn-primary" onClick={() => setTrade({ asset: holding, side: "buy" })}>
+                          Buy
+                        </button>
+                        <button className="btn bq-secondary" onClick={() => setTrade({ asset: holding, side: "sell" })}>
+                          Sell
+                        </button>
+                      </div>
+                      <Link className="link" href={`/discover?similar=${encodeURIComponent(holding.symbol)}`}>
+                        Find similar stocks →
+                      </Link>
+                    </article>
+                  ))}
             </div>
             {!loading && visibleHoldings.length === 0 && (
               <div className="bq-empty">

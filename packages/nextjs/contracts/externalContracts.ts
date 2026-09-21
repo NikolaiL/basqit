@@ -30,3 +30,6 @@ export const stockTokenAbi = [
 ] as const;
 
 export const stockTokenContract = (address: `0x${string}`) => ({ address, abi: stockTokenAbi });
+
+// Dynamic issuer tokens and USDG share the standard ERC-20 trade interface.
+export { erc20Abi as tradeTokenAbi } from "viem";

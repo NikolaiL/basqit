@@ -32,6 +32,13 @@ export const Header = () => {
             Assets
           </Link>
           <Link
+            href="/discover"
+            className={pathname === "/discover" ? "bq-nav-active" : ""}
+            aria-current={pathname === "/discover" ? "page" : undefined}
+          >
+            Discover
+          </Link>
+          <Link
             className={pathname === "/corporate-events" ? "bq-nav-active" : ""}
             aria-current={pathname === "/corporate-events" ? "page" : undefined}
             href="/corporate-events"

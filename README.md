@@ -6,4 +6,4 @@ Basqit is a portfolio explorer for tokenized stocks and a creator marketplace fo
 
 - **Explorer:** Explore your own or another wallet’s holdings, view prices and corporate actions, and learn more about each asset.
 
-- **Packs:** Buy tokenized stocks in small amounts.
+- **Packs:** Buy or gift tokenized stocks in small amounts.

@@ -7,7 +7,7 @@ export const Footer = () => (
       <span>A clearer view of your Stock Tokens.</span>
     </div>
     <div>
-      <span className="badge bq-status">Read-only preview</span>
+      <span className="badge bq-status">Early preview</span>
       <Link className="link" href="/debug">
         Developer tools
       </Link>

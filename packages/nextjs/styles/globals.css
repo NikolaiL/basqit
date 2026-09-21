@@ -1338,3 +1338,303 @@ summary {
   flex-direction: column;
   gap: 6px;
 }
+
+/* Shared wallet trade dialog and entry points. */
+.bq-trade-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.bq-trade-dialog {
+  background: var(--color-base-100, #fff);
+  max-width: 32rem;
+}
+.bq-trade-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.bq-trade-heading h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.bq-trade-input {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+}
+.bq-trade-input input {
+  width: 100%;
+}
+.bq-trade-quote {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+.bq-trade-quote > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.bq-trade-quote dd {
+  text-align: right;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.bq-trade-footer {
+  margin-top: 1rem;
+}
+.bq-trade-footer .btn {
+  width: 100%;
+  min-height: 3rem;
+}
+
+/* Equal trade controls on cards and table rows. */
+.bq-trade-buttons > .btn {
+  height: 44px;
+  min-height: 44px;
+  min-width: 76px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.bq-holdings-cards {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .bq-holdings-desktop {
+    display: none;
+  }
+  .bq-holdings-cards {
+    display: grid;
+    gap: 16px;
+    padding: 0 20px 20px;
+  }
+  .bq-holding-card {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--bq-line);
+    border-radius: 16px;
+    background: var(--bq-paper);
+  }
+  .bq-holding-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 12px;
+    margin: 20px 0;
+  }
+  .bq-holding-metrics dt {
+    font-size: 12px;
+    color: var(--bq-muted);
+    margin-bottom: 6px;
+  }
+  .bq-holding-metrics dd {
+    margin: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .bq-holding-metrics .bq-cell-sub {
+    font-weight: 400;
+  }
+  .bq-holding-value {
+    grid-column: 1 / -1;
+  }
+  .bq-holding-value dd {
+    font-size: 22px;
+  }
+  .bq-holding-history {
+    margin-bottom: 18px;
+  }
+  .bq-holding-card .bq-trade-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .bq-holding-card .bq-asset > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .bq-holding-card .bq-token-icon {
+    flex-shrink: 0;
+  }
+  .bq-holding-skeleton {
+    height: 300px;
+    border-radius: 16px;
+  }
+}
+
+.bq-asset-sessions {
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--bq-mist);
+  border: 1px solid var(--bq-line);
+  font-size: 13px;
+}
+.bq-asset-sessions h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.bq-asset-sessions dl {
+  margin: 0;
+}
+.bq-asset-sessions dl > div {
+  margin: 10px 0;
+}
+.bq-asset-sessions dt {
+  font-weight: 600;
+}
+.bq-asset-sessions dd {
+  margin: 3px 0 0;
+  color: var(--bq-muted);
+}
+.bq-asset-sessions dd span {
+  display: block;
+}
+.bq-asset-sessions small {
+  display: block;
+  margin-top: 12px;
+  color: var(--bq-muted);
+  line-height: 1.5;
+}
+
+.bq-trade-dialog {
+  padding: 24px;
+  border-radius: 24px;
+}
+.bq-trade-heading {
+  margin-bottom: 20px;
+}
+.bq-trade-heading h2 {
+  margin: 0;
+}
+.bq-trade-heading small,
+.bq-swap-caption {
+  color: var(--bq-muted);
+  font-size: 12px;
+}
+.bq-swap-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bq-swap-panel {
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--bq-mist);
+}
+.bq-swap-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+}
+.bq-swap-token {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.bq-swap-amount.input {
+  display: block;
+  width: 100%;
+  height: 56px;
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  font-size: 30px;
+  font-weight: 700;
+  text-align: right;
+  padding: 0;
+}
+.bq-swap-presets {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+}
+.bq-swap-presets .btn {
+  flex: 1;
+  padding: 0;
+  font-size: 12px;
+  min-height: 44px;
+  height: 44px;
+}
+.bq-swap-presets .btn[aria-pressed="true"] {
+  color: var(--bq-brand);
+  background: var(--bq-lilac);
+}
+.bq-swap-direction.btn {
+  display: flex;
+  margin: -5px auto;
+  position: relative;
+  z-index: 1;
+  background: var(--bq-paper);
+  border: 1px solid var(--bq-line);
+  font-size: 22px;
+}
+.bq-swap-output {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 26px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bq-swap-approval-note {
+  height: 42px;
+  margin-top: 8px;
+  color: var(--bq-muted);
+  font-size: 11px;
+  line-height: 14px;
+  text-align: center;
+  overflow-y: auto;
+}
+.bq-swap-status {
+  margin: 16px 0;
+}
+.bq-swap-details {
+  border-top: 1px solid var(--bq-line);
+  padding-top: 12px;
+  font-size: 13px;
+}
+.bq-swap-details summary {
+  cursor: pointer;
+  min-height: 32px;
+}
+@media (max-width: 480px) {
+  .bq-trade-dialog {
+    padding: 18px;
+  }
+  .bq-swap-panel {
+    padding: 14px;
+  }
+}
+
+.bq-stock-logo {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  color: #5a4fe0;
+  font-size: 12px;
+  font-weight: 750;
+  vertical-align: middle;
+}
+.bq-stock-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+}

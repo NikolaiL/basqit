@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { isAddress, parseUnits } from "viem";
 import { AssetCatalog, type CatalogAsset } from "~~/components/atlas/AssetCatalog";
+import { tradingSessions } from "~~/services/atlas/tradingSessions";
 import type { RawAsset } from "~~/services/atlas/types";
 import { decimalPattern, tokenValue } from "~~/services/portfolio/format";
+import { readTokenData } from "~~/services/portfolio/token-data";
 
 export const metadata = { title: "Explore assets" };
 export const dynamic = "force-dynamic";
@@ -11,12 +13,7 @@ export default async function AtlasPage() {
   let assets: CatalogAsset[] = [];
   let unavailable = false;
   try {
-    const response = await fetch("https://api.robinhood.com/rhj/assets", {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!response.ok) throw new Error("Asset catalog unavailable");
-    const payload = await response.json();
+    const payload = await readTokenData("assets");
     if (!Array.isArray(payload.assets)) throw new Error("Invalid catalog");
     assets = payload.assets.flatMap((asset: RawAsset) => {
       if (!asset || typeof asset.tokenSymbol !== "string" || typeof asset.tokenName !== "string") return [];
@@ -38,6 +35,7 @@ export default async function AtlasPage() {
             Number.isInteger(asset.tokenDecimals) && asset.tokenDecimals >= 0 && asset.tokenDecimals <= 255
               ? asset.tokenDecimals
               : null,
+          sessions: tradingSessions(asset.tradingCapabilities),
           isin: typeof asset.isin === "string" ? asset.isin : null,
           status:
             asset.status === "ASSET_STATUS_ACTIVE"
@@ -55,12 +53,7 @@ export default async function AtlasPage() {
   // The catalog needs every quote: one cached bulk request avoids per-card requests.
   if (assets.length) {
     try {
-      const response = await fetch("https://api.robinhood.com/rhj/prices", {
-        next: { revalidate: 15 },
-        signal: AbortSignal.timeout(12000),
-      });
-      if (!response.ok) throw new Error("Prices unavailable");
-      const payload = await response.json();
+      const payload = await readTokenData("prices");
       if (!Array.isArray(payload.quotes)) throw new Error("Invalid quotes");
       for (const asset of assets) {
         const quote = payload.quotes.find(

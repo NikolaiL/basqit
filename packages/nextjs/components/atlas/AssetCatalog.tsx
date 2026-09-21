@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { QuoteDetails } from "./QuoteDetails";
 import { CheckIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { StockLogo } from "~~/components/StockLogo";
+import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import { robinhoodChain } from "~~/services/atlas/client";
+import type { tradingSessions } from "~~/services/atlas/tradingSessions";
 import { amount, money } from "~~/services/portfolio/format";
 
 export type CatalogAsset = {
@@ -15,6 +18,7 @@ export type CatalogAsset = {
   decimals: number | null;
   isin: string | null;
   status: string;
+  sessions: ReturnType<typeof tradingSessions>;
   price?: string | null;
   priceAt?: string;
 };
@@ -62,6 +66,7 @@ function CopyTokenAddress({ address, symbol }: { address: string; symbol: string
 }
 
 export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
+  const [trade, setTrade] = useState<TradeSelection>();
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   const visible = assets.filter(asset =>
@@ -69,6 +74,7 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
   );
   return (
     <>
+      {trade && <TradeDialog selection={trade} onClose={() => setTrade(undefined)} />}
       <div className="bq-catalog-toolbar">
         <label>
           <span className="sr-only">Search tokens</span>
@@ -88,9 +94,7 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
         {visible.map(asset => (
           <article key={asset.address} className="card bq-asset-card">
             <div className="bq-asset-heading">
-              <span className="bq-asset-mark" aria-hidden="true">
-                {asset.symbol.slice(0, 2)}
-              </span>
+              <StockLogo symbol={asset.symbol} size={56} />
               <div>
                 <h2>{asset.symbol}</h2>
                 <p>{asset.name}</p>
@@ -132,9 +136,49 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
                 <dd>{asset.isin || "Not provided"}</dd>
               </div>
             </dl>
+            <section className="bq-asset-sessions" aria-label={`${asset.symbol} trading sessions`}>
+              <h3>Underlying trading sessions</h3>
+              <dl>
+                {asset.sessions.map(session => (
+                  <div key={session.label}>
+                    <dt>{session.label}</dt>
+                    <dd>
+                      {session.whole === "Available" && session.fractional === "Available" ? (
+                        "Whole & fractional · Available"
+                      ) : (
+                        <>
+                          {session.overall && session.overall !== "Not reported" && (
+                            <span>Session · {session.overall}</span>
+                          )}
+                          <span>Whole · {session.whole}</span>
+                          <span>Fractional · {session.fractional}</span>
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <small>Exact hours aren’t provided. DEX availability is checked when you request a quote.</small>
+            </section>
             <div className="bq-asset-address">
               <span>Token contract</span>
               <CopyTokenAddress address={asset.address} symbol={asset.symbol} />
+            </div>
+            <div className="bq-trade-buttons">
+              <button
+                className="btn btn-primary"
+                disabled={asset.status !== "Active"}
+                onClick={() => setTrade({ asset, side: "buy" })}
+              >
+                Buy
+              </button>
+              <button
+                className="btn bq-secondary"
+                disabled={asset.status !== "Active"}
+                onClick={() => setTrade({ asset, side: "sell" })}
+              >
+                Sell
+              </button>
             </div>
             <div className="bq-asset-links">
               <a
