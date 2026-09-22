@@ -1,4 +1,4 @@
-import { ALLOWANCE_HOLDER, USDG } from "../trading/quote";
+import { ALLOWANCE_HOLDER, USDG, swapFeeConfig } from "../trading/quote";
 import { ScanError } from "./balances";
 import { type FundingQuote, parseFundingInput } from "./shared";
 
@@ -59,6 +59,7 @@ export async function fundingRequest(path: "quotes" | "status", params: URLSearc
 }
 export async function getFundingQuote(params: URLSearchParams): Promise<FundingQuote> {
   const p = parseFundingInput(params);
+  const fee = swapFeeConfig(process.env.BASQIT_SWAP_FEE_BPS, process.env.BASQIT_SWAP_FEE_RECIPIENT);
   const data = await fundingRequest(
     "quotes",
     new URLSearchParams({
@@ -71,6 +72,7 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
       destinationAddress: p.wallet,
       sortQuotesBy: "price",
       maxNumQuotes: "1",
+      ...(fee.bps > 0 ? { feeBps: String(fee.bps), feeRecipient: fee.recipient!, feeToken: p.token } : {}),
     }),
   );
   const q = data.quotes?.[0],
@@ -98,7 +100,23 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     throw new ScanError("No valid funding quote returned.", 502);
   if (issues?.balance || issues?.simulationIncomplete)
     throw new ScanError("Check your source balance; this route could not be fully simulated.", 422);
+  const fees = q.fees?.integratorFees ?? (q.fees?.integratorFee ? [q.fees.integratorFee] : []);
+  const expectedFee = (BigInt(p.amount) * BigInt(fee.bps)) / 10000n;
+  if (!Array.isArray(fees) || fees.length > 1 || (fee.bps > 0 && fees.length !== 1))
+    throw new ScanError("Funding quote is missing the configured Basqit fee.", 502);
+  const reportedFee = fees[0];
+  if (
+    reportedFee &&
+    (typeof reportedFee.amount !== "string" ||
+      !/^\d+$/.test(reportedFee.amount) ||
+      BigInt(reportedFee.amount) !== expectedFee ||
+      typeof reportedFee.token !== "string" ||
+      reportedFee.token.toLowerCase() !== p.token.toLowerCase() ||
+      (reportedFee.recipient !== undefined && reportedFee.recipient?.toLowerCase() !== fee.recipient?.toLowerCase()))
+  )
+    throw new ScanError("Funding quote fee does not match the configured Basqit fee.", 502);
   return {
+    basqitFee: { ...fee, token: p.token, amount: expectedFee.toString() },
     wallet: p.wallet,
     chainId: p.chainId,
     token: p.token,

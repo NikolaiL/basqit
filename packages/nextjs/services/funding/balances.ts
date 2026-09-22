@@ -1,28 +1,12 @@
-// ponytail: preview-only process cache/budget. Fail closed in production until a shared durable limiter exists.
+import { cacheFundingLogos } from "./tokenLogos";
+
+// Preview-only process cache; authenticated access is enforced by the API route.
 type Entry = { expires: number; promise: Promise<unknown> };
 const globals = globalThis as typeof globalThis & {
   basqitScanCursors?: Map<string, { wallet: string; expires: number }>;
-  basqitWalletScans?: {
-    cache: Map<string, Entry>;
-    minute: number;
-    hour: number;
-    day: number;
-    minutes: number;
-    hours: number;
-    days: number;
-    active: number;
-  };
+  basqitBalanceCache?: Map<string, Entry>;
 };
-const state = (globals.basqitWalletScans ??= {
-  cache: new Map(),
-  minute: 0,
-  hour: 0,
-  day: 0,
-  minutes: 0,
-  hours: 0,
-  days: 0,
-  active: 0,
-});
+const cache = (globals.basqitBalanceCache ??= new Map<string, Entry>());
 export const FUNDING_NETWORKS = ["eth-mainnet", "base-mainnet", "arb-mainnet", "opt-mainnet"];
 export class ScanError extends Error {
   status: number;
@@ -45,28 +29,9 @@ export function readFundingBalances(address: string, pageKey = ""): Promise<unkn
   if (pageKey && (cursors.get(pageKey)?.wallet !== wallet || !/^[a-zA-Z0-9_-]{1,128}$/.test(pageKey)))
     throw new ScanError("Scan page expired. Refresh your wallet scan.", 400);
   const cacheKey = `${wallet}:${pageKey}`;
-  const cached = state.cache.get(cacheKey);
+  const cached = cache.get(cacheKey);
   if (cached && cached.expires > now) return cached.promise;
-  for (const [id, entry] of state.cache) if (entry.expires <= now) state.cache.delete(id);
-  if (now - state.minute >= 60000) {
-    state.minute = now;
-    state.minutes = 0;
-  }
-  if (now - state.hour >= 3600000) {
-    state.hour = now;
-    state.hours = 0;
-  }
-  if (now - state.day >= 86400000) {
-    state.day = now;
-    state.days = 0;
-  }
-  if (state.active >= 2 || state.minutes >= 10 || state.hours >= 60 || state.days >= 200 || state.cache.size >= 256)
-    throw new ScanError("Wallet scan budget reached. Please try again later.", 429);
-  // Reserve before I/O. Failures count too; rotating wallet addresses cannot bypass this budget.
-  state.minutes++;
-  state.hours++;
-  state.days++;
-  state.active++;
+  for (const [id, entry] of cache) if (entry.expires <= now) cache.delete(id);
   const entry: Entry = { expires: Infinity, promise: Promise.resolve() };
   entry.promise = (async () => {
     try {
@@ -96,9 +61,8 @@ export function readFundingBalances(address: string, pageKey = ""): Promise<unkn
       const nextPageKey = payload.data.pageKey ?? payload.pageKey ?? null;
       if (typeof nextPageKey === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(nextPageKey) && cursors.size < 512)
         cursors.set(nextPageKey, { wallet, expires: Date.now() + 600000 });
-      // Every page uses the same global paid-request budget and cache.
       return {
-        tokens: payload.data.tokens.slice(0, 100),
+        tokens: cacheFundingLogos(payload.data.tokens.slice(0, 100)),
         nextPageKey: cursors.get(nextPageKey)?.wallet === wallet ? nextPageKey : null,
         networks: FUNDING_NETWORKS,
         fetchedAt,
@@ -109,10 +73,9 @@ export function readFundingBalances(address: string, pageKey = ""): Promise<unkn
       entry.expires = Date.now() + 30000;
       // Do not forward/log upstream errors: Alchemy embeds the API key in the URL.
       throw new ScanError("Wallet data is temporarily unavailable.", 503);
-    } finally {
-      state.active--;
     }
   })();
-  state.cache.set(cacheKey, entry);
+  if (cache.size >= 256) cache.delete(cache.keys().next().value!);
+  cache.set(cacheKey, entry);
   return entry.promise;
 }

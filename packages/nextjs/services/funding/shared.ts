@@ -15,8 +15,11 @@ export type FundingToken = {
   decimals: number;
   balance: string;
   usd: number;
+  logo?: string;
+  name?: string;
 };
 export type FundingQuote = {
+  basqitFee: { bps: number; recipient: string | null; token: string; amount: string };
   wallet: `0x${string}`;
   chainId: number;
   token: `0x${string}`;
@@ -47,6 +50,15 @@ export type FundingTransfer = {
   hash?: `0x${string}`;
   createdAt: number;
 };
+export function fundingStatusLabel(data?: FundingStatus) {
+  if (!data) return "Checking your transfer…";
+  if (data.status === "bridge_filled") return "USDG received";
+  if (data.status === "origin_tx_reverted") return "Transfer was not completed";
+  if (data.failure?.status === "refund_succeeded") return "Refund completed";
+  if (data.failure?.status === "refund_pending") return "Refund in progress";
+  if (data.status === "bridge_failed") return "Transfer needs attention";
+  return "Transfer in progress";
+}
 export function terminalStatus(data?: FundingStatus) {
   return (
     data?.status === "bridge_filled" ||
@@ -112,6 +124,11 @@ export function fundingTokens(rows: unknown[]): FundingToken[] {
         decimals,
         balance: balance.toString(),
         usd,
+        name: typeof r.tokenMetadata?.name === "string" ? r.tokenMetadata.name.slice(0, 100) : undefined,
+        logo:
+          typeof r.tokenMetadata?.logo === "string" && /^https:\/\//i.test(r.tokenMetadata.logo)
+            ? r.tokenMetadata.logo
+            : undefined,
         symbol: String(r.tokenAddress == null ? "ETH" : (r.tokenMetadata?.symbol ?? "Token")).slice(0, 20),
       });
     } catch {

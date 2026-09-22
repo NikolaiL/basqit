@@ -58,7 +58,7 @@ export function WalletWatchlist({
       <div className="bq-watch-heading">
         <div>
           <h2 id="wallets-title">Watch wallets</h2>
-          <p>Save several wallets or look up any address. No connection needed.</p>
+          <p>Save wallets or look up any address. Sign in with your own wallet to view Stock Tokens.</p>
         </div>
         {selected && (
           <button className="btn btn-sm btn-ghost" onClick={() => onSelect(undefined)}>

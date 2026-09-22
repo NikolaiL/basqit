@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FundingPanel } from "./FundingPanel";
 import { SwapConfetti } from "./SwapConfetti";
+import { SwapPayPanel } from "./SwapPayPanel";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
@@ -154,90 +154,39 @@ export function TradeDialog({
             </button>
           </div>
         </div>
-        {side === "buy" && !hash && (
-          <FundingPanel
-            disabled={!!busy}
-            onBusy={setBusy}
-            onFunded={value => {
-              setInput({ key: inputKey, percentage: 100, manual: value });
-              setRefresh(v => v + 1);
-            }}
-          />
-        )}
-        <section className="bq-swap-panel" aria-label="You pay">
-          <div className="bq-swap-caption">
-            <span>You pay</span>
-            <span title={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}>
-              {!address ? (
-                "Connect wallet"
-              ) : balance.isError ? (
-                "Balance unavailable"
-              ) : balance.data ? (
-                <>
-                  Balance: <TokenAmount value={formatUnits(balance.data.balance, balance.data.decimals)} />
-                </>
-              ) : (
-                "Loading balance…"
-              )}
-            </span>
-          </div>
-          <div className="bq-swap-amount-row">
-            <strong className="bq-swap-token">{sellSymbol}</strong>
-            <input
-              aria-label={`You pay (${sellSymbol})`}
-              className="input bq-swap-amount"
-              inputMode="decimal"
-              placeholder="0.00"
-              autoComplete="off"
-              value={amount}
-              disabled={!!busy || !!hash}
-              onChange={e => {
-                setInput({ key: inputKey, percentage: sliderPercentage, manual: e.target.value });
-                setHash(undefined);
-                setError("");
-              }}
-            />
-          </div>
-          <input
-            type="range"
-            style={{ width: "100%", minHeight: 44, accentColor: "var(--bq-brand)" }}
-            min={0}
-            max={100}
-            step={1}
-            value={sliderPercentage}
-            aria-label={`Percentage of ${sellSymbol} balance`}
-            aria-valuetext={`${sliderPercentage}%`}
-            disabled={!!busy || !!hash}
-            onChange={e => selectPercentage(Number(e.target.value))}
-          />
-          <div className="bq-swap-presets" role="group" aria-label="Balance percentage presets">
-            {[0, 25, 50, 75, 100].map(value => (
-              <button
-                key={value}
-                type="button"
-                className="btn btn-ghost"
-                aria-pressed={sliderPercentage === value}
-                disabled={!!busy || !!hash}
-                onClick={() => selectPercentage(value)}
-              >
-                {value}%
-              </button>
-            ))}
-          </div>
-        </section>
-        <button
-          className="btn btn-circle bq-swap-direction"
-          aria-label={`Switch to ${side === "buy" ? "selling" : "buying"} ${asset.symbol}`}
+        <SwapPayPanel
+          symbol={sellSymbol}
+          balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
+          connected={!!address}
+          balanceError={balance.isError}
+          amount={amount}
+          percentage={sliderPercentage}
           disabled={!!busy || !!hash}
-          onClick={() => {
+          percentageDisabled={!!busy || !!hash}
+          loading={loading}
+          directionLabel={`Switch to ${side === "buy" ? "selling" : "buying"} ${asset.symbol}`}
+          onAmountChange={value => {
+            setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
+            setHash(undefined);
+            setError("");
+          }}
+          onPercentageChange={selectPercentage}
+          onBusy={setBusy}
+          onFunded={
+            side === "buy" && !hash
+              ? value => {
+                  setInput({ key: inputKey, percentage: 100, manual: value });
+                  setRefresh(v => v + 1);
+                }
+              : undefined
+          }
+          onReverse={() => {
             setSide(side === "buy" ? "sell" : "buy");
             setInput(undefined);
             setHash(undefined);
             setError("");
           }}
-        >
-          ↓
-        </button>
+        />
         <section className="bq-swap-panel" aria-label="You receive">
           <div className="bq-swap-caption">
             <span>You receive</span>
@@ -357,16 +306,18 @@ export function TradeDialog({
             )}
           </p>
         </details>
-        {activeState?.error && canQuote && (
-          <p role="alert" className="bq-wallet-error">
-            {activeState.error}
-          </p>
-        )}
-        {error && (
-          <p role="alert" className="bq-wallet-error">
-            {error}
-          </p>
-        )}
+        <div className="bq-swap-errors">
+          {activeState?.error && canQuote && (
+            <p role="alert" className="bq-wallet-error">
+              {activeState.error}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="bq-wallet-error">
+              {error}
+            </p>
+          )}
+        </div>
         {hash && (
           <p role="status">
             Swap confirmed.{" "}

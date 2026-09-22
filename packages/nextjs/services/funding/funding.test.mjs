@@ -11,7 +11,7 @@ registerHooks({
     return next(specifier, context);
   },
 });
-const { fundingTokens, parseFundingInput, terminalStatus, NATIVE } = await import("./shared.ts");
+const { fundingTokens, parseFundingInput, terminalStatus, fundingStatusLabel, NATIVE } = await import("./shared.ts");
 const { getFundingQuote } = await import("./provider.ts");
 const { USDG, ALLOWANCE_HOLDER } = await import("../trading/quote.ts");
 const wallet = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6",
@@ -48,7 +48,18 @@ assert.deepEqual(
     { ...native, tokenBalance: "bad" },
     { ...native, tokenPrices: [] },
   ]),
-  [{ chainId: 8453, address: NATIVE, decimals: 18, symbol: "ETH", balance: "1000000000000000000", usd: 2700 }],
+  [
+    {
+      chainId: 8453,
+      address: NATIVE,
+      decimals: 18,
+      symbol: "ETH",
+      balance: "1000000000000000000",
+      usd: 2700,
+      logo: undefined,
+      name: undefined,
+    },
+  ],
 );
 assert.equal(terminalStatus({ status: "bridge_failed", failure: { status: "refund_pending" } }), false);
 assert.equal(terminalStatus({ status: "bridge_failed", failure: { status: "manual_action_required" } }), false);
@@ -77,6 +88,7 @@ function response() {
         buyAmount: "27000000",
         minBuyAmount: "26000000",
         quoteId: "0x1234",
+        fees: { integratorFees: [{ amount: "15000000000000", token, type: "volume" }] },
         issues: { simulationIncomplete: false, balance: null },
         transaction: { chainType: "evm", details: { to: ALLOWANCE_HOLDER, data: "0x1234", value: "0" } },
         steps: [{ type: "bridge", provider: "across_v4" }],
@@ -90,6 +102,11 @@ globalThis.fetch = async (url, opts) => {
   assert.equal(u.searchParams.get("buyToken"), USDG);
   assert.equal(u.searchParams.get("destinationAddress"), wallet);
   assert.equal(u.searchParams.get("destinationChain"), "4663");
+  assert.equal(u.searchParams.get("feeBps"), process.env.BASQIT_SWAP_FEE_BPS === "0" ? null : "15");
+  if (process.env.BASQIT_SWAP_FEE_BPS !== "0") {
+    assert.equal(u.searchParams.get("feeRecipient"), wallet);
+    assert.equal(u.searchParams.get("feeToken"), token);
+  }
   assert.equal(opts.headers["0x-api-key"], "test");
   return Response.json(modify(response()));
 };
@@ -97,7 +114,11 @@ try {
   process.env.NODE_ENV = "development";
   process.env.BASQIT_ENABLE_FUNDING = "true";
   process.env.ZEROX_API_KEY = "test";
+  process.env.BASQIT_SWAP_FEE_BPS = "15";
+  process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
   const first = await getFundingQuote(params());
+  assert.equal(first.basqitFee.amount, "15000000000000");
+  assert.equal(first.basqitFee.recipient, wallet);
   assert.equal(first.buyAmount, "27000000");
   assert.equal(first.expiresAt, 130000);
   now += 1000;
@@ -114,6 +135,25 @@ try {
     modify = change;
     await assert.rejects(getFundingQuote(params()));
   }
+  for (const fees of [
+    undefined,
+    { integratorFees: [] },
+    { integratorFees: [{ amount: "0", token }] },
+    { integratorFees: [{ amount: "15000000000000", token: USDG }] },
+    { integratorFees: [{ amount: "15000000000000", token, recipient: token }] },
+    { integratorFees: [{ amount: "15000000000001", token }] },
+  ]) {
+    globalThis.basqitFundingProvider.cache.clear();
+    modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees }] });
+    await assert.rejects(getFundingQuote(params()), /fee/);
+  }
+  process.env.BASQIT_SWAP_FEE_BPS = "0";
+  modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees: null }] });
+  assert.equal((await getFundingQuote(params())).basqitFee.amount, "0");
+  process.env.BASQIT_SWAP_FEE_BPS = "15";
+  process.env.BASQIT_SWAP_FEE_RECIPIENT = "";
+  await assert.rejects(getFundingQuote(params()), /RECIPIENT/);
+  process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
   process.env.NODE_ENV = "production";
   await assert.rejects(getFundingQuote(params()), /not enabled/);
   console.log(
@@ -122,8 +162,38 @@ try {
 } finally {
   globalThis.fetch = fetchBefore;
   Date.now = nowBefore;
-  for (const key of ["NODE_ENV", "BASQIT_ENABLE_FUNDING", "ZEROX_API_KEY"]) {
+  for (const key of [
+    "NODE_ENV",
+    "BASQIT_ENABLE_FUNDING",
+    "ZEROX_API_KEY",
+    "BASQIT_SWAP_FEE_BPS",
+    "BASQIT_SWAP_FEE_RECIPIENT",
+  ]) {
     if (env[key] === undefined) delete process.env[key];
     else process.env[key] = env[key];
   }
 }
+
+assert.equal(fundingStatusLabel(), "Checking your transfer…");
+assert.equal(fundingStatusLabel({ status: "bridge_filled" }), "USDG received");
+assert.equal(fundingStatusLabel({ status: "origin_tx_reverted" }), "Transfer was not completed");
+assert.equal(
+  fundingStatusLabel({ status: "bridge_failed", failure: { status: "refund_succeeded" } }),
+  "Refund completed",
+);
+assert.equal(
+  fundingStatusLabel({ status: "bridge_failed", failure: { status: "refund_pending" } }),
+  "Refund in progress",
+);
+assert.equal(
+  fundingStatusLabel({ status: "bridge_failed", failure: { status: "manual_action_required" } }),
+  "Transfer needs attention",
+);
+assert.equal(fundingStatusLabel({ status: "origin_tx_confirmed" }), "Transfer in progress");
+assert.equal(fundingStatusLabel({ status: "unknown_future_status" }), "Transfer in progress");
+
+assert.equal(
+  fundingTokens([{ ...native, tokenMetadata: { logo: "https://static.alchemyapi.io/images/assets/1027.png" } }])[0]
+    .logo,
+  "https://static.alchemyapi.io/images/assets/1027.png",
+);

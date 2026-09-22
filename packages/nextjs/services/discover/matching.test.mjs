@@ -34,3 +34,14 @@ const { surpriseIdeas } = await import("./prompts.ts");
 assert.equal(surpriseIdeas.length, 20);
 assert.equal(new Set(surpriseIdeas).size, 20);
 assert.ok(surpriseIdeas.every(idea => normalizeTheme(idea) === idea));
+
+const context = JSON.parse(readFileSync(new URL("./company-context.json", import.meta.url)));
+assert.deepEqual(Object.keys(context).sort(), Object.keys(profiles).sort());
+for (const company of Object.values(context)) {
+  assert.ok(company.facts.length && company.sources.length, company.name);
+  assert.ok(company.facts.every(fact => typeof fact === "string" && fact.trim()));
+  assert.ok(company.sources.every(source => new URL(source).protocol === "https:"));
+}
+assert.ok(context.AAPL.facts.some(fact => fact.includes("Steve Jobs")));
+assert.ok(context.TSLA.facts.some(fact => fact.includes("Martin Eberhard")));
+console.log("Company context covers the catalog with attributed facts");

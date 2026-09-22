@@ -140,8 +140,10 @@ export function quoteError(status: number, name?: unknown) {
   };
 }
 
-export function balancePercentage(balance: bigint, decimals: number, percentage: number) {
+export function balancePercentage(balance: bigint, decimals: number, percentage: number, maxDecimals = decimals) {
   if (balance < 0n || !Number.isInteger(percentage) || percentage < 0 || percentage > 100)
     throw new Error("Invalid balance percentage");
-  return formatUnits((balance * BigInt(percentage)) / 100n, decimals);
+  if (!Number.isInteger(maxDecimals) || maxDecimals < 0) throw new Error("Invalid amount precision");
+  const scale = 10n ** BigInt(Math.max(0, decimals - maxDecimals));
+  return formatUnits(((balance * BigInt(percentage)) / 100n / scale) * scale, decimals);
 }

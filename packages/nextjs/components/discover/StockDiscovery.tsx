@@ -164,7 +164,7 @@ export function StockDiscovery({
               : query && result?.theme === query
                 ? matches.length
                   ? `${matches.length} connections. Tap a logo to take a closer look.`
-                  : "No strong connections yet. Try an industry, product or logo color."
+                  : "No strong connections yet. Try a founder, a vibe, a product or a logo color."
                 : `${assets.length} little possibilities. One big idea.`)}
           {error && (
             <button className="btn btn-ghost btn-sm" onClick={() => setRetry(value => value + 1)}>

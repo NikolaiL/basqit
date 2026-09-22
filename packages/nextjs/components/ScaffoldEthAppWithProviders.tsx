@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import { WagmiProvider } from "wagmi";
 import { Footer } from "~~/components/Footer";
 import { Header } from "~~/components/Header";
+import { WalletAuthentication } from "~~/components/WalletAuthentication";
 import { BlockieAvatar } from "~~/components/scaffold-eth";
 import { ScaffoldToaster } from "~~/components/scaffold-eth/ScaffoldToaster";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
@@ -45,19 +46,21 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          avatar={BlockieAvatar}
-          theme={
-            mounted
-              ? isDarkMode
-                ? darkTheme()
+        <WalletAuthentication>
+          <RainbowKitProvider
+            avatar={BlockieAvatar}
+            theme={
+              mounted
+                ? isDarkMode
+                  ? darkTheme()
+                  : lightTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
                 : lightTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
-              : lightTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
-          }
-        >
-          <ProgressBar height="3px" color="#5A4FE0" />
-          <ScaffoldEthApp>{children}</ScaffoldEthApp>
-        </RainbowKitProvider>
+            }
+          >
+            <ProgressBar height="3px" color="#5A4FE0" />
+            <ScaffoldEthApp>{children}</ScaffoldEthApp>
+          </RainbowKitProvider>
+        </WalletAuthentication>
       </QueryClientProvider>
     </WagmiProvider>
   );

@@ -17,6 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
+import { useWalletSession } from "~~/components/WalletAuthentication";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import { USDGBalance } from "~~/components/trading/USDGBalance";
@@ -202,6 +203,7 @@ export function PortfolioDashboard({
   const [trade, setTrade] = useState<TradeSelection>();
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
+  const { authenticated } = useWalletSession();
   const { openConnectModal } = useConnectModal();
   const [watchedAddress, setWatchedAddress] = useState<`0x${string}`>();
   const [search, setSearch] = useState("");
@@ -227,7 +229,7 @@ export function PortfolioDashboard({
   const events = scopedEvents.filter(event => eventStatus === "all" || event.status === eventStatus);
   const relevantEvents = actions.filter(event => symbols.has(event.symbol));
   const pending = relevantEvents.filter(event => event.status === "CORPORATE_ACTION_STATUS_IN_PROGRESS");
-  const loading = !!address && walletQuery.isPending;
+  const loading = authenticated && !!address && walletQuery.isPending;
   const hasPortfolio = !!portfolio;
 
   useEffect(() => {
@@ -267,7 +269,7 @@ export function PortfolioDashboard({
             className="btn btn-square bq-secondary"
             disabled={walletQuery.isFetching || actionsQuery.isFetching}
             onClick={() => {
-              if (address && (!eventsPage || scope === "holdings")) void walletQuery.refetch();
+              if (authenticated && address && (!eventsPage || scope === "holdings")) void walletQuery.refetch();
               void actionsQuery.refetch();
               if (!eventsPage) void queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
             }}
@@ -286,7 +288,9 @@ export function PortfolioDashboard({
                 {watchedAddress ? "Watching wallet" : connectedAddress ? "Connected wallet" : "No wallet connected"}
               </span>
               {address && <Address address={address} chain={robinhoodChain} />}
-              {address && !eventsPage && <USDGBalance address={address} />}
+              {authenticated && address && address.toLowerCase() === connectedAddress?.toLowerCase() && !eventsPage && (
+                <USDGBalance address={address} />
+              )}
             </div>
             <span className="bq-network">
               <span />
@@ -294,14 +298,17 @@ export function PortfolioDashboard({
             </span>
           </div>
 
-          {!address && (
+          {!authenticated && (
             <div className="bq-connect-panel card">
               <div>
                 <h2>A clearer view of your holdings.</h2>
-                <p>Connect your wallet to read its Stock Token balances. No signature or transaction required.</p>
+                <p>
+                  Sign in with your wallet to view your own or another wallet’s Stock Tokens on Robinhood Chain. No
+                  transaction required.
+                </p>
               </div>
               <button className="btn btn-primary" type="button" onClick={openConnectModal}>
-                Connect wallet
+                {connectedAddress ? "Sign in" : "Connect wallet"}
               </button>
             </div>
           )}
@@ -315,7 +322,7 @@ export function PortfolioDashboard({
             }}
           />
 
-          {walletQuery.isError && (
+          {authenticated && walletQuery.isError && (
             <div role="alert" className="alert bq-error">
               <span>{walletQuery.error.message}</span>
               <button

@@ -1,9 +1,13 @@
 import type { TradeQuote } from "./quote";
 
-export type QuoteState = { loading: boolean; quote?: TradeQuote; error?: string };
+export type QuoteState<T = TradeQuote> = { loading: boolean; quote?: T; error?: string };
 
 // One request at a time; changing the form disposes the previous request and timer.
-export function watchQuote(params: string, update: (state: QuoteState) => void) {
+export function watchQuote<T = TradeQuote>(
+  params: string,
+  update: (state: QuoteState<T>) => void,
+  endpoint = "/api/swap",
+) {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout>;
   update({ loading: true });
@@ -11,7 +15,7 @@ export function watchQuote(params: string, update: (state: QuoteState) => void) 
     if (controller.signal.aborted) return;
     update({ loading: true });
     try {
-      const response = await fetch(`/api/swap?${params}`, {
+      const response = await fetch(`${endpoint}?${params}`, {
         cache: "no-store",
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]),
       });

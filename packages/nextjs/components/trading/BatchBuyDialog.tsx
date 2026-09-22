@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FundingPanel } from "./FundingPanel";
 import { SwapConfetti } from "./SwapConfetti";
+import { SwapPayPanel } from "./SwapPayPanel";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress } from "viem";
@@ -180,67 +180,31 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             ? `One total, split equally across ${selected.length} selected ${selected.length === 1 ? "stock" : "stocks"}.`
             : "Select at least one stock to continue."}
         </p>
-        {!hash && (
-          <FundingPanel
-            disabled={!!busy}
-            onBusy={setBusy}
-            onFunded={value => {
-              setInput({ key: inputKey, percentage: 100, manual: value });
-            }}
-          />
-        )}
-        <label className="bq-batch-amount">
-          <span>Total USDG</span>
-          <input
-            aria-label="Total USDG"
-            inputMode="decimal"
-            placeholder="0.00"
-            value={amount}
-            disabled={!!busy || !!hash}
-            onChange={event => {
-              setInput({ key: inputKey, percentage: sliderPercentage, manual: event.target.value });
-              setError("");
-            }}
-          />
-        </label>
-        <small>
-          Balance:{" "}
-          {balance.data ? (
-            <>
-              <TokenAmount value={formatUnits(balance.data.balance, balance.data.decimals)} /> USDG
-            </>
-          ) : address ? (
-            "Loading…"
-          ) : (
-            "Connect wallet"
-          )}
-        </small>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          style={{ width: "100%", minHeight: 44, accentColor: "var(--bq-brand)" }}
-          aria-label="Percentage of USDG balance"
-          aria-valuetext={`${sliderPercentage}%`}
-          value={sliderPercentage}
-          disabled={!balance.data || !!busy || !!hash}
-          onChange={event => choosePercentage(Number(event.target.value))}
+        <SwapPayPanel
+          symbol="USDG"
+          balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
+          connected={!!address}
+          balanceError={balance.isError}
+          amount={amount}
+          percentage={sliderPercentage}
+          disabled={!!busy || !!hash}
+          percentageDisabled={!balance.data || !!busy || !!hash}
+          loading={quotes.isFetching}
+          directionLabel="USDG to selected stocks"
+          onAmountChange={value => {
+            setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
+            setError("");
+          }}
+          onPercentageChange={choosePercentage}
+          onBusy={setBusy}
+          onFunded={
+            !hash
+              ? value => {
+                  setInput({ key: inputKey, percentage: 100, manual: value });
+                }
+              : undefined
+          }
         />
-        <div className="bq-swap-presets" role="group" aria-label="Balance percentage presets">
-          {[0, 25, 50, 75, 100].map(value => (
-            <button
-              key={value}
-              type="button"
-              className="btn btn-ghost"
-              aria-pressed={sliderPercentage === value}
-              disabled={!balance.data || !!busy || !!hash}
-              onClick={() => choosePercentage(value)}
-            >
-              {value}%
-            </button>
-          ))}
-        </div>
         <div className="bq-batch-legs">
           {assets.map(asset => {
             const result = response?.results.find(item => item.token.toLowerCase() === asset.address.toLowerCase());

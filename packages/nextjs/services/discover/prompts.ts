@@ -17,6 +17,6 @@ export const surpriseIdeas = [
   "Crypto exchanges and digital-asset infrastructure",
   "Online shopping and the brands in my wardrobe",
   "Aerospace and defense technology",
-  "ETFs that cover a whole market",
+  "Companies with crazy founders",
   "Companies with orange logos",
 ];

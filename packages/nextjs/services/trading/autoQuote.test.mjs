@@ -35,14 +35,15 @@ try {
   assert.equal(calls, 2);
   let resolveFetch;
   let signal;
-  globalThis.fetch = (_, options) => {
+  globalThis.fetch = (url, options) => {
+    assert.equal(url, "/api/funding/quote?amount=3");
     signal = options.signal;
     return new Promise(resolve => {
       resolveFetch = resolve;
     });
   };
   const late = [];
-  const cancel = watchQuote("amount=3", state => late.push(state));
+  const cancel = watchQuote("amount=3", state => late.push(state), "/api/funding/quote");
   mock.timers.tick(500);
   cancel();
   assert.equal(signal.aborted, true);

@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { FundingTokenLogo } from "./FundingTokenLogo";
+import { FundingTokenPicker } from "./FundingTokenPicker";
+import { SwapDivider } from "./SwapDivider";
 import { USDGBalance } from "./USDGBalance";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { TokenAmount } from "~~/components/TokenAmount";
+import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { useFundingTransfer } from "~~/hooks/scaffold-eth/useFundingTransfer";
 import { atlasClient } from "~~/services/atlas/client";
@@ -15,9 +20,11 @@ import {
   type FundingStatus,
   type FundingTransfer,
   fundingChains,
+  fundingStatusLabel,
   fundingTokens,
   terminalStatus,
 } from "~~/services/funding/shared";
+import { type QuoteState, watchQuote } from "~~/services/trading/autoQuote";
 import { USDG, balancePercentage } from "~~/services/trading/quote";
 
 async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
@@ -28,10 +35,12 @@ async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
 }
 export function FundingPanel({
   disabled = false,
+  triggerLabel = "Convert to USDG",
   onBusy,
   onFunded,
 }: {
   disabled?: boolean;
+  triggerLabel?: string;
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
 }) {
@@ -43,6 +52,7 @@ export function FundingPanel({
       address={address as `0x${string}`}
       chainId={chainId}
       disabled={disabled}
+      triggerLabel={triggerLabel}
       onBusy={onBusy}
       onFunded={onFunded}
     />
@@ -52,29 +62,37 @@ function WalletFunding({
   address,
   chainId,
   disabled,
+  triggerLabel,
   onBusy,
   onFunded,
 }: {
   address: `0x${string}`;
   chainId?: number;
   disabled: boolean;
+  triggerLabel: string;
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
 }) {
+  const [executionQuoteLoading, setQuoteLoading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerContainer = useRef<HTMLDivElement>(null);
+  const pickerTrigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false),
     [selected, setSelected] = useState(""),
     [amount, setAmount] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
-  const [quote, setQuote] = useState<FundingQuote>(),
-    [recoveryHash, setRecoveryHash] = useState("");
+  const [quoteState, setQuoteState] = useState<QuoteState<FundingQuote> & { key: string }>({ key: "", loading: false });
+  const [refresh, setRefresh] = useState(0);
+  const [recoveryHash, setRecoveryHash] = useState("");
   const lock = useRef(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const { openConnectModal, connectModalOpen } = useConnectModal();
   useEffect(() => {
-    if (open) dialog.current?.showModal();
+    if (open && !connectModalOpen) dialog.current?.showModal();
     else dialog.current?.close();
-  }, [open]);
+  }, [open, connectModalOpen]);
   const transfer = useFundingTransfer(),
     queryClient = useQueryClient(),
     { switchChainAsync } = useSwitchChain();
@@ -111,28 +129,56 @@ function WalletFunding({
     }
     queryClient.setQueryData([storageKey], value);
   }
+  const { authenticated } = useWalletSession();
   const scans = useInfiniteQuery({
     queryKey: ["funding-balances-v2", address],
-    enabled: open && !pending,
+    enabled: open && !pending && authenticated,
     initialPageParam: "",
     queryFn: ({ signal, pageParam }) =>
       read<{ tokens: unknown[]; incomplete: boolean; nextPageKey: string | null; warning?: string | null }>(
         `/api/funding/balances?${new URLSearchParams({ address, ...(pageParam ? { pageKey: pageParam } : {}) })}`,
         signal,
       ),
-    getNextPageParam: page => page.nextPageKey ?? undefined,
+    getNextPageParam: (page, _pages, _param, pageParams) =>
+      page.nextPageKey && !pageParams.includes(page.nextPageKey) ? page.nextPageKey : undefined,
     staleTime: 60000,
     retry: false,
     refetchOnWindowFocus: false,
   });
   const { hasNextPage, isFetching, isError, fetchNextPage } = scans;
+  const loadingTokens = scans.isFetching || (open && authenticated && !pending && !!hasNextPage && !isError);
   const pageCount = scans.data?.pages.length ?? 0;
   useEffect(() => {
-    // ponytail: auto-load at most five pages; deeper wallets continue explicitly, under the same upstream budget.
-    if (open && !pending && hasNextPage && !isFetching && !isError && pageCount < 5) void fetchNextPage();
-  }, [open, pending, hasNextPage, isFetching, isError, pageCount, fetchNextPage]);
+    if (open && !pending && authenticated && hasNextPage && !isFetching && !isError) void fetchNextPage();
+  }, [open, pending, authenticated, hasNextPage, isFetching, isError, pageCount, fetchNextPage]);
   const tokens = fundingTokens(scans.data?.pages.flatMap(page => page.tokens) ?? []);
   const token = tokens.find(t => `${t.chainId}:${t.address}` === selected);
+  const validAmount =
+    !!token && /^\d{1,40}(\.\d{1,36})?$/.test(amount) && (amount.split(".")[1]?.length ?? 0) <= token.decimals;
+  const units = validAmount ? parseUnits(amount, token!.decimals) : 0n;
+  const canQuote =
+    open && authenticated && !pending && !disabled && !!token && units > 0n && units <= BigInt(token.balance);
+  const params = new URLSearchParams({
+    wallet: address,
+    chainId: String(token?.chainId ?? ""),
+    token: token?.address ?? "",
+    amount: units.toString(),
+  }).toString();
+  const activeState = quoteState.key === params ? quoteState : undefined;
+  const quote = canQuote ? activeState?.quote : undefined;
+  const quoteLoading = executionQuoteLoading || (canQuote && (!activeState || activeState.loading));
+  useEffect(() => {
+    if (!canQuote || busy) return;
+    return watchQuote<FundingQuote>(params, state => setQuoteState({ ...state, key: params }), "/api/funding/quote");
+  }, [canQuote, params, busy, refresh]);
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function dismiss(event: PointerEvent) {
+      if (!pickerContainer.current?.contains(event.target as Node)) setPickerOpen(false);
+    }
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [pickerOpen]);
   const status = useQuery<FundingStatus>({
     queryKey: ["funding-status", pending?.chainId, pending?.hash, pending?.quoteId],
     enabled: open && !!pending?.hash,
@@ -172,11 +218,16 @@ function WalletFunding({
       throw new Error("Enter a valid source amount.");
     const units = parseUnits(amount, token.decimals);
     if (units <= 0n || units > BigInt(token.balance)) throw new Error("Amount exceeds your available balance.");
-    const q = await read<FundingQuote>(
-      `/api/funding/quote?${new URLSearchParams({ wallet: address, chainId: String(token.chainId), token: token.address, amount: units.toString() })}`,
-    );
-    setQuote(q);
-    return q;
+    setQuoteLoading(true);
+    try {
+      const q = await read<FundingQuote>(
+        `/api/funding/quote?${new URLSearchParams({ wallet: address, chainId: String(token.chainId), token: token.address, amount: units.toString() })}`,
+      );
+      setQuoteState({ key: params, loading: false, quote: q });
+      return q;
+    } finally {
+      setQuoteLoading(false);
+    }
   }
   async function finish() {
     const [balance, gas] = await Promise.all([
@@ -190,7 +241,6 @@ function WalletFunding({
     onFunded?.(formatUnits(balance, 6));
     save(null);
     setOpen(false);
-    setQuote(undefined);
   }
   const sliderPercentage = token
     ? Math.min(
@@ -203,8 +253,7 @@ function WalletFunding({
     : 50;
   function choosePercentage(value: number) {
     if (!token) return;
-    setAmount(balancePercentage(BigInt(token.balance), token.decimals, value));
-    setQuote(undefined);
+    setAmount(balancePercentage(BigInt(token.balance), token.decimals, value, 8));
     setError("");
   }
   const source = fundingChains.find(c => c.id === pending?.chainId);
@@ -219,7 +268,7 @@ function WalletFunding({
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        {pending ? "View USDG transfer" : "Convert to USDG"}
+        {pending ? "View USDG transfer" : triggerLabel}
       </button>
       {open &&
         createPortal(
@@ -234,14 +283,16 @@ function WalletFunding({
             }}
             onClose={e => {
               e.stopPropagation();
-              setOpen(false);
+              if (!connectModalOpen) setOpen(false);
             }}
           >
-            <div className="modal-box bq-trade-dialog">
+            <div className="modal-box bq-trade-dialog bq-converter">
               <div className="bq-trade-heading">
                 <div>
-                  <h2 id={titleId}>Convert to USDG</h2>
-                  <small>On Robinhood Chain</small>
+                  <h2 id={titleId}>{pending ? "USDG transfer" : "Get USDG"}</h2>
+                  <small>
+                    {pending ? "Track your transfer" : "You need USDG to buy stock tokens on Robinhood Chain."}
+                  </small>
                 </div>
                 <button
                   type="button"
@@ -253,21 +304,20 @@ function WalletFunding({
                   ✕
                 </button>
               </div>
-              <USDGBalance address={address} />
+              <div className="bq-converter-balance">
+                <span>Available on Robinhood</span>
+                <USDGBalance address={address} />
+              </div>
               <div className="bq-funding-content">
-                <p className="bq-fine-print">
-                  Convert crypto to USDG on Robinhood Chain. Add one source asset at a time. Transfers and stock
-                  purchases are separate transactions.
-                </p>
                 {saved.isError && <p role="alert">{saved.error.message}</p>}
                 {pending ? (
                   <>
-                    <p role="status">
+                    <p role="status" className="bq-converter-progress">
                       {!pending.hash
-                        ? "Submission needs checking"
+                        ? "Check your wallet"
                         : status.isError
                           ? "Status unavailable — your transfer is still saved."
-                          : (status.data?.status ?? "Checking transfer").replaceAll("_", " ")}
+                          : fundingStatusLabel(status.data)}
                     </p>
                     {pending.hash && (
                       <a
@@ -276,7 +326,7 @@ function WalletFunding({
                         rel="noreferrer"
                         href={`${source?.blockExplorers.default.url}/tx/${pending.hash}`}
                       >
-                        View source transaction ↗
+                        View transaction ↗
                       </a>
                     )}
                     {status.data?.failure && (
@@ -342,12 +392,11 @@ function WalletFunding({
                           disabled={blocked}
                           onClick={() => {
                             save(null);
-                            setQuote(undefined);
                             setOpen(true);
                             void queryClient.invalidateQueries({ queryKey: ["funding-balances-v2", address] });
                           }}
                         >
-                          Add another source asset
+                          Convert another token
                         </button>
                       </>
                     )}
@@ -364,182 +413,296 @@ function WalletFunding({
                   </>
                 ) : (
                   <>
-                    {scans.isFetching && <p role="status">Finding wallet balances…</p>}
-                    {scans.isError && (
-                      <>
-                        <p role="alert">{scans.error.message}</p>
-                        <button className="btn btn-ghost" disabled={blocked} onClick={() => void scans.refetch()}>
-                          Retry scan
-                        </button>
-                      </>
-                    )}
-                    {(scans.hasNextPage || scans.data?.pages.some(page => page.warning)) && (
-                      <p className="bq-fine-print">
-                        {scans.hasNextPage
-                          ? "More wallet assets are available."
-                          : "Some wallet data may be unavailable."}
-                      </p>
-                    )}
-                    {scans.hasNextPage && (
-                      <button
-                        className="btn btn-ghost"
-                        disabled={blocked || scans.isFetching}
-                        onClick={() => void scans.fetchNextPage()}
-                      >
-                        Load more wallet assets
-                      </button>
-                    )}
-                    {scans.data && !scans.isFetching && !tokens.length && (
-                      <p>No priced balances found on Ethereum, Base, Arbitrum or Optimism.</p>
-                    )}
-                    <label className="bq-trade-input">
-                      Pay with
-                      <select
-                        className="select select-bordered w-full"
-                        value={selected}
-                        disabled={blocked}
-                        onChange={e => {
-                          setSelected(e.target.value);
-                          setQuote(undefined);
-                          const t = tokens.find(t => `${t.chainId}:${t.address}` === e.target.value);
-                          setAmount(t ? balancePercentage(BigInt(t.balance), t.decimals, 50) : "");
+                    <section className="bq-converter-pay" aria-label="You pay">
+                      <div className="bq-swap-caption">
+                        <span>You pay</span>
+                        {token && (
+                          <span>
+                            Balance: <TokenAmount value={formatUnits(BigInt(token.balance), token.decimals)} />{" "}
+                            {token.symbol}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className="bq-token-picker-anchor"
+                        ref={pickerContainer}
+                        onBlur={event => {
+                          if (!event.currentTarget.contains(event.relatedTarget)) setPickerOpen(false);
                         }}
                       >
-                        <option value="">Select an asset</option>
-                        {tokens.map(t => (
-                          <option key={`${t.chainId}:${t.address}`} value={`${t.chainId}:${t.address}`}>
-                            {t.symbol} · {fundingChains.find(c => c.id === t.chainId)?.name} · ~${t.usd.toFixed(2)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {token && (
-                      <>
-                        <small className="block break-all">
-                          {token.address} · Balance{" "}
-                          <TokenAmount value={formatUnits(BigInt(token.balance), token.decimals)} />
-                        </small>
-                        <label className="bq-batch-amount">
-                          <span>{token.symbol}</span>
-                          <input
-                            inputMode="decimal"
-                            aria-label="Funding amount"
-                            value={amount}
-                            disabled={blocked}
-                            onChange={e => {
-                              setAmount(e.target.value);
-                              setQuote(undefined);
+                        <button
+                          type="button"
+                          className="btn btn-ghost bq-token-trigger"
+                          ref={pickerTrigger}
+                          disabled={blocked}
+                          aria-expanded={pickerOpen}
+                          aria-busy={loadingTokens}
+                          onClick={() => setPickerOpen(value => !value)}
+                        >
+                          {token && <FundingTokenLogo token={token} />}
+                          <span>
+                            {token ? (
+                              <>
+                                <strong>{token.symbol}</strong>
+                                <small>{fundingChains.find(c => c.id === token.chainId)?.name}</small>
+                              </>
+                            ) : (
+                              "Choose a token"
+                            )}
+                          </span>
+                          <span className="bq-token-trigger-status">
+                            {loadingTokens ? (
+                              <span role="status">
+                                <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+                                <span className="sr-only">Loading wallet tokens…</span>
+                              </span>
+                            ) : (
+                              <span aria-hidden="true">⌄</span>
+                            )}
+                          </span>
+                        </button>
+                        {pickerOpen && (
+                          <FundingTokenPicker
+                            tokens={tokens}
+                            selected={selected}
+                            loading={loadingTokens}
+                            error={scans.error?.message}
+                            onRetry={() => void scans.refetch()}
+                            onClose={() => {
+                              setPickerOpen(false);
+                              pickerTrigger.current?.focus();
+                            }}
+                            onSelect={t => {
+                              setSelected(`${t.chainId}:${t.address}`);
+                              setError("");
+                              setAmount(balancePercentage(BigInt(t.balance), t.decimals, 50, 8));
+                              setPickerOpen(false);
+                              pickerTrigger.current?.focus();
                             }}
                           />
-                        </label>
+                        )}
+                      </div>
+                      <div className="bq-swap-amount-row">
+                        <strong className="bq-swap-token">{token?.symbol ?? "Amount"}</strong>
                         <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="1"
-                          style={{ width: "100%", minHeight: 44, accentColor: "var(--bq-brand)" }}
-                          aria-label={`Percentage of ${token.symbol} balance`}
-                          aria-valuetext={`${sliderPercentage}%`}
-                          value={sliderPercentage}
-                          disabled={blocked}
-                          onChange={event => choosePercentage(Number(event.target.value))}
+                          className="input bq-swap-amount"
+                          inputMode="decimal"
+                          aria-label="Funding amount"
+                          placeholder="0.00"
+                          autoComplete="off"
+                          value={amount}
+                          disabled={blocked || !token}
+                          onChange={e => {
+                            setAmount(e.target.value);
+                            setError("");
+                          }}
                         />
-                        <div
-                          className="bq-swap-presets"
-                          role="group"
-                          aria-label="Conversion balance percentage presets"
-                        >
-                          {[0, 25, 50, 75, 100].map(p => (
-                            <button
-                              key={p}
-                              className="btn btn-ghost"
-                              disabled={blocked}
-                              type="button"
-                              aria-pressed={sliderPercentage === p}
-                              onClick={() => choosePercentage(p)}
-                            >
-                              {p}%
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          className="btn btn-secondary w-full"
-                          disabled={blocked || !saved.isSuccess || !!saved.error}
-                          onClick={() =>
-                            void run("Finding funding route…", async () => {
-                              await getQuote();
-                            })
-                          }
-                        >
-                          {busy || "Get funding quote"}
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        style={{ width: "100%", minHeight: 44, accentColor: "var(--bq-brand)" }}
+                        aria-label={`Percentage of ${token?.symbol ?? "token"} balance`}
+                        aria-valuetext={`${sliderPercentage}%`}
+                        value={sliderPercentage}
+                        disabled={blocked || !token}
+                        onChange={event => choosePercentage(Number(event.target.value))}
+                      />
+                      <div className="bq-swap-presets" role="group" aria-label="Conversion balance percentage presets">
+                        {[0, 25, 50, 75, 100].map(p => (
+                          <button
+                            key={p}
+                            className="btn btn-ghost"
+                            disabled={blocked || !token}
+                            type="button"
+                            aria-pressed={!!token && sliderPercentage === p}
+                            onClick={() => choosePercentage(p)}
+                          >
+                            {p}%
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                    <div className="bq-converter-scan" aria-live="polite">
+                      {!authenticated && (
+                        <button type="button" className="btn btn-link btn-sm" onClick={openConnectModal}>
+                          Sign in to load your tokens
                         </button>
-                      </>
+                      )}
+                      {scans.isError && (
+                        <>
+                          <span>{scans.error.message}</span>
+                          <button
+                            className="btn btn-link btn-sm"
+                            disabled={blocked || scans.isFetching}
+                            onClick={() => void scans.refetch()}
+                          >
+                            Retry
+                          </button>
+                        </>
+                      )}
+                      {!scans.hasNextPage && scans.data?.pages.some(page => page.warning) && (
+                        <span>Some networks could not be checked.</span>
+                      )}
+                      {scans.data && !scans.isFetching && !tokens.length && (
+                        <span>No eligible balances found on Ethereum, Base, Arbitrum or Optimism.</span>
+                      )}
+                    </div>
+                    <SwapDivider loading={quoteLoading} directionLabel="Convert to USDG" />
+                    <section className="bq-converter-receive" aria-label="You receive">
+                      <div className="bq-swap-caption">
+                        <span>You receive</span>
+                        <span>Robinhood Chain</span>
+                      </div>
+                      <div className="bq-swap-amount-row">
+                        <strong className="bq-swap-token">USDG</strong>
+                        <output className="bq-swap-output" aria-live="polite">
+                          {quote ? (
+                            <>
+                              ~<TokenAmount value={formatUnits(BigInt(quote.buyAmount), 6)} />
+                            </>
+                          ) : (
+                            "—"
+                          )}
+                        </output>
+                      </div>
+                      <small>
+                        {quote ? (
+                          <>
+                            Minimum <TokenAmount value={formatUnits(BigInt(quote.minBuyAmount), 6)} /> USDG · About{" "}
+                            {quote.seconds}s
+                          </>
+                        ) : quoteLoading ? (
+                          "Updating amount…"
+                        ) : (
+                          "Enter an amount to see how much you’ll receive."
+                        )}
+                      </small>
+                    </section>
+                    {token && (
+                      <details className="bq-converter-details">
+                        <summary>Conversion details</summary>
+                        <dl>
+                          <div>
+                            <dt>From</dt>
+                            <dd>{fundingChains.find(c => c.id === token.chainId)?.name}</dd>
+                          </div>
+                          <div>
+                            <dt>Token contract</dt>
+                            <dd>{token.address}</dd>
+                          </div>
+                          <div>
+                            <dt>To</dt>
+                            <dd>USDG · Robinhood Chain</dd>
+                          </div>
+                          {quote && (
+                            <div>
+                              <dt>Basqit fee ({quote.basqitFee.bps / 100}%)</dt>
+                              <dd>
+                                <TokenAmount value={formatUnits(BigInt(quote.basqitFee.amount), token.decimals)} />{" "}
+                                {token.symbol}
+                              </dd>
+                            </div>
+                          )}
+                          {quote && (
+                            <div>
+                              <dt>Route</dt>
+                              <dd>{quote.provider.replaceAll("_", " ")}</dd>
+                            </div>
+                          )}
+                        </dl>
+                        <p>This conversion sends USDG to your connected wallet. Stock purchases are a separate step.</p>
+                      </details>
                     )}
-                    {quote && token && (
-                      <>
-                        <p>
-                          <strong>
-                            ~<TokenAmount value={formatUnits(BigInt(quote.buyAmount), 6)} /> USDG
-                          </strong>{" "}
-                          on Robinhood
-                        </p>
-                        <small>
-                          Minimum <TokenAmount value={formatUnits(BigInt(quote.minBuyAmount), 6)} /> USDG ·{" "}
-                          {quote.provider} · estimated {quote.seconds}s. Output includes provider fees; ETH for gas is
-                          additional.
-                        </small>
-                        <p className="bq-fine-print">
-                          You also need ETH on Robinhood for the later stock purchase. Funding does not buy stocks
-                          automatically.
-                        </p>
-                        <button
-                          className="btn btn-primary w-full"
-                          disabled={blocked}
-                          onClick={() =>
-                            void run("Confirm funding in your wallet…", async () => {
-                              if (chainId !== quote.chainId) {
-                                await transfer.switchSource(quote.chainId);
-                                return;
-                              }
-                              await transfer.approve(quote);
-                              const fresh = await getQuote();
-                              if (
-                                fresh.wallet.toLowerCase() !== quote.wallet.toLowerCase() ||
-                                fresh.token.toLowerCase() !== quote.token.toLowerCase() ||
-                                fresh.chainId !== quote.chainId ||
-                                fresh.sellAmount !== quote.sellAmount ||
-                                fresh.spender?.toLowerCase() !== quote.spender?.toLowerCase() ||
-                                BigInt(fresh.minBuyAmount) < BigInt(quote.minBuyAmount)
-                              )
-                                throw new Error("Quote changed. Review the new amount and confirm again.");
-                              const record: FundingTransfer = {
-                                wallet: address,
-                                chainId: fresh.chainId,
-                                quoteId: fresh.quoteId,
-                                createdAt: Date.now(),
-                              };
-                              await transfer.send(
-                                fresh,
-                                () => {
-                                  if (localStorage.getItem(storageKey))
-                                    throw new Error("A transfer is already pending.");
-                                  save(record);
-                                },
-                                hash => save({ ...record, hash }),
-                              );
-                            })
+                    <p className="bq-converter-note">
+                      {quote ? "Basqit and provider fees are included in the estimate. " : ""}Network fees are paid
+                      separately in ETH. Keep ETH on Robinhood Chain for stock purchases.
+                    </p>
+                    <div className="bq-swap-errors" role="alert">
+                      {error ||
+                        (canQuote
+                          ? activeState?.error
+                          : token && amount && units > BigInt(token.balance)
+                            ? "Amount exceeds your available balance."
+                            : "")}
+                    </div>
+                    <button
+                      className="btn btn-primary w-full"
+                      disabled={
+                        blocked ||
+                        quoteLoading ||
+                        !token ||
+                        (!quote && !activeState?.error) ||
+                        !saved.isSuccess ||
+                        !!saved.error
+                      }
+                      onClick={() =>
+                        void run("Confirm in your wallet…", async () => {
+                          if (!quote) {
+                            setRefresh(value => value + 1);
+                            return;
                           }
-                        >
-                          {busy ||
-                            (chainId !== quote.chainId
-                              ? `Switch to ${fundingChains.find(c => c.id === quote.chainId)?.name}`
-                              : "Approve & fund USDG")}
-                        </button>
-                      </>
-                    )}
+                          if (chainId !== quote.chainId) {
+                            await transfer.switchSource(quote.chainId);
+                            return;
+                          }
+                          await transfer.approve(quote);
+                          const fresh = await getQuote();
+                          if (
+                            fresh.wallet.toLowerCase() !== quote.wallet.toLowerCase() ||
+                            fresh.token.toLowerCase() !== quote.token.toLowerCase() ||
+                            fresh.chainId !== quote.chainId ||
+                            fresh.sellAmount !== quote.sellAmount ||
+                            fresh.basqitFee.bps !== quote.basqitFee.bps ||
+                            fresh.basqitFee.recipient?.toLowerCase() !== quote.basqitFee.recipient?.toLowerCase() ||
+                            fresh.spender?.toLowerCase() !== quote.spender?.toLowerCase() ||
+                            BigInt(fresh.minBuyAmount) < BigInt(quote.minBuyAmount)
+                          )
+                            throw new Error("Quote changed. Review the new amount and confirm again.");
+                          const record: FundingTransfer = {
+                            wallet: address,
+                            chainId: fresh.chainId,
+                            quoteId: fresh.quoteId,
+                            createdAt: Date.now(),
+                          };
+                          await transfer.send(
+                            fresh,
+                            () => {
+                              if (localStorage.getItem(storageKey)) throw new Error("A transfer is already pending.");
+                              save(record);
+                            },
+                            hash => save({ ...record, hash }),
+                          );
+                        })
+                      }
+                    >
+                      {busy ||
+                        (quoteLoading
+                          ? "Finding route…"
+                          : !token
+                            ? "Choose a token to continue"
+                            : !quote
+                              ? activeState?.error
+                                ? "Try again"
+                                : "Enter an amount"
+                              : chainId !== quote.chainId
+                                ? `Switch to ${fundingChains.find(c => c.id === quote.chainId)?.name}`
+                                : "Convert to USDG")}
+                    </button>
+                    <p className="bq-converter-note bq-converter-next">
+                      {quote
+                        ? "Your wallet may ask for token approval before the transfer."
+                        : "Review the amount and fees before confirming in your wallet."}
+                    </p>
                   </>
                 )}
-                {error && <p role="alert">{error}</p>}
+                {pending && (
+                  <div className="bq-swap-errors" role="alert">
+                    {error}
+                  </div>
+                )}
               </div>
             </div>
           </dialog>,

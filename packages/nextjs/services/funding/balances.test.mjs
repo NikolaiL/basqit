@@ -1,5 +1,13 @@
-import { readFundingBalances } from "./balances.ts";
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+
+registerHooks({
+  resolve(specifier, context, next) {
+    if (specifier === "./tokenLogos") return next("./tokenLogos.ts", context);
+    return next(specifier, context);
+  },
+});
+const { readFundingBalances } = await import("./balances.ts");
 
 const originalFetch = globalThis.fetch;
 const originalNow = Date.now;
@@ -35,19 +43,8 @@ try {
   assert.equal(data[0].nextPageKey, "next");
   assert.throws(() => readFundingBalances(wallet(2), "next"), /expired/);
   assert.throws(() => readFundingBalances(wallet(1), "invented"), /expired/);
-  const first = readFundingBalances(wallet(2));
-  const second = readFundingBalances(wallet(3));
-  assert.throws(
-    () => readFundingBalances(wallet(4)),
-    error => error.status === 429,
-  );
-  await Promise.all([first, second]);
-  for (let n = 4; n <= 10; n++) await readFundingBalances(wallet(n));
-  assert.throws(
-    () => readFundingBalances(wallet(11)),
-    error => error.status === 429,
-  );
-  assert.equal(calls, 10);
+  await Promise.all(Array.from({ length: 210 }, (_, i) => readFundingBalances(wallet(i + 2))));
+  assert.equal(calls, 211, "scans have no minute, hour, daily or concurrency budget");
   now += 60000;
   fail = true;
   await assert.rejects(
@@ -55,42 +52,13 @@ try {
     error => error.message === "Wallet data is temporarily unavailable.",
   );
   await assert.rejects(readFundingBalances(wallet(11)));
-  assert.equal(calls, 11, "errors cached; no retries");
+  assert.equal(calls, 212, "errors cached; no retries");
   fail = false;
-  for (let minute = 0; minute < 5; minute++) {
-    now += 60000;
-    for (let i = 0; i < 10; i++) {
-      if (calls === 60) break;
-      await readFundingBalances(wallet(100 + minute * 10 + i));
-    }
-  }
-  assert.equal(calls, 60);
-  now += 60000;
-  assert.throws(
-    () => readFundingBalances(wallet(500)),
-    error => error.status === 429,
-  );
-  assert.equal(calls, 60, "hour budget cannot be bypassed with different wallets");
-  let id = 1000;
-  while (calls < 200) {
-    now += 3600000;
-    for (let minute = 0; minute < 6 && calls < 200; minute++) {
-      now += 60000;
-      for (let request = 0; request < 10 && calls < 200; request++) await readFundingBalances(wallet(id++));
-    }
-  }
-  now += 3600000;
-  assert.throws(
-    () => readFundingBalances(wallet(id)),
-    error => error.status === 429,
-  );
-  assert.equal(calls, 200, "daily upstream cap enforced");
-  now += 86400000;
   await readFundingBalances(wallet(1));
   const beforePage = calls;
   await Promise.all([readFundingBalances(wallet(1), "next"), readFundingBalances(wallet(1), "next")]);
-  assert.equal(calls, beforePage + 1, "next page deduplicates and consumes budget");
-  console.log("Wallet scan guards, deduplication, bounds, budgets and secret-safe failures passed");
+  assert.equal(calls, beforePage + 1, "next page deduplicates");
+  console.log("Wallet scan guards, deduplication, unlimited scanning and secret-safe failures passed");
 } finally {
   globalThis.fetch = originalFetch;
   Date.now = originalNow;

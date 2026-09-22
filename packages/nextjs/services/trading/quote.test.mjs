@@ -107,3 +107,10 @@ const liveFeeShape = {
   fees: { integratorFee: { amount: "2675", token }, zeroExFee: { amount: "4012", token } },
 };
 assert.equal(validateQuote(liveFeeShape, USDG, token, "1000000", feeConfig).providerFee.amount, "4012");
+
+assert.equal(balancePercentage(1000000000856277211610700n, 18, 50, 8), "500000.00042813");
+assert.equal(balancePercentage(1234567n, 6, 50, 8), "0.617283");
+assert.equal(balancePercentage(1234567890123456789n, 18, 100, 8), "1.23456789");
+assert.equal(balancePercentage(9999999999n, 18, 100, 8), "0");
+assert.equal(balancePercentage(123n, 2, 50, 8), "0.61");
+assert.throws(() => balancePercentage(1n, 18, 50, -1));

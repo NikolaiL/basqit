@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useWalletSession } from "~~/components/WalletAuthentication";
 import type { ActionsResponse, Portfolio } from "~~/services/portfolio/types";
 
 async function load<T>(url: string, signal: AbortSignal): Promise<T> {
@@ -9,13 +10,18 @@ async function load<T>(url: string, signal: AbortSignal): Promise<T> {
 }
 
 export function useStockPortfolio(address?: string) {
-  return useQuery({
-    queryKey: ["stock-portfolio", 4663, address],
-    queryFn: ({ signal }) => load<Portfolio>(`/api/stocks/portfolio?address=${address}`, signal),
-    enabled: !!address,
+  const session = useWalletSession();
+  const query = useQuery({
+    queryKey: ["stock-portfolio", 4663, address, session.data?.address],
+    queryFn: ({ signal }) => {
+      if (!session.authenticated) throw new Error("Sign in to view stock portfolios.");
+      return load<Portfolio>(`/api/stocks/portfolio?address=${address}`, signal);
+    },
+    enabled: session.authenticated && !!address,
     staleTime: 60000,
     retry: false,
   });
+  return { ...query, data: session.authenticated ? query.data : undefined };
 }
 
 export function useStockActions() {

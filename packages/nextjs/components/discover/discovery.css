@@ -412,27 +412,9 @@
   color: var(--bq-muted);
   margin: 4px 0 12px;
 }
-.bq-batch-buy .bq-batch-amount {
-  padding: 10px 14px;
-}
-.bq-batch-buy .bq-batch-amount > span {
-  font-size: 13px;
-}
 .bq-batch-buy > small {
   font-size: 11px;
   color: var(--bq-muted);
-}
-.bq-batch-buy .bq-funding {
-  border: 0;
-  margin: 4px 0;
-}
-.bq-batch-buy .bq-funding > button {
-  min-height: 36px;
-  font-size: 12px;
-}
-.bq-batch-buy .bq-swap-presets .btn {
-  min-height: 36px;
-  font-size: 12px;
 }
 .bq-batch-buy > details {
   margin: 8px 0 12px;

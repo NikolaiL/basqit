@@ -20,7 +20,7 @@ export const RainbowKitCustomConnectButton = () => {
 
   return (
     <ConnectButton.Custom>
-      {({ account, chain, openConnectModal, mounted }) => {
+      {({ account, chain, openConnectModal, mounted, authenticationStatus }) => {
         const connected = mounted && account && chain;
         const blockExplorerAddressLink = account
           ? getBlockExplorerAddressLink(targetNetwork, account.address)
@@ -35,10 +35,15 @@ export const RainbowKitCustomConnectButton = () => {
               </div>
             )}
             {(() => {
-              if (!connected) {
+              if (!connected || authenticationStatus === "unauthenticated" || authenticationStatus === "loading") {
                 return (
-                  <button className="btn btn-primary btn-sm" onClick={openConnectModal} type="button">
-                    Connect Wallet
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={openConnectModal}
+                    type="button"
+                    disabled={!mounted || authenticationStatus === "loading"}
+                  >
+                    {connected ? "Sign in" : "Connect Wallet"}
                   </button>
                 );
               }

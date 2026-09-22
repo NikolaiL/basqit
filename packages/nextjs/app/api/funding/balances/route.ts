@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { ScanError, readFundingBalances } from "~~/services/funding/balances";
 
 export const runtime = "nodejs";
@@ -8,10 +9,10 @@ export async function GET(request: NextRequest) {
       status,
       headers: {
         "Cache-Control": "no-store",
-        ...(status === 429 ? { "Retry-After": "3600" } : {}),
       },
     });
-  // Secondary browser protection only; the global upstream budget does not trust IP/Origin headers.
+  const session = getSession(request.cookies.get(SESSION_COOKIE)?.value);
+  if (!session) return reply({ error: "Sign in with your wallet to load balances." }, 401);
   if (request.headers.get("sec-fetch-site") === "cross-site")
     return reply({ error: "Cross-site requests are not allowed." }, 403);
   const params = request.nextUrl.searchParams;
@@ -21,6 +22,8 @@ export async function GET(request: NextRequest) {
     params.getAll("pageKey").length > 1
   )
     return reply({ error: "Supply one wallet address only." }, 400);
+  if (params.get("address")?.toLowerCase() !== session.address)
+    return reply({ error: "You can only load your signed-in wallet." }, 403);
   try {
     return reply(await readFundingBalances(params.get("address") ?? "", params.get("pageKey") ?? ""));
   } catch (error) {
