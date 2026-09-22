@@ -10,6 +10,7 @@ const hash = `0x${"1".repeat(64)}`;
 let sendError, receiptError;
 const exports = {};
 const dependencies = {
+  "~~/services/analytics/events": { trackSwap: (_legs, execute) => execute(() => {}) },
   viem: {
     BaseError,
     http: () => {},
@@ -55,6 +56,7 @@ const quote = {
   token: native,
   expiresAt: Date.now() + 60000,
   transaction: { to: wallet, data: "0x", value: "1" },
+  basqitFee: { bps: 15 },
 };
 for (const [name, sending, receipt, expected] of [
   ["raw rejection returns to converter", { code: 4001 }, null, ["saved", "rejected"]],

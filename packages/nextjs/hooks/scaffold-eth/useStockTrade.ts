@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { encodeFunctionData } from "viem";
 import { useWalletClient } from "wagmi";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
+import { trackSwap } from "~~/services/analytics/events";
 import { atlasClient, robinhoodChain } from "~~/services/atlas/client";
 import { NATIVE } from "~~/services/funding/shared";
-import { ALLOWANCE_HOLDER, type ExecutionQuote, ZEROX_ENABLED } from "~~/services/trading/quote";
+import type { BatchQuote } from "~~/services/trading/batch";
+import { ALLOWANCE_HOLDER, type ExecutionQuote, type TradeQuote, ZEROX_ENABLED } from "~~/services/trading/quote";
 import { V3_ROUTER } from "~~/services/trading/uniswap";
 
 export function useStockTrade() {
@@ -29,14 +31,24 @@ export function useStockTrade() {
     return wallet;
   }
 
-  async function send(quote: ExecutionQuote, to: `0x${string}`, data: `0x${string}`, swap = false) {
+  async function send(
+    quote: ExecutionQuote,
+    to: `0x${string}`,
+    data: `0x${string}`,
+    swap = false,
+    submitted?: () => void,
+  ) {
     const client = await checkWallet(quote);
     const tx = { account: quote.taker, chain: robinhoodChain, to, data, value: 0n };
     // Estimate against current state before asking the wallet to sign; no API-supplied gas overrides.
     await atlasClient.estimateGas(tx);
     await checkWallet(quote);
     if (swap && Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
-    const hash = await transact(() => client.sendTransaction(tx));
+    const hash = await transact(async () => {
+      const hash = await client.sendTransaction(tx);
+      submitted?.();
+      return hash;
+    });
     if (!hash) throw new Error("Transaction was not submitted.");
     return hash;
   }
@@ -68,26 +80,44 @@ export function useStockTrade() {
     );
   }
 
-  async function swap(quote: ExecutionQuote) {
-    await checkWallet(quote);
-    if (Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
-    const [balance, allowance] = await Promise.all([
-      atlasClient.readContract({
-        address: quote.sellToken,
-        abi: tradeTokenAbi,
-        functionName: "balanceOf",
-        args: [quote.taker],
-      }),
-      atlasClient.readContract({
-        address: quote.sellToken,
-        abi: tradeTokenAbi,
-        functionName: "allowance",
-        args: [quote.taker, quote.spender],
-      }),
-    ]);
-    if (balance < BigInt(quote.sellAmount) || allowance < BigInt(quote.sellAmount))
-      throw new Error("Balance or allowance changed. Request a new quote.");
-    return send(quote, quote.transaction.to, quote.transaction.data, true);
+  async function swap(quote: TradeQuote | BatchQuote) {
+    const legs = "legs" in quote ? quote.legs : [quote];
+    return trackSwap(
+      legs.map(leg => ({
+        swap_type: "legs" in quote ? "batch" : "single",
+        provider: leg.provider,
+        source_chain: robinhoodChain.id,
+        destination_chain: robinhoodChain.id,
+        sell_token: leg.sellToken,
+        buy_token: leg.buyToken,
+        sell_amount_raw: leg.sellAmount,
+        sell_decimals: leg.sellDecimals,
+        buy_decimals: leg.buyDecimals,
+        quoted_buy_amount_raw: leg.buyAmount,
+        fee_bps: leg.basqitFee.bps,
+      })),
+      async submitted => {
+        await checkWallet(quote);
+        if (Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
+        const [balance, allowance] = await Promise.all([
+          atlasClient.readContract({
+            address: quote.sellToken,
+            abi: tradeTokenAbi,
+            functionName: "balanceOf",
+            args: [quote.taker],
+          }),
+          atlasClient.readContract({
+            address: quote.sellToken,
+            abi: tradeTokenAbi,
+            functionName: "allowance",
+            args: [quote.taker, quote.spender],
+          }),
+        ]);
+        if (balance < BigInt(quote.sellAmount) || allowance < BigInt(quote.sellAmount))
+          throw new Error("Balance or allowance changed. Request a new quote.");
+        return send(quote, quote.transaction.to, quote.transaction.data, true, submitted);
+      },
+    );
   }
   return { approve, swap };
 }

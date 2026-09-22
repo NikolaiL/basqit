@@ -14,6 +14,7 @@ import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { useFundingTransfer } from "~~/hooks/scaffold-eth/useFundingTransfer";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
+import { trackFundingResult } from "~~/services/analytics/events";
 import { atlasClient } from "~~/services/atlas/client";
 import {
   type FundingDestination,
@@ -216,6 +217,10 @@ function WalletFunding({
     retry: false,
     refetchInterval: q => (terminalStatus(q.state.data) ? false : 10000),
   });
+  useEffect(() => {
+    if (pending?.hash && status.data?.status)
+      trackFundingResult(pending.hash, destination, pending.chainId, status.data.status);
+  }, [pending?.hash, pending?.chainId, destination, status.data?.status]);
   useEffect(() => {
     if (status.data?.status === "bridge_filled") void queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
   }, [status.data?.status, queryClient]);

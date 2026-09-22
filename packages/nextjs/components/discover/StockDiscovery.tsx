@@ -7,6 +7,7 @@ import { ShareIcon } from "@heroicons/react/24/outline";
 import { StockLogo } from "~~/components/StockLogo";
 import { BatchBuyDialog } from "~~/components/trading/BatchBuyDialog";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
+import { trackDiscovery } from "~~/services/analytics/events";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
 import { attachPileDrag } from "~~/services/discover/pileDrag";
@@ -40,13 +41,18 @@ export function StockDiscovery({
   const [trade, setTrade] = useState<TradeSelection>();
   const [buyList, setBuyList] = useState<DiscoveryAsset[]>([]);
   const [shareStatus, setShareStatus] = useState("");
+  const entryMethod = useRef(initialTheme ? "shared_link" : "typed");
+  const sharedTracked = useRef(false);
   const scene = useRef<HTMLDivElement>(null);
   const detailsDialog = useRef<HTMLDialogElement>(null);
   const query = normalizeTheme(theme);
   const matches = result?.theme === query ? result.matches : [];
   const matchSymbols = matches.map(match => match.symbol).join(",");
   useEffect(() => {
-    if (scene.current) return attachPileDrag(scene.current);
+    if (scene.current)
+      return attachPileDrag(scene.current, coin =>
+        trackDiscovery("token_drag", query ?? "", { symbol: coin.dataset.symbol }),
+      );
   }, [query, matchSymbols]);
   const source = theme === initialTheme ? similar : undefined;
   const current = assets.find(asset => asset.symbol === selected);
@@ -60,12 +66,18 @@ export function StockDiscovery({
       return;
     }
     if (query === normalizeTheme(initialTheme) && sharedSymbols.length && retry === 0) {
+      if (!sharedTracked.current) {
+        trackDiscovery("shared_open", query, { stocks: sharedSymbols.join(","), result_count: sharedSymbols.length });
+        sharedTracked.current = true;
+      }
       setLoading(false);
       return;
     }
     const controller = new AbortController();
     setLoading(true);
     const timer = setTimeout(async () => {
+      const entry = entryMethod.current;
+      trackDiscovery("search", query, { entry_method: entry, retry_count: retry });
       try {
         const response = await fetch(
           `/api/discover?theme=${encodeURIComponent(query)}${source ? `&similar=${encodeURIComponent(source)}` : ""}`,
@@ -73,9 +85,19 @@ export function StockDiscovery({
         );
         const body = await response.json();
         if (!response.ok) throw new Error(body.error ?? "Could not match this idea.");
-        if (!controller.signal.aborted) setResult({ theme: query, matches: body.matches });
+        if (!controller.signal.aborted) {
+          setResult({ theme: query, matches: body.matches });
+          trackDiscovery("results", query, {
+            entry_method: entry,
+            result_count: body.matches.length,
+            stocks: body.matches.map((match: DiscoveryMatch) => match.symbol).join(","),
+          });
+        }
       } catch (failure) {
-        if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : "Try another idea.");
+        if (!controller.signal.aborted) {
+          setError(failure instanceof Error ? failure.message : "Try another idea.");
+          trackDiscovery("error", query, { entry_method: entry });
+        }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -93,6 +115,7 @@ export function StockDiscovery({
 
   async function share(target: "x" | "system") {
     if (!query) return;
+    trackDiscovery("share", query, { method: target, stocks: matchSymbols });
     const url = new URL("/discover", window.location.origin);
     url.searchParams.set("theme", query);
     url.searchParams.set("card", "3");
@@ -134,24 +157,44 @@ export function StockDiscovery({
             placeholder="Drop an idea. Watch the stocks click."
             value={theme}
             maxLength={180}
-            onChange={event => setTheme(event.target.value)}
+            onChange={event => {
+              entryMethod.current = "typed";
+              setTheme(event.target.value);
+            }}
           />
           {theme && (
-            <button className="btn btn-ghost btn-circle" aria-label="Clear theme" onClick={() => setTheme("")}>
+            <button
+              className="btn btn-ghost btn-circle"
+              aria-label="Clear theme"
+              onClick={() => {
+                trackDiscovery("clear", theme);
+                setTheme("");
+              }}
+            >
               ×
             </button>
           )}
         </div>
         <div className="bq-discover-prompts">
           {ideas.map(idea => (
-            <button key={idea} onClick={() => setTheme(idea)}>
+            <button
+              key={idea}
+              onClick={() => {
+                entryMethod.current = "preset";
+                trackDiscovery("preset", idea);
+                setTheme(idea);
+              }}
+            >
               {idea}
             </button>
           ))}
           <button
             onClick={() => {
               const options = surpriseIdeas.filter(idea => idea !== theme);
-              setTheme(options[Math.floor(Math.random() * options.length)]);
+              const idea = options[Math.floor(Math.random() * options.length)];
+              entryMethod.current = "surprise";
+              trackDiscovery("surprise", idea);
+              setTheme(idea);
             }}
           >
             ✦ Surprise me
@@ -204,11 +247,15 @@ export function StockDiscovery({
             return (
               <button
                 key={asset.symbol}
+                data-symbol={asset.symbol}
                 className={`bq-discover-coin ${matched ? "is-match" : ""}`}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}
-                onClick={() => setSelected(asset.symbol)}
+                onClick={() => {
+                  trackDiscovery("token_open", query ?? "", { symbol: asset.symbol, matched });
+                  setSelected(asset.symbol);
+                }}
               >
                 <StockLogo symbol={asset.symbol} size={46} />
                 <span className="bq-discover-ticker">{asset.symbol}</span>
@@ -222,6 +269,11 @@ export function StockDiscovery({
                   className="btn btn-primary"
                   disabled={loading || !!error || !matches.length}
                   onClick={() => {
+                    trackDiscovery("buy", query ?? "", {
+                      mode: "batch",
+                      stocks: matchSymbols,
+                      token_count: matches.length,
+                    });
                     setBuyList(matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol)));
                   }}
                 >
@@ -280,6 +332,7 @@ export function StockDiscovery({
                 disabled={!current.active}
                 onClick={() => {
                   setSelected(undefined);
+                  trackDiscovery("buy", query ?? "", { mode: "single", symbol: current.symbol });
                   setTrade({ asset: current, side: "buy" });
                 }}
               >

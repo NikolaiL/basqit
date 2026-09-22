@@ -1,5 +1,5 @@
 /** Drag the whole coin; independent translation preserves its border and rotation. */
-export function attachPileDrag(scene: HTMLElement) {
+export function attachPileDrag(scene: HTMLElement, onDrop?: (coin: HTMLElement) => void) {
   let drag:
     | {
         coin: HTMLElement;
@@ -68,7 +68,10 @@ export function attachPileDrag(scene: HTMLElement) {
     drag = undefined;
     if (coin.hasPointerCapture(pointerId)) coin.releasePointerCapture(pointerId);
     coin.classList.remove("is-dragging");
-    if (moved) suppressedClick = coin;
+    if (moved) {
+      suppressedClick = coin;
+      onDrop?.(coin);
+    }
     coin.style.translate = `${x}px 0px`;
     if (y >= 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     coin.classList.add("is-falling");
