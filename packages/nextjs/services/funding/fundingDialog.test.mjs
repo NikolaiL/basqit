@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 
-let pending, busy, stateIndex, portals;
+let pending, busy, stateIndex, portals, effects;
 const exports = {};
 const jsx = (type, props) => ({ type, props });
 const code = ts.transpileModule(
@@ -16,7 +16,7 @@ const dependencies = {
       const index = stateIndex++;
       return [index === 2 ? true : index === 6 ? busy : initial, () => {}];
     },
-    useEffect: () => {},
+    useEffect: effect => effects.push(effect),
     useRef: () => ({ current: null }),
     useId: () => "funding",
   },
@@ -65,8 +65,19 @@ for (const destination of ["ETH", "USDG"]) {
     busy = working;
     stateIndex = 0;
     portals = 0;
-    const panel = exports.FundingPanel({ destination });
+    effects = [];
+    const visibility = [];
+    const panel = exports.FundingPanel({ destination, onOpenChange: open => visibility.push(open) });
     panel.type(panel.props);
+    const cleanup = effects[0]();
+    effects[1]();
+    assert.equal(
+      visibility.at(-1),
+      true,
+      "parent remains suspended, including while wallet confirmation hides funding",
+    );
+    cleanup();
+    assert.equal(visibility.at(-1), false, "restore parent on funding unmount");
     assert.equal(portals, expected, `${destination}: ${name}`);
     assert.equal(pending, record, "visibility must not discard the saved transfer");
   }

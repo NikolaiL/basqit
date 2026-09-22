@@ -110,7 +110,6 @@ export function FundingTokenPicker({
           </div>
         )}
       </div>
-      <p className="bq-token-picker-note">Tokens from your connected wallet on supported networks.</p>
     </div>
   );
 }

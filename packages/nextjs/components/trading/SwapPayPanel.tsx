@@ -19,6 +19,7 @@ type SwapPayPanelProps = {
   onAmountChange: (value: string) => void;
   onPercentageChange: (value: number) => void;
   onBusy: (value: string) => void;
+  onFundingOpenChange?: (open: boolean) => void;
   onFunded?: (value: string) => void;
   onReverse?: () => void;
 };
@@ -38,6 +39,7 @@ export function SwapPayPanel({
   onPercentageChange,
   onBusy,
   onFunded,
+  onFundingOpenChange,
   onReverse,
 }: SwapPayPanelProps) {
   const { openConnectModal } = useWalletConnectModal();
@@ -68,7 +70,13 @@ export function SwapPayPanel({
               )}
             </span>
             {onFunded && (
-              <FundingPanel triggerLabel="Get More" disabled={disabled} onBusy={onBusy} onFunded={onFunded} />
+              <FundingPanel
+                triggerLabel="Get More"
+                disabled={disabled}
+                onBusy={onBusy}
+                onFunded={onFunded}
+                onOpenChange={onFundingOpenChange}
+              />
             )}
           </div>
         </div>
@@ -98,7 +106,7 @@ export function SwapPayPanel({
           onChange={event => onPercentageChange(Number(event.target.value))}
         />
         <div className="bq-swap-presets" role="group" aria-label="Balance percentage presets">
-          {[0, 25, 50, 75, 100].map(value => (
+          {[25, 50, 75, 100].map(value => (
             <button
               key={value}
               type="button"

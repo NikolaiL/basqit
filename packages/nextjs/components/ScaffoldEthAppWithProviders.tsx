@@ -52,7 +52,7 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
             theme={
               mounted
                 ? isDarkMode
-                  ? darkTheme()
+                  ? darkTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
                   : lightTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
                 : lightTheme({ accentColor: "#5A4FE0", accentColorForeground: "white", borderRadius: "medium" })
             }

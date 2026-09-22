@@ -33,9 +33,9 @@
   --color-warning: #ffcf72;
   --color-error: #ff8863;
 
-  --radius-field: 0.65rem;
-  --radius-box: 1rem;
-  --radius-selector: 0.5rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.5rem;
+  --radius-selector: 0.75rem;
 
   --tt-tailw: 6px;
 }
@@ -60,9 +60,9 @@
   --color-warning: #ffcf72;
   --color-error: #ff8863;
 
-  --radius-field: 0.65rem;
-  --radius-box: 1rem;
-  --radius-selector: 0.5rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.5rem;
+  --radius-selector: 0.75rem;
 
   --tt-tailw: 6px;
   --tt-bg: var(--color-primary);
@@ -1607,6 +1607,18 @@ summary {
   background: var(--bq-line);
 }
 .bq-swap-direction.btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 44px;
+  max-height: 44px;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
   display: flex;
   margin: 0;
   flex-shrink: 0;
@@ -2120,4 +2132,440 @@ summary {
   border-color: var(--bq-brand);
   background: var(--bq-lilac);
   color: var(--bq-brand);
+}
+
+/* Mobile-first information hierarchy. */
+.bq-asset-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 80px;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--bq-line);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.bq-asset-list-row:hover {
+  background: var(--bq-mist);
+}
+.bq-asset-list-row:focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: -2px;
+}
+.bq-list-identity {
+  flex: 1;
+  min-width: 0;
+}
+.bq-list-identity strong,
+.bq-list-value strong {
+  display: block;
+  font-size: 16px;
+}
+.bq-list-identity small,
+.bq-list-value small {
+  display: block;
+  margin-top: 4px;
+  color: var(--bq-muted);
+  font-size: 12px;
+}
+.bq-list-identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bq-list-value {
+  text-align: right;
+  flex-shrink: 0;
+}
+.bq-catalog-grid {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--bq-line);
+  border-radius: 16px;
+}
+.bq-asset-detail {
+  width: min(100% - 24px, 520px);
+  max-height: 90dvh;
+  padding: 20px;
+  border-radius: 24px;
+}
+.bq-asset-detail .bq-trade-heading {
+  gap: 12px;
+}
+.bq-asset-detail .bq-trade-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.bq-asset-detail .bq-trade-heading h2 {
+  font-size: 24px;
+}
+.bq-asset-detail > p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.bq-asset-detail .bq-trade-buttons {
+  margin: 16px 0;
+}
+.bq-asset-detail .bq-asset-links {
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.bq-asset-detail .bq-asset-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.bq-portfolio-dashboard .bq-overview {
+  display: block;
+  margin-bottom: 16px;
+}
+.bq-portfolio-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  padding: 12px 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+}
+.bq-portfolio-funds {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+}
+.bq-watch-disclosure {
+  margin: 16px 0;
+}
+.bq-watch-disclosure > summary,
+.bq-event-filters > summary,
+.bq-explainer > summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.bq-event-filters {
+  padding: 0 20px 12px;
+}
+.bq-event-filters .select {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.bq-events-layout {
+  display: block;
+}
+.bq-explainer {
+  margin-top: 16px;
+}
+.bq-explainer:not([open]) {
+  padding-block: 0;
+}
+.bq-page-heading {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+}
+.bq-page-heading h1 {
+  margin-bottom: 6px;
+}
+.bq-heading-actions {
+  flex-shrink: 0;
+}
+.bq-wallet-bar[hidden] {
+  display: none;
+}
+.bq-trade-dialog {
+  max-height: 90dvh;
+}
+.bq-back-to-purchase {
+  justify-content: flex-start;
+  padding-left: 0;
+  min-height: 44px;
+}
+.bq-swap-panel {
+  padding: 10px 0;
+}
+.bq-swap-details summary,
+.bq-converter-details summary {
+  min-height: 44px;
+  padding-block: 10px;
+}
+.bq-token-picker-panel {
+  max-height: min(400px, 50dvh);
+}
+.bq-token-results {
+  padding: 12px 8px;
+}
+.bq-token-row {
+  min-height: 64px;
+}
+.bq-token-networks .btn {
+  min-height: 44px;
+  height: 44px;
+}
+.bq-header-wallet .dropdown-content {
+  width: min(320px, calc(100vw - 24px));
+  max-height: 80dvh;
+  overflow-y: auto;
+  z-index: 30;
+}
+.bq-header-wallet .dropdown-toggle {
+  min-height: 44px;
+}
+.bq-header-wallet .dropdown-content > li {
+  flex-shrink: 0;
+}
+@media (max-width: 650px) {
+  .bq-dashboard {
+    padding: 18px 14px;
+  }
+  .bq-page-heading {
+    margin-bottom: 16px;
+  }
+  .bq-page-heading h1 {
+    font-size: 28px;
+  }
+  .bq-wallet-bar {
+    margin-bottom: 12px;
+    padding: 0;
+    gap: 4px;
+  }
+  .bq-wallet-label {
+    flex-wrap: wrap;
+  }
+  .bq-wallet-label > svg,
+  .bq-wallet-label > span:first-of-type {
+    display: none;
+  }
+  .bq-value-card {
+    padding: 16px;
+  }
+  .bq-value-card .bq-total {
+    font-size: 36px;
+  }
+  .bq-portfolio-funds {
+    width: 100%;
+    margin-left: 0;
+  }
+  .bq-section-heading {
+    padding: 14px;
+    gap: 10px;
+  }
+  .bq-section-heading p {
+    display: none;
+  }
+  .bq-asset-list-row {
+    padding-inline: 12px;
+    gap: 10px;
+  }
+  .bq-trade-dialog {
+    padding: 16px;
+  }
+  .bq-trade-heading {
+    margin-bottom: 12px;
+  }
+  .bq-swap-panel {
+    padding: 6px 0;
+  }
+  .bq-swap-amount.input {
+    font-size: 26px;
+  }
+  .bq-converter .bq-swap-divider {
+    margin-top: 8px;
+  }
+  .bq-converter-receive {
+    padding-top: 8px;
+  }
+  .bq-nav {
+    gap: 12px;
+    justify-content: space-between;
+    height: auto;
+  }
+  .bq-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .bq-converter-note {
+    font-size: 12px;
+  }
+}
+.bq-stock-trade {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bq-stock-trade > * {
+  flex-shrink: 0;
+}
+.bq-stock-trade > .bq-trade-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.bq-stock-trade .bq-trade-footer {
+  margin-top: 8px;
+}
+.bq-stock-trade .bq-swap-approval-note {
+  height: 28px;
+}
+.bq-stock-trade .bq-swap-errors {
+  height: 40px;
+}
+.bq-heading-actions[hidden] {
+  display: none;
+}
+.bq-converter {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bq-converter > * {
+  flex-shrink: 0;
+}
+.bq-converter > .bq-funding-content {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  flex: 0 1 auto;
+  overscroll-behavior: contain;
+}
+.bq-funding-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bq-paper);
+  padding-top: 8px;
+  z-index: 2;
+}
+.bq-funding-footer .bq-converter-next {
+  margin-top: 8px;
+  height: 3em;
+}
+.bq-primary-funding .bq-funding {
+  border: 0;
+  margin: 0;
+}
+.bq-primary-funding .bq-funding > button {
+  background: var(--bq-brand);
+  color: white;
+  min-height: 48px;
+  width: 100%;
+}
+
+.bq-asset-action-row {
+  cursor: default;
+}
+.bq-asset-row-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bq-asset-row-details:focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.bq-asset-owned,
+.bq-asset-owned:hover {
+  background: var(--bq-lilac);
+  box-shadow: inset 3px 0 var(--bq-brand);
+}
+.bq-owned-balance {
+  display: block;
+  margin-top: 6px;
+  color: var(--bq-brand);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.bq-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.bq-row-actions .btn {
+  min-height: 32px;
+  height: 32px;
+  padding-block: 0;
+  border-radius: 10px;
+  padding-inline: 16px;
+}
+.bq-holdings-link-loading {
+  width: 170px;
+  height: 24px;
+  margin-top: 8px;
+}
+.bq-holdings-list .bq-holding-skeleton {
+  height: 96px;
+  margin: 8px 14px;
+  border-radius: 12px;
+}
+@media (max-width: 640px) {
+  .bq-asset-row-details {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+  .bq-asset-row-details > :first-child {
+    width: 32px;
+    height: 32px;
+  }
+  .bq-asset-row-details .bq-list-value {
+    grid-column: 2;
+    text-align: left;
+  }
+  .bq-asset-row-details .bq-list-value strong {
+    display: inline;
+    font-size: 13px;
+  }
+  .bq-asset-row-details .bq-list-value small {
+    display: inline;
+    margin-left: 4px;
+    font-size: 10px;
+  }
+  .bq-row-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 0;
+  }
+  .bq-row-actions .btn {
+    padding-inline: 12px;
+    min-width: 58px;
+    font-size: 13px;
+  }
+}
+
+/* Keep Scaffold-ETH wallet surfaces consistent with Basqit. */
+.bq-wallet-avatar {
+  border-radius: 50%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.bq-wallet-dropdown .dropdown-toggle {
+  border-radius: 14px;
+  padding: 6px 10px;
+}
+.bq-wallet-dropdown .dropdown-content {
+  border-radius: 20px;
+  border: 1px solid var(--bq-line);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+}
+.bq-wallet-dropdown .menu > li > :not(ul) {
+  border-radius: 12px;
 }

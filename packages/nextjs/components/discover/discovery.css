@@ -524,3 +524,109 @@
     height: 40px;
   }
 }
+
+.bq-batch-buy {
+  padding: 18px;
+}
+.bq-batch-buy .bq-swap-panel {
+  padding: 4px 0;
+}
+.bq-batch-buy .bq-swap-amount-row,
+.bq-batch-buy .bq-swap-amount.input {
+  height: 44px;
+  min-height: 44px;
+}
+.bq-batch-buy > .bq-batch-scroll {
+  min-height: 96px;
+}
+.bq-batch-buy > .bq-batch-total {
+  font-size: 13px;
+  margin: 6px 0 0;
+  color: var(--bq-ink);
+}
+.bq-discover-heading {
+  margin-bottom: 12px;
+}
+.bq-discover-prompts button {
+  min-height: 44px;
+  font-size: 13px;
+}
+.bq-discover-hint {
+  display: none;
+}
+.bq-discover-note {
+  margin: 16px auto;
+}
+@media (max-width: 650px) {
+  .bq-discover {
+    padding: 16px 12px;
+  }
+  .bq-discover-heading .bq-eyebrow {
+    display: none;
+  }
+  .bq-discover-heading h1 {
+    font-size: 30px;
+    margin: 0 0 16px;
+  }
+  .bq-discover-prompts {
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .bq-discover-prompts button {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .bq-discover-status {
+    height: 42px;
+    padding: 4px;
+  }
+  .bq-discover-bottom {
+    display: grid;
+    grid-template-columns: minmax(0, auto) 44px;
+    justify-content: center;
+    gap: 6px;
+  }
+  .bq-discover-bottom .btn {
+    font-size: 13px;
+    min-height: 44px;
+    height: auto;
+    padding: 8px 12px;
+  }
+  .bq-discover-bottom .btn-primary {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+  .bq-discover-scene {
+    height: 390px;
+  }
+  .bq-discover-coin:not(.is-match) {
+    top: calc(var(--mobile-pile-y) + 40px);
+  }
+  .bq-batch-buy {
+    padding: 14px;
+  }
+}
+@media (max-height: 600px) {
+  .bq-batch-buy {
+    overflow-y: auto;
+  }
+  .bq-batch-buy > .bq-batch-scroll {
+    flex-shrink: 0;
+    max-height: 35dvh;
+  }
+}
+
+/* The supporting layer rests on the floor at every viewport size. */
+.bq-discover-coin.is-grounded:not(.is-match) {
+  top: auto;
+  bottom: 0;
+  transform: translateX(-50%) rotate(var(--tilt));
+}
+
+@media (max-width: 650px) {
+  .bq-discover-coin.is-grounded:not(.is-mobile-grounded):not(.is-match) {
+    top: calc(var(--mobile-pile-y) + 40px);
+    bottom: auto;
+    transform: translate(-50%, -50%) rotate(var(--tilt));
+  }
+}

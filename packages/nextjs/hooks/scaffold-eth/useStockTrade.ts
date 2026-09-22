@@ -41,7 +41,9 @@ export function useStockTrade() {
     const client = await checkWallet(quote);
     const tx = { account: quote.taker, chain: robinhoodChain, to, data, value: 0n };
     // Estimate against current state before asking the wallet to sign; no API-supplied gas overrides.
-    await atlasClient.estimateGas(tx);
+    const required = await estimateNetworkFee(tx);
+    if ((await atlasClient.getBalance({ address: quote.taker })) < required)
+      throw new Error("Not enough ETH on Robinhood Chain for network fees. Add ETH and try again.");
     await checkWallet(quote);
     if (swap && Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
     const hash = await transact(async () => {
@@ -138,4 +140,59 @@ export function useTradeBalance(token: `0x${string}`, owner?: `0x${string}`) {
       return { balance, decimals };
     },
   });
+}
+
+async function estimateNetworkFee(tx: {
+  account: `0x${string}`;
+  to: `0x${string}`;
+  data: `0x${string}`;
+  value: bigint;
+}) {
+  const [gas, fees] = await Promise.all([atlasClient.estimateGas(tx), atlasClient.estimateFeesPerGas()]);
+  return (gas * fees.maxFeePerGas * 120n + 99n) / 100n;
+}
+
+// Estimate the next wallet action, including approval/reset when necessary.
+export function useTradeGas(quote?: ExecutionQuote) {
+  const balance = useTradeBalance(NATIVE, quote?.taker);
+  const query = useQuery({
+    queryKey: [
+      "trade-gas",
+      quote?.taker,
+      quote?.sellToken,
+      quote?.sellAmount,
+      quote?.transaction.data,
+      quote?.expiresAt,
+    ],
+    enabled: !!quote,
+    staleTime: 15000,
+    retry: false,
+    queryFn: async () => {
+      if (!quote) throw new Error("Quote unavailable");
+      const allowance = await atlasClient.readContract({
+        address: quote.sellToken,
+        abi: tradeTokenAbi,
+        functionName: "allowance",
+        args: [quote.taker, quote.spender],
+      });
+      const approval = allowance < BigInt(quote.sellAmount);
+      const tx = approval
+        ? {
+            to: quote.sellToken,
+            data: encodeFunctionData({
+              abi: tradeTokenAbi,
+              functionName: "approve",
+              args: [quote.spender, allowance > 0n ? 0n : BigInt(quote.sellAmount)],
+            }),
+          }
+        : quote.transaction;
+      return estimateNetworkFee({ account: quote.taker, to: tx.to, data: tx.data, value: 0n });
+    },
+  });
+  return {
+    ...query,
+    insufficient:
+      balance.data?.balance === 0n ||
+      (balance.data !== undefined && query.data !== undefined && balance.data.balance < query.data),
+  };
 }

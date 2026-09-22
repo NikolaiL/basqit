@@ -9,20 +9,26 @@ import { NATIVE } from "~~/services/funding/shared";
 export function GasFundingNotice({
   showAction = true,
   disabled = false,
+  onOpenChange,
+  required,
 }: {
   showAction?: boolean;
   disabled?: boolean;
+  required?: bigint;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { address } = useAccount();
   const gas = useTradeBalance(NATIVE, address && isAddress(address) ? (address as `0x${string}`) : undefined);
-  if (gas.data?.balance !== 0n) return null;
+  if (!gas.data || (gas.data.balance > 0n && (required === undefined || gas.data.balance >= required))) return null;
   return (
     <div className="bq-gas-notice" role="status">
       <p>
-        You need ETH on Robinhood Chain for stock purchases. Start with around $1–2; choose your amount. Network fees
+        You need more ETH on Robinhood Chain for network fees. Start with around $1–2; choose your amount. Network fees
         vary.
       </p>
-      {showAction && <FundingPanel destination="ETH" triggerLabel="Get ETH" disabled={disabled} />}
+      {showAction && (
+        <FundingPanel destination="ETH" triggerLabel="Get ETH" disabled={disabled} onOpenChange={onOpenChange} />
+      )}
     </div>
   );
 }

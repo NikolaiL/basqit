@@ -8,15 +8,14 @@ import { useAccount } from "wagmi";
 import {
   ArrowPathIcon,
   CalendarDaysIcon,
-  DocumentTextIcon,
   InformationCircleIcon,
   MagnifyingGlassIcon,
-  Squares2X2Icon,
   WalletIcon,
 } from "@heroicons/react/24/outline";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
+import { AssetDetails, type DetailAsset } from "~~/components/atlas/AssetDetails";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { RobinhoodBalance } from "~~/components/trading/RobinhoodBalance";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
@@ -200,6 +199,7 @@ export function PortfolioDashboard({
   initialToken?: string;
 }) {
   const queryClient = useQueryClient();
+  const [selectedAsset, setSelectedAsset] = useState<DetailAsset>();
   const [trade, setTrade] = useState<TradeSelection>();
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
@@ -207,17 +207,22 @@ export function PortfolioDashboard({
   const { openConnectModal } = useWalletConnectModal();
   const [watchedAddress, setWatchedAddress] = useState<`0x${string}`>();
   const [search, setSearch] = useState("");
-  const [scope, setScope] = useState<"holdings" | "all">(eventsPage ? "all" : "holdings");
+  const [chosenScope, setScope] = useState<"holdings" | "all">();
   const [eventStatus, setEventStatus] = useState("all");
   const [eventToken, setEventToken] = useState(initialToken);
   const [eventLimit, setEventLimit] = useState(20);
   const loadMoreRef = useRef<HTMLButtonElement>(null);
   const address = watchedAddress ?? connectedAddress;
-  const walletQuery = useStockPortfolio(!eventsPage || scope === "holdings" ? address : undefined);
+  const walletQuery = useStockPortfolio(address);
+  const ownPortfolio = useStockPortfolio(connectedAddress);
+  const ownBalances = new Map(
+    ownPortfolio.data?.holdings.map(holding => [holding.address.toLowerCase(), holding.balance]),
+  );
   const actionsQuery = useStockActions();
   const portfolio = walletQuery.data;
   const actions = actionsQuery.data?.actions ?? [];
   const holdings = portfolio?.holdings ?? [];
+  const scope = chosenScope ?? (connectedAddress && (!portfolio || holdings.length > 0) ? "holdings" : "all");
   const symbols = new Set(holdings.map(h => h.symbol));
   const visibleHoldings = holdings.filter(h => `${h.symbol} ${h.name}`.toLowerCase().includes(search.toLowerCase()));
   const tokenOptions = [
@@ -249,11 +254,20 @@ export function PortfolioDashboard({
   }, [eventsPage, eventLimit, events.length, eventToken, eventStatus, scope]);
 
   return (
-    <div className="bq-dashboard">
+    <div className="bq-dashboard bq-portfolio-dashboard">
+      {selectedAsset && (
+        <AssetDetails
+          asset={selectedAsset}
+          onClose={() => setSelectedAsset(undefined)}
+          onTrade={selection => {
+            setSelectedAsset(undefined);
+            setTrade(selection);
+          }}
+        />
+      )}
       {trade && <TradeDialog selection={trade} onClose={() => setTrade(undefined)} />}
       <div className="bq-page-heading">
         <div>
-          <div className="bq-eyebrow">YOUR STOCK TOKENS, IN ONE PLACE</div>
           <h1>{eventsPage ? "Corporate events" : "Your portfolio"}</h1>
           <p>
             {eventsPage
@@ -261,7 +275,7 @@ export function PortfolioDashboard({
               : "See what you hold. Understand what’s changing."}
           </p>
         </div>
-        <div className="bq-heading-actions">
+        <div className="bq-heading-actions" hidden={!eventsPage && !authenticated}>
           <button
             type="button"
             aria-label={eventsPage ? "Refresh corporate events" : "Refresh portfolio and events"}
@@ -281,16 +295,13 @@ export function PortfolioDashboard({
 
       {(!eventsPage || scope === "holdings") && (
         <>
-          <div className="bq-wallet-bar">
+          <div className="bq-wallet-bar" hidden={!authenticated}>
             <div className="bq-wallet-label">
               <WalletIcon />
               <span>
                 {watchedAddress ? "Watching wallet" : connectedAddress ? "Connected wallet" : "No wallet connected"}
               </span>
               {address && <Address address={address} chain={robinhoodChain} />}
-              {authenticated && address && address.toLowerCase() === connectedAddress?.toLowerCase() && !eventsPage && (
-                <RobinhoodBalance address={address} />
-              )}
             </div>
             <span className="bq-network">
               <span />
@@ -307,20 +318,14 @@ export function PortfolioDashboard({
                   transaction required.
                 </p>
               </div>
-              <button className="btn btn-primary" type="button" onClick={openConnectModal}>
-                {connectedAddress ? "Sign in" : "Connect wallet"}
+              <button className="btn btn-primary" type="button" onClick={openConnectModal} disabled={!openConnectModal}>
+                {connectedAddress ? (openConnectModal ? "Sign in" : "Confirm in wallet…") : "Connect wallet"}
               </button>
+              <Link className="link" href="/atlas">
+                Explore assets →
+              </Link>
             </div>
           )}
-
-          <WalletWatchlist
-            selected={watchedAddress}
-            connected={connectedAddress}
-            onSelect={address => {
-              setWatchedAddress(address);
-              setSearch("");
-            }}
-          />
 
           {authenticated && walletQuery.isError && (
             <div role="alert" className="alert bq-error">
@@ -342,7 +347,7 @@ export function PortfolioDashboard({
           )}
         </>
       )}
-      {!eventsPage && (
+      {!eventsPage && authenticated && (
         <>
           <section className="bq-overview" aria-label="Portfolio overview">
             <div className="bq-value-card">
@@ -363,28 +368,21 @@ export function PortfolioDashboard({
                 )}
               </div>
               <p>Indicative value · not a sell quote</p>
-              <div className="bq-value-bottom">
-                <span className="bq-dot" />
-                {portfolio?.unpriced
-                  ? `${portfolio.unpriced} holding(s) without a price`
-                  : "Your assets stay in your wallet"}
-              </div>
+              {!!portfolio?.unpriced && (
+                <div className="bq-value-bottom">{portfolio.unpriced} holding(s) without a price</div>
+              )}
             </div>
-            <div className="bq-stat-card card">
-              <span className="bq-stat-icon">
-                <Squares2X2Icon />
-              </span>
-              <div className="bq-card-label">Stock Tokens held</div>
-              <strong>{loading ? "…" : hasPortfolio ? holdings.length.toString().padStart(2, "0") : "—"}</strong>
-              <p>{hasPortfolio ? "Distinct assets in this wallet" : "Connect to see your assets"}</p>
-            </div>
-            <div className="bq-stat-card card">
-              <span className="bq-stat-icon bq-stat-warm">
-                <CalendarDaysIcon />
-              </span>
-              <div className="bq-card-label">Events in progress</div>
-              <strong>{hasPortfolio && actionsQuery.data ? pending.length.toString().padStart(2, "0") : "—"}</strong>
-              <p>For your current holdings</p>
+            <div className="bq-portfolio-counts">
+              <span>{loading ? "Loading…" : `${hasPortfolio ? holdings.length : "—"} Stock Tokens`}</span>
+              <Link className="link" href="/corporate-events">
+                {hasPortfolio && actionsQuery.data ? pending.length : "—"} events in progress
+              </Link>
+              {address && !watchedAddress && (
+                <span className="bq-portfolio-funds">
+                  <RobinhoodBalance address={address} />
+                  <RobinhoodBalance address={address} asset="ETH" />
+                </span>
+              )}
             </div>
           </section>
 
@@ -392,12 +390,19 @@ export function PortfolioDashboard({
             <div className="bq-section-heading">
               <div>
                 <h2 id="holdings-title">
-                  Your holdings <span className="bq-count">{holdings.length}</span>
+                  Your holdings{" "}
+                  <span className="bq-count" role="status">
+                    {loading ? "Loading…" : hasPortfolio ? holdings.length : "—"}
+                  </span>
                 </h2>
                 <p>Token balances and their underlying share equivalents.</p>
-                <Link className="link" href="/atlas">
-                  Buy another asset →
-                </Link>
+                {loading ? (
+                  <div className="skeleton bq-holdings-link-loading" aria-label="Loading holdings" />
+                ) : (
+                  <Link className="link" href="/atlas">
+                    Buy another asset →
+                  </Link>
+                )}
               </div>
               <label className="input bq-search">
                 <MagnifyingGlassIcon />
@@ -409,170 +414,49 @@ export function PortfolioDashboard({
                 />
               </label>
             </div>
-            <div className="bq-table-scroll bq-holdings-desktop">
-              <table className="table bq-holdings-table">
-                <thead>
-                  <tr>
-                    <th>ASSET</th>
-                    <th>TOKEN BALANCE</th>
-                    <th>SHARE EQUIVALENT</th>
-                    <th>REFERENCE VALUE</th>
-                    <th>DIVIDENDS</th>
-                    <th>TRADE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading
-                    ? [0, 1, 2].map(i => (
-                        <tr key={i}>
-                          <td colSpan={6}>
-                            <div className="skeleton bq-row-skeleton" />
-                          </td>
-                        </tr>
-                      ))
-                    : visibleHoldings.map(holding => (
-                        <tr key={holding.address}>
-                          <td>
-                            <div className="bq-asset">
-                              <StockLogo symbol={holding.symbol} />
-                              <div>
-                                <strong>{holding.symbol}</strong>
-                                <span>{holding.name}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <strong>
-                              <TokenAmount value={holding.balance} />
-                            </strong>
-                            <span className="bq-cell-sub">tokens</span>
-                          </td>
-                          <td>
-                            <strong>
-                              <TokenAmount value={holding.shareEquivalent} />
-                            </strong>
-                            <span className="bq-cell-sub">
-                              {holding.multiplier ? `× ${amount(holding.multiplier, 6)}` : "Multiplier unavailable"}
-                            </span>
-                          </td>
-                          <td>
-                            <strong>{holding.valueUsd === null ? "Unavailable" : money(holding.valueUsd)}</strong>
-                            <span className="bq-cell-sub">
-                              {holding.priceAt
-                                ? `Data ${new Date(holding.priceAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                                : "No reference price"}
-                            </span>
-                          </td>
-                          <td>
-                            <Link
-                              className="link bq-dividend-link"
-                              href={`/corporate-events?token=${encodeURIComponent(holding.symbol)}`}
-                              aria-label={`View ${holding.symbol} dividend history`}
-                            >
-                              Dividend history
-                            </Link>
-                            <span className="bq-cell-sub">
-                              {!actionsQuery.data
-                                ? "Awaiting event data"
-                                : `${dividendHistory(actions, holding.symbol).length} reported`}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="bq-trade-buttons">
-                              <button
-                                className="btn btn-sm btn-primary"
-                                onClick={() => setTrade({ asset: holding, side: "buy" })}
-                              >
-                                Buy
-                              </button>
-                              <button
-                                className="btn btn-sm bq-secondary"
-                                onClick={() => setTrade({ asset: holding, side: "sell" })}
-                              >
-                                Sell
-                              </button>
-                            </div>
-                            <Link
-                              className="link bq-cell-sub"
-                              href={`/discover?similar=${encodeURIComponent(holding.symbol)}`}
-                            >
-                              Find similar stocks →
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="bq-holdings-cards">
+            <div className="bq-holdings-list" aria-busy={loading}>
               {loading
                 ? [0, 1, 2].map(i => (
                     <div key={i} className="skeleton bq-holding-skeleton" aria-label="Loading holding" />
                   ))
                 : visibleHoldings.map(holding => (
-                    <article className="bq-holding-card" key={holding.address} aria-label={`${holding.symbol} holding`}>
-                      <div className="bq-asset">
-                        <StockLogo symbol={holding.symbol} />
-                        <div>
+                    <div className="bq-asset-list-row bq-asset-action-row" key={holding.address}>
+                      <button
+                        className="bq-asset-row-details"
+                        onClick={() => setSelectedAsset(holding)}
+                        aria-label={`View ${holding.symbol} holding`}
+                      >
+                        <StockLogo symbol={holding.symbol} size={40} />
+                        <span className="bq-list-identity">
                           <strong>{holding.symbol}</strong>
-                          <span>{holding.name}</span>
-                        </div>
-                      </div>
-                      <dl className="bq-holding-metrics">
-                        <div>
-                          <dt>Token balance</dt>
-                          <dd>
-                            <TokenAmount value={holding.balance} />
-                            <span className="bq-cell-sub">tokens</span>
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Share equivalent</dt>
-                          <dd>
-                            <TokenAmount value={holding.shareEquivalent} />
-                            <span className="bq-cell-sub">
-                              {holding.multiplier ? `× ${amount(holding.multiplier, 6)}` : "Multiplier unavailable"}
-                            </span>
-                          </dd>
-                        </div>
-                        <div className="bq-holding-value">
-                          <dt>Reference value</dt>
-                          <dd>
-                            {holding.valueUsd === null ? "Unavailable" : money(holding.valueUsd)}
-                            <span className="bq-cell-sub">
-                              {holding.priceAt
-                                ? `Data ${new Date(holding.priceAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                                : "No reference price"}
-                            </span>
-                          </dd>
-                        </div>
-                      </dl>
-                      <div className="bq-holding-history">
-                        <Link
-                          className="link bq-dividend-link"
-                          href={`/corporate-events?token=${encodeURIComponent(holding.symbol)}`}
-                          aria-label={`View ${holding.symbol} dividend history`}
-                        >
-                          Dividend history
-                        </Link>
-                        <span className="bq-cell-sub">
-                          {!actionsQuery.data
-                            ? "Awaiting event data"
-                            : `${dividendHistory(actions, holding.symbol).length} reported`}
+                          <small>
+                            <TokenAmount value={holding.balance} /> tokens
+                          </small>
                         </span>
-                      </div>
-                      <div className="bq-trade-buttons">
-                        <button className="btn btn-primary" onClick={() => setTrade({ asset: holding, side: "buy" })}>
+                        <span className="bq-list-value">
+                          <strong>{holding.valueUsd === null ? "Unavailable" : money(holding.valueUsd)}</strong>
+                          <small>Reference value</small>
+                        </span>
+                      </button>
+                      <div className="bq-row-actions">
+                        <button
+                          className="btn btn-primary"
+                          aria-label={`Buy ${holding.symbol}`}
+                          onClick={() => setTrade({ asset: holding, side: "buy" })}
+                        >
                           Buy
                         </button>
-                        <button className="btn bq-secondary" onClick={() => setTrade({ asset: holding, side: "sell" })}>
-                          Sell
-                        </button>
+                        {Number(ownBalances.get(holding.address.toLowerCase()) ?? 0) > 0 && (
+                          <button
+                            className="btn btn-secondary"
+                            aria-label={`Sell ${holding.symbol}`}
+                            onClick={() => setTrade({ asset: holding, side: "sell" })}
+                          >
+                            Sell
+                          </button>
+                        )}
                       </div>
-                      <Link className="link" href={`/discover?similar=${encodeURIComponent(holding.symbol)}`}>
-                        Find similar stocks →
-                      </Link>
-                    </article>
+                    </div>
                   ))}
             </div>
             {!loading && visibleHoldings.length === 0 && (
@@ -606,20 +490,22 @@ export function PortfolioDashboard({
           </section>
         </>
       )}
+      {authenticated && (!eventsPage || scope === "holdings") && (
+        <details className="bq-watch-disclosure">
+          <summary>{watchedAddress ? "Watching another wallet · Change" : "Watch another wallet"}</summary>
+          <WalletWatchlist
+            selected={watchedAddress}
+            connected={connectedAddress}
+            onSelect={address => {
+              setWatchedAddress(address);
+              setSearch("");
+            }}
+          />
+        </details>
+      )}
       {eventsPage && (
         <section className="bq-events-layout" id="corporate-events">
           <div className="bq-section card">
-            <div className="bq-section-heading">
-              <div>
-                <h2>{eventToken ? `${eventToken} dividend history` : "Corporate events"}</h2>
-                <p>
-                  {eventToken
-                    ? "Reported dividend events, newest processing date first."
-                    : "Dividends, splits and updates to your Stock Tokens."}
-                </p>
-              </div>
-              <DocumentTextIcon className="bq-section-symbol" />
-            </div>
             <div className="bq-event-controls">
               <div className="tabs bq-tabs" role="group" aria-label="Event scope">
                 <button
@@ -647,6 +533,12 @@ export function PortfolioDashboard({
                   All Stock Tokens
                 </button>
               </div>
+            </div>
+            <details className="bq-event-filters">
+              <summary>
+                Filters{eventToken ? ` · ${eventToken}` : ""}
+                {eventStatus !== "all" ? " · Status selected" : ""}
+              </summary>
               <select
                 className="select bq-event-select"
                 aria-label="Filter event status"
@@ -660,27 +552,27 @@ export function PortfolioDashboard({
                 <option value="CORPORATE_ACTION_STATUS_IN_PROGRESS">In progress</option>
                 <option value="CORPORATE_ACTION_STATUS_COMPLETED">Processed</option>
               </select>
-            </div>
-            <div className="bq-dividend-filter">
-              <label htmlFor="dividend-token">Dividend history by token</label>
-              <select
-                id="dividend-token"
-                className="select"
-                value={eventToken}
-                onChange={e => {
-                  setEventToken(e.target.value);
-                  setEventStatus("all");
-                  setEventLimit(20);
-                }}
-              >
-                <option value="">All corporate events</option>
-                {tokenOptions.map(symbol => (
-                  <option key={symbol} value={symbol}>
-                    {symbol}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="bq-dividend-filter">
+                <label htmlFor="dividend-token">Dividend history by token</label>
+                <select
+                  id="dividend-token"
+                  className="select"
+                  value={eventToken}
+                  onChange={e => {
+                    setEventToken(e.target.value);
+                    setEventStatus("all");
+                    setEventLimit(20);
+                  }}
+                >
+                  <option value="">All corporate events</option>
+                  {tokenOptions.map(symbol => (
+                    <option key={symbol} value={symbol}>
+                      {symbol}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </details>
             {eventToken && (
               <p className="bq-history-note">
                 Available issuer records; a complete historical archive is not guaranteed. Rates are per underlying
@@ -733,7 +625,8 @@ export function PortfolioDashboard({
               </div>
             )}
           </div>
-          <aside className="bq-explainer card">
+          <details className="bq-explainer card">
+            <summary>How corporate events work</summary>
             <span className="bq-explainer-icon">
               <InformationCircleIcon />
             </span>
@@ -765,7 +658,7 @@ export function PortfolioDashboard({
             >
               Read about adjustments ↗
             </a>
-          </aside>
+          </details>
         </section>
       )}
       <div className="bq-data-note">

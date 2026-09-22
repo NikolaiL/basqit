@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { QuoteDetails } from "./QuoteDetails";
-import { CheckIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { AssetDetails, type DetailAsset } from "./AssetDetails";
+import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
+import { TokenAmount } from "~~/components/TokenAmount";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
-import { robinhoodChain } from "~~/services/atlas/client";
+import { useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
 import type { tradingSessions } from "~~/services/atlas/tradingSessions";
-import { amount, money } from "~~/services/portfolio/format";
+import { money } from "~~/services/portfolio/format";
 
 export type CatalogAsset = {
   symbol: string;
@@ -23,50 +23,12 @@ export type CatalogAsset = {
   priceAt?: string;
 };
 
-function CopyTokenAddress({ address, symbol }: { address: string; symbol: string }) {
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(address);
-      clearTimeout(timer.current);
-      setError(false);
-      setCopied(true);
-      timer.current = setTimeout(() => setCopied(false), 3000);
-    } catch {
-      setError(true);
-      setCopied(false);
-    }
-  }
-
-  return (
-    <>
-      <div className="bq-token-copy-row">
-        <code title={address} aria-label={address}>
-          {address.slice(0, 6)}…{address.slice(-4)}
-        </code>
-        <button
-          type="button"
-          className={`btn btn-ghost btn-square bq-token-copy ${copied ? "bq-token-copied" : ""}`}
-          aria-label={copied ? `${symbol} address copied` : `Copy ${symbol} token address`}
-          title={copied ? "Copied" : "Copy address"}
-          onClick={() => void copy()}
-        >
-          {copied ? <CheckIcon key="copied" aria-hidden="true" /> : <DocumentDuplicateIcon aria-hidden="true" />}
-        </button>
-      </div>
-      <span className={error ? "bq-wallet-error" : "sr-only"} role="status">
-        {error ? "Could not copy. Select and copy the address manually." : copied ? "Address copied" : ""}
-      </span>
-    </>
-  );
-}
-
 export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
+  const { address } = useAccount();
+  const portfolio = useStockPortfolio(address);
+  const balances = new Map(portfolio.data?.holdings.map(holding => [holding.address.toLowerCase(), holding]));
   const [trade, setTrade] = useState<TradeSelection>();
+  const [selected, setSelected] = useState<DetailAsset>();
   const [search, setSearch] = useState("");
   const query = search.trim().toLowerCase();
   const visible = assets.filter(asset =>
@@ -75,6 +37,16 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
   return (
     <>
       {trade && <TradeDialog selection={trade} onClose={() => setTrade(undefined)} />}
+      {selected && (
+        <AssetDetails
+          asset={selected}
+          onClose={() => setSelected(undefined)}
+          onTrade={selection => {
+            setSelected(undefined);
+            setTrade(selection);
+          }}
+        />
+      )}
       <div className="bq-catalog-toolbar">
         <label>
           <span className="sr-only">Search tokens</span>
@@ -91,110 +63,57 @@ export function AssetCatalog({ assets }: { assets: CatalogAsset[] }) {
         </span>
       </div>
       <div className="bq-catalog-grid">
-        {visible.map(asset => (
-          <article key={asset.address} className="card bq-asset-card">
-            <div className="bq-asset-heading">
-              <StockLogo symbol={asset.symbol} size={56} />
-              <div>
-                <h2>{asset.symbol}</h2>
-                <p>{asset.name}</p>
-              </div>
-              <span className="badge badge-outline">{asset.status}</span>
-            </div>
-            <div className="bq-asset-price">
-              <span>Reference price / token</span>
-              <strong>{asset.price ? money(asset.price) : "—"}</strong>
-              <QuoteDetails symbol={asset.symbol} address={asset.address} />
-              {asset.priceAt && (
-                <small>
-                  Quote generated{" "}
-                  {new Date(asset.priceAt).toLocaleString("en-GB", {
-                    timeZone: "UTC",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  UTC
-                </small>
-              )}
-            </div>
-            <div className="bq-asset-equivalent">
-              <span>1 token represents</span>
-              <strong title={asset.multiplier ?? undefined}>
-                {asset.multiplier ? amount(asset.multiplier, 9) : "Unavailable"}
-              </strong>
-              <span>underlying shares · adjusts with corporate events</span>
-            </div>
-            <dl className="bq-asset-metadata">
-              <div>
-                <dt>Token decimals</dt>
-                <dd>{asset.decimals ?? "Unavailable"}</dd>
-              </div>
-              <div>
-                <dt>ISIN</dt>
-                <dd>{asset.isin || "Not provided"}</dd>
-              </div>
-            </dl>
-            <section className="bq-asset-sessions" aria-label={`${asset.symbol} trading sessions`}>
-              <h3>Underlying trading sessions</h3>
-              <dl>
-                {asset.sessions.map(session => (
-                  <div key={session.label}>
-                    <dt>{session.label}</dt>
-                    <dd>
-                      {session.whole === "Available" && session.fractional === "Available" ? (
-                        "Whole & fractional · Available"
-                      ) : (
-                        <>
-                          {session.overall && session.overall !== "Not reported" && (
-                            <span>Session · {session.overall}</span>
-                          )}
-                          <span>Whole · {session.whole}</span>
-                          <span>Fractional · {session.fractional}</span>
-                        </>
-                      )}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <small>Exact hours aren’t provided. DEX availability is checked when you request a quote.</small>
-            </section>
-            <div className="bq-asset-address">
-              <span>Token contract</span>
-              <CopyTokenAddress address={asset.address} symbol={asset.symbol} />
-            </div>
-            <div className="bq-trade-buttons">
+        {visible.map(asset => {
+          const holding = balances.get(asset.address.toLowerCase());
+          const owned = !!holding && Number(holding.balance) > 0;
+          return (
+            <div
+              key={asset.address}
+              className={`bq-asset-list-row bq-asset-action-row${owned ? " bq-asset-owned" : ""}`}
+            >
               <button
-                className="btn btn-primary"
-                disabled={asset.status !== "Active"}
-                onClick={() => setTrade({ asset, side: "buy" })}
+                className="bq-asset-row-details"
+                onClick={() => setSelected({ ...asset, ...holding })}
+                aria-label={`View ${asset.symbol}, ${asset.name}`}
               >
-                Buy
+                <StockLogo symbol={asset.symbol} size={40} />
+                <span className="bq-list-identity">
+                  <strong>{asset.symbol}</strong>
+                  <small>{asset.name}</small>
+                  {owned && (
+                    <span className="bq-owned-balance">
+                      You own <TokenAmount value={holding.balance} /> ·{" "}
+                      {holding.valueUsd === null ? "Value unavailable" : `≈${money(holding.valueUsd)}`}
+                    </span>
+                  )}
+                </span>
+                <span className="bq-list-value">
+                  <strong>{asset.price ? money(asset.price) : "—"}</strong>
+                  <small>{asset.status === "Active" ? "Reference / token" : asset.status}</small>
+                </span>
               </button>
-              <button
-                className="btn bq-secondary"
-                disabled={asset.status !== "Active"}
-                onClick={() => setTrade({ asset, side: "sell" })}
-              >
-                Sell
-              </button>
+              <div className="bq-row-actions">
+                <button
+                  className="btn btn-primary"
+                  aria-label={`Buy ${asset.symbol}`}
+                  disabled={asset.status !== "Active"}
+                  onClick={() => setTrade({ asset, side: "buy" })}
+                >
+                  Buy
+                </button>
+                {owned && (
+                  <button
+                    className="btn btn-secondary"
+                    aria-label={`Sell ${asset.symbol}`}
+                    onClick={() => setTrade({ asset, side: "sell" })}
+                  >
+                    Sell
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="bq-asset-links">
-              <a
-                className="link"
-                href={`${robinhoodChain.blockExplorers.default.url}/token/${asset.address}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View on explorer ↗
-              </a>
-              <Link className="link" href={`/corporate-events?token=${encodeURIComponent(asset.symbol)}`}>
-                Dividend history →
-              </Link>
-            </div>
-          </article>
-        ))}
+          );
+        })}
       </div>
       {!visible.length && (
         <div className="bq-empty">

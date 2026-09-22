@@ -43,12 +43,14 @@ export function FundingPanel({
   triggerLabel = `Get ${destination}`,
   onBusy,
   onFunded,
+  onOpenChange,
 }: {
   disabled?: boolean;
   triggerLabel?: string;
   destination?: FundingDestination;
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { address, chainId } = useAccount();
   // Remount on account change: a previous wallet's quote or transfer must never become actionable.
@@ -62,6 +64,7 @@ export function FundingPanel({
       triggerLabel={triggerLabel}
       onBusy={onBusy}
       onFunded={onFunded}
+      onOpenChange={onOpenChange}
     />
   ) : null;
 }
@@ -73,6 +76,7 @@ function WalletFunding({
   triggerLabel,
   onBusy,
   onFunded,
+  onOpenChange,
 }: {
   destination: FundingDestination;
   address: `0x${string}`;
@@ -81,8 +85,10 @@ function WalletFunding({
   triggerLabel: string;
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const destinationDecimals = fundingDestinations[destination].decimals;
+  useEffect(() => () => onOpenChange?.(false), [onOpenChange]);
   const [executionQuoteLoading, setQuoteLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerContainer = useRef<HTMLDivElement>(null);
@@ -122,6 +128,9 @@ function WalletFunding({
     retry: false,
   });
   const pending = saved.data;
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
   // A saved intent protects against duplicate sends; it is not a recovery case while the wallet is responding.
   const showDialog = open && !(pending && !pending.hash && busy);
   useEffect(() => {
@@ -273,9 +282,7 @@ function WalletFunding({
             functionName: "balanceOf",
             args: [address],
           });
-    if (destination === "USDG" && onFunded && gas === 0n)
-      throw new Error("USDG has arrived. Add ETH on Robinhood Chain for the stock purchase, then continue.");
-    if (onFunded) await switchChainAsync({ chainId: 4663 });
+    if (onFunded || onOpenChange) await switchChainAsync({ chainId: 4663 });
     await queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
     onFunded?.(formatUnits(destination === "ETH" ? gas : balance, destinationDecimals));
     save(null);
@@ -326,6 +333,16 @@ function WalletFunding({
             }}
           >
             <div className="modal-box bq-trade-dialog bq-converter">
+              {onOpenChange && (
+                <button
+                  type="button"
+                  className="btn btn-ghost bq-back-to-purchase"
+                  disabled={!!busy}
+                  onClick={() => setOpen(false)}
+                >
+                  ← Back to purchase
+                </button>
+              )}
               <div className="bq-trade-heading">
                 <div>
                   <h2 id={titleId}>{pending ? `${destination} transfer` : `Get ${destination}`}</h2>
@@ -419,7 +436,7 @@ function WalletFunding({
                     {status.data?.status === "bridge_filled" && (
                       <>
                         <p>
-                          {onFunded
+                          {onFunded || onOpenChange
                             ? `${destination} delivered. Continue with your available balance and a fresh stock quote.`
                             : `${destination} delivered to your wallet on Robinhood Chain.`}
                         </p>
@@ -428,7 +445,7 @@ function WalletFunding({
                           disabled={blocked}
                           onClick={() => void run(`Updating ${destination} balance…`, finish)}
                         >
-                          {busy || (onFunded ? "Continue to stock purchase" : "Done")}
+                          {busy || (onFunded || onOpenChange ? "Continue to stock purchase" : "Done")}
                         </button>
                         <button
                           className="btn btn-ghost w-full"
@@ -559,7 +576,7 @@ function WalletFunding({
                         onChange={event => choosePercentage(Number(event.target.value))}
                       />
                       <div className="bq-swap-presets" role="group" aria-label="Conversion balance percentage presets">
-                        {[0, 25, 50, 75, 100].map(p => (
+                        {[25, 50, 75, 100].map(p => (
                           <button
                             key={p}
                             className="btn btn-ghost"
@@ -695,80 +712,82 @@ function WalletFunding({
                             ? "Amount exceeds your available balance."
                             : "")}
                     </div>
-                    <button
-                      className="btn btn-primary w-full"
-                      disabled={
-                        blocked ||
-                        spendingAllEth ||
-                        quoteLoading ||
-                        !token ||
-                        (!quote && !activeState?.error) ||
-                        !saved.isSuccess ||
-                        !!saved.error
-                      }
-                      onClick={() =>
-                        void run("Confirm in your wallet…", async () => {
-                          if (!quote) {
-                            setRefresh(value => value + 1);
-                            return;
-                          }
-                          if (chainId !== quote.chainId) {
-                            await transfer.switchSource(quote.chainId);
-                            return;
-                          }
-                          await transfer.approve(quote);
-                          const fresh = await getQuote();
-                          if (
-                            fresh.destination !== destination ||
-                            quote.destination !== destination ||
-                            fresh.wallet.toLowerCase() !== quote.wallet.toLowerCase() ||
-                            fresh.token.toLowerCase() !== quote.token.toLowerCase() ||
-                            fresh.chainId !== quote.chainId ||
-                            fresh.sellAmount !== quote.sellAmount ||
-                            fresh.basqitFee.bps !== quote.basqitFee.bps ||
-                            fresh.basqitFee.recipient?.toLowerCase() !== quote.basqitFee.recipient?.toLowerCase() ||
-                            fresh.spender?.toLowerCase() !== quote.spender?.toLowerCase() ||
-                            BigInt(fresh.minBuyAmount) < BigInt(quote.minBuyAmount)
-                          )
-                            throw new Error("Quote changed. Review the new amount and confirm again.");
-                          const record: FundingTransfer = {
-                            wallet: address,
-                            chainId: fresh.chainId,
-                            quoteId: fresh.quoteId,
-                            createdAt: Date.now(),
-                          };
-                          await transfer.send(
-                            fresh,
-                            () => {
-                              if (localStorage.getItem(storageKey)) throw new Error("A transfer is already pending.");
-                              save(record);
-                            },
-                            hash => save({ ...record, hash }),
-                            () => save(null),
-                          );
-                        })
-                      }
-                    >
-                      {busy ||
-                        (quoteLoading
-                          ? "Finding route…"
-                          : !token
-                            ? "Choose a token to continue"
-                            : !quote
-                              ? activeState?.error
-                                ? "Try again"
-                                : spendingAllEth
-                                  ? "Leave ETH for network fees"
-                                  : "Enter an amount"
-                              : chainId !== quote.chainId
-                                ? `Switch to ${fundingChains.find(c => c.id === quote.chainId)?.name}`
-                                : `Convert to ${destination}`)}
-                    </button>
-                    <p className="bq-converter-note bq-converter-next">
-                      {quote
-                        ? "Your wallet may ask for token approval before the transfer."
-                        : "Review the amount and fees before confirming in your wallet."}
-                    </p>
+                    <div className="bq-funding-footer">
+                      <button
+                        className="btn btn-primary w-full"
+                        disabled={
+                          blocked ||
+                          spendingAllEth ||
+                          quoteLoading ||
+                          !token ||
+                          (!quote && !activeState?.error) ||
+                          !saved.isSuccess ||
+                          !!saved.error
+                        }
+                        onClick={() =>
+                          void run("Confirm in your wallet…", async () => {
+                            if (!quote) {
+                              setRefresh(value => value + 1);
+                              return;
+                            }
+                            if (chainId !== quote.chainId) {
+                              await transfer.switchSource(quote.chainId);
+                              return;
+                            }
+                            await transfer.approve(quote);
+                            const fresh = await getQuote();
+                            if (
+                              fresh.destination !== destination ||
+                              quote.destination !== destination ||
+                              fresh.wallet.toLowerCase() !== quote.wallet.toLowerCase() ||
+                              fresh.token.toLowerCase() !== quote.token.toLowerCase() ||
+                              fresh.chainId !== quote.chainId ||
+                              fresh.sellAmount !== quote.sellAmount ||
+                              fresh.basqitFee.bps !== quote.basqitFee.bps ||
+                              fresh.basqitFee.recipient?.toLowerCase() !== quote.basqitFee.recipient?.toLowerCase() ||
+                              fresh.spender?.toLowerCase() !== quote.spender?.toLowerCase() ||
+                              BigInt(fresh.minBuyAmount) < BigInt(quote.minBuyAmount)
+                            )
+                              throw new Error("Quote changed. Review the new amount and confirm again.");
+                            const record: FundingTransfer = {
+                              wallet: address,
+                              chainId: fresh.chainId,
+                              quoteId: fresh.quoteId,
+                              createdAt: Date.now(),
+                            };
+                            await transfer.send(
+                              fresh,
+                              () => {
+                                if (localStorage.getItem(storageKey)) throw new Error("A transfer is already pending.");
+                                save(record);
+                              },
+                              hash => save({ ...record, hash }),
+                              () => save(null),
+                            );
+                          })
+                        }
+                      >
+                        {busy ||
+                          (quoteLoading
+                            ? "Finding route…"
+                            : !token
+                              ? "Choose a token to continue"
+                              : !quote
+                                ? activeState?.error
+                                  ? "Try again"
+                                  : spendingAllEth
+                                    ? "Leave ETH for network fees"
+                                    : "Enter an amount"
+                                : chainId !== quote.chainId
+                                  ? `Switch to ${fundingChains.find(c => c.id === quote.chainId)?.name}`
+                                  : `Convert to ${destination}`)}
+                      </button>
+                      <p className="bq-converter-note bq-converter-next">
+                        {quote
+                          ? "Your wallet may ask for token approval before the transfer."
+                          : "Review the amount and fees before confirming in your wallet."}
+                      </p>
+                    </div>
                   </>
                 )}
                 {pending && (

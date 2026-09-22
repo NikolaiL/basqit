@@ -5,12 +5,14 @@ import Link from "next/link";
 import "./discovery.css";
 import { ShareIcon } from "@heroicons/react/24/outline";
 import { StockLogo } from "~~/components/StockLogo";
+import { AssetDetails } from "~~/components/atlas/AssetDetails";
 import { BatchBuyDialog } from "~~/components/trading/BatchBuyDialog";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import { trackDiscovery } from "~~/services/analytics/events";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
 import { attachPileDrag } from "~~/services/discover/pileDrag";
+import { pilePosition } from "~~/services/discover/pileLayout";
 import { surpriseIdeas } from "~~/services/discover/prompts";
 
 const noSharedSymbols: string[] = [];
@@ -44,7 +46,6 @@ export function StockDiscovery({
   const entryMethod = useRef(initialTheme ? "shared_link" : "typed");
   const sharedTracked = useRef(false);
   const scene = useRef<HTMLDivElement>(null);
-  const detailsDialog = useRef<HTMLDialogElement>(null);
   const query = normalizeTheme(theme);
   const matches = result?.theme === query ? result.matches : [];
   const matchSymbols = matches.map(match => match.symbol).join(",");
@@ -107,11 +108,6 @@ export function StockDiscovery({
       controller.abort();
     };
   }, [query, retry, source, initialTheme, sharedSymbols]);
-
-  useEffect(() => {
-    if (current) detailsDialog.current?.showModal();
-    else detailsDialog.current?.close();
-  }, [current]);
 
   async function share(target: "x" | "system") {
     if (!query) return;
@@ -203,7 +199,7 @@ export function StockDiscovery({
         <div className="bq-discover-status" role="status" aria-live="polite">
           {error ||
             (loading
-              ? "Basqit is connecting the dots…"
+              ? "Finding stocks for your idea…"
               : query && result?.theme === query
                 ? matches.length
                   ? `${matches.length} connections. Tap a logo to take a closer look.`
@@ -221,24 +217,19 @@ export function StockDiscovery({
               <span className="bq-discover-loading-orbit">
                 <span>✳</span>
               </span>
-              <div>
-                <strong>
-                  Basqit is thinking<span className="bq-discover-loading-dots">…</span>
-                </strong>
-                <small>Finding the stocks that fit your idea</small>
-              </div>
             </div>
           )}
-          {!matches.length && <span className="bq-discover-shelf">LET CURIOSITY DO THE SORTING</span>}
+          {!matches.length && !loading && <span className="bq-discover-shelf">LET CURIOSITY DO THE SORTING</span>}
           {assets.map((asset, index) => {
+            const pile = pilePosition(asset.symbol, index, assets.length);
             const rank = matches.findIndex(match => match.symbol === asset.symbol);
             const matched = rank >= 0;
             const rowSize = Math.min(4, matches.length - Math.floor(rank / 4) * 4);
             const style = {
-              "--pile-x": `${5 + (((index * 73) % 191) / 191) * 90}%`,
-              "--pile-y": `${210 + ((index * 31) % 46)}px`,
-              "--mobile-pile-y": `${270 + ((index * 31) % 41)}px`,
-              "--tilt": `${((index * 17) % 45) - 22}deg`,
+              "--pile-x": `${pile.x}%`,
+              "--pile-y": `${pile.y}px`,
+              "--mobile-pile-y": `${pile.mobileY}px`,
+              "--tilt": `${pile.tilt}deg`,
               "--match-x": `${((rank + 0.5) * 100) / Math.max(matches.length, 1)}%`,
               "--mobile-x": `${((rank % 4) + 0.5 + (4 - rowSize) / 2) * 25}%`,
               "--mobile-y": `${Math.floor(rank / 4) * 76 + 26}px`,
@@ -248,7 +239,7 @@ export function StockDiscovery({
               <button
                 key={asset.symbol}
                 data-symbol={asset.symbol}
-                className={`bq-discover-coin ${matched ? "is-match" : ""}`}
+                className={`bq-discover-coin ${matched ? "is-match" : ""} ${pile.grounded ? "is-grounded" : ""} ${pile.mobileGrounded ? "is-mobile-grounded" : ""}`}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}
@@ -269,12 +260,15 @@ export function StockDiscovery({
                   className="btn btn-primary"
                   disabled={loading || !!error || !matches.length}
                   onClick={() => {
+                    const selected = matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol));
+                    if (!selected.length) return;
                     trackDiscovery("buy", query ?? "", {
-                      mode: "batch",
+                      mode: selected.length === 1 ? "single" : "batch",
                       stocks: matchSymbols,
-                      token_count: matches.length,
+                      token_count: selected.length,
                     });
-                    setBuyList(matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol)));
+                    if (selected.length === 1) setTrade({ asset: selected[0], side: "buy" });
+                    else setBuyList(selected);
                   }}
                 >
                   Buy these
@@ -303,60 +297,17 @@ export function StockDiscovery({
           )}
         </div>
       </section>
-      <dialog
-        ref={detailsDialog}
-        className="modal"
-        aria-labelledby="discover-stock-title"
-        onClose={() => setSelected(undefined)}
-      >
-        {current && (
-          <article className="modal-box bq-discover-detail">
-            <div className="bq-discover-detail-heading">
-              <StockLogo symbol={current.symbol} size={56} />
-              <div>
-                <h2 id="discover-stock-title">{current.symbol}</h2>
-                <p>{current.name}</p>
-              </div>
-              <button
-                className="btn btn-ghost btn-circle"
-                aria-label="Close stock details"
-                onClick={() => setSelected(undefined)}
-              >
-                ×
-              </button>
-            </div>
-            {current.description && <p>{current.description}</p>}
-            <div className="bq-discover-detail-actions">
-              <button
-                className="btn btn-primary"
-                disabled={!current.active}
-                onClick={() => {
-                  setSelected(undefined);
-                  trackDiscovery("buy", query ?? "", { mode: "single", symbol: current.symbol });
-                  setTrade({ asset: current, side: "buy" });
-                }}
-              >
-                {current.active ? `Buy ${current.symbol}` : "Currently inactive"}
-              </button>
-              <a
-                href={`https://robinhoodchain.blockscout.com/token/${current.address}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Token details ↗
-              </a>
-              {current.website && (
-                <a href={current.website} target="_blank" rel="noreferrer">
-                  Company / fund ↗
-                </a>
-              )}
-            </div>
-          </article>
-        )}
-        <form method="dialog" className="modal-backdrop">
-          <button aria-label="Close stock details">Close</button>
-        </form>
-      </dialog>
+      {current && (
+        <AssetDetails
+          asset={current}
+          onClose={() => setSelected(undefined)}
+          onTrade={selection => {
+            setSelected(undefined);
+            trackDiscovery(selection.side, query ?? "", { mode: "single", symbol: current.symbol });
+            setTrade(selection);
+          }}
+        />
+      )}
       <div className="bq-discover-results">
         <div className="bq-discover-hint">
           {matches.length

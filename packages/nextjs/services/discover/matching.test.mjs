@@ -45,3 +45,19 @@ for (const company of Object.values(context)) {
 assert.ok(context.AAPL.facts.some(fact => fact.includes("Steve Jobs")));
 assert.ok(context.TSLA.facts.some(fact => fact.includes("Martin Eberhard")));
 console.log("Company context covers the catalog with attributed facts");
+
+const { randomTokenCount, randomMatches } = await import("./matching.ts");
+for (const query of ["5 random tokens", "show me 5 random stocks", "покажи 5 случайных токенов"])
+  assert.equal(randomTokenCount(query), 5);
+assert.equal(randomTokenCount("random tokens"), 8);
+assert.equal(randomTokenCount("0 random tokens"), 0);
+assert.equal(randomTokenCount("9 random tokens"), 9);
+assert.equal(randomTokenCount("5 random AI tokens"), null);
+assert.equal(randomTokenCount("companies with random access memory"), null);
+const random = randomMatches([...symbols, symbols[0]], 5);
+assert.equal(random.length, 5);
+assert.equal(new Set(random.map(item => item.symbol)).size, 5);
+assert.ok(random.every(item => symbols.includes(item.symbol)));
+assert.equal(randomMatches(["A"], 5).length, 1);
+assert.deepEqual(randomMatches([], 5), []);
+console.log("Random discovery: requested count, distinct catalog tokens, English/Russian, thematic fallback passed.");

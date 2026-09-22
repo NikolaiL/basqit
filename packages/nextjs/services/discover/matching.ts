@@ -30,3 +30,22 @@ export function selectMatches(payload: unknown, symbols: string[]): DiscoveryMat
   }
   return matches.sort((a, b) => b.score - a.score || a.symbol.localeCompare(b.symbol)).slice(0, 8);
 }
+
+// Only plain random requests bypass thematic scoring; "random AI tokens" still goes to Jev.
+export function randomTokenCount(theme: string): number | null {
+  const match = theme
+    .toLowerCase()
+    .match(
+      /^(?:(?:please\s+)?(?:show me|give me|pick|select)\s+|(?:покажи|выбери|дай)\s+)?(?:(\d+)\s+)?(?:random\s+(?:tokens?|stocks?)|случайн(?:ые|ых|ый)\s+(?:токены|токенов|токена|токен|акции|акций))[.!?]?$/,
+    );
+  return match ? Number(match[1] ?? 8) : null;
+}
+
+export function randomMatches(symbols: string[], count: number): DiscoveryMatch[] {
+  const pool = [...new Set(symbols)];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count).map(symbol => ({ symbol, score: 0 }));
+}

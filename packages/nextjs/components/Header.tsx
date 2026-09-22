@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth/RainbowKitCustomConnectButton";
 
 export const Header = () => {
   const pathname = usePathname();
@@ -47,7 +47,7 @@ export const Header = () => {
           </Link>
         </nav>
         <div className="bq-header-wallet">
-          <ConnectButton showBalance={false} chainStatus="none" accountStatus="address" />
+          <RainbowKitCustomConnectButton />
         </div>
       </div>
     </header>

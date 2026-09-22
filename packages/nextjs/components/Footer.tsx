@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export const Footer = () => (
   <footer className="bq-footer">
     <div>
@@ -8,9 +6,6 @@ export const Footer = () => (
     </div>
     <div>
       <span className="badge bq-status">Early preview</span>
-      <Link className="link" href="/debug">
-        Developer tools
-      </Link>
     </div>
   </footer>
 );
