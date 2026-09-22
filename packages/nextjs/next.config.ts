@@ -4,7 +4,8 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["rhh.ngrok.dev", "basqit.ngrok.dev"],
   reactStrictMode: true,
   outputFileTracingIncludes: {
-    "/discover/og": ["./public/stock-logos/*.png", "./public/stock-logos/*.svg", "./public/og/stock-field-*.png"],
+    "/og/farcaster": ["./public/thumbnail.jpg"],
+    "/discover/og{,/**}": ["./public/stock-logos/*.png", "./public/stock-logos/*.svg", "./public/og/stock-field-*.png"],
   },
   devIndicators: false,
   typescript: {

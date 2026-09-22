@@ -26,7 +26,7 @@
 .bq-discover-playground {
   --pile-inset: 24px;
   padding: 18px 24px 0;
-  background: linear-gradient(155deg, #fff 25%, #f3f0ff);
+  background: linear-gradient(155deg, var(--bq-paper) 25%, var(--bq-lilac));
   border: 1px solid var(--bq-line, #e6e6ef);
   border-radius: 32px;
   box-shadow: 0 18px 70px #3d2d8010;
@@ -39,10 +39,10 @@
   margin: 0 auto;
   max-width: 760px;
   min-height: 64px;
-  border: 1px solid #e3e0ef;
+  border: 1px solid var(--bq-line);
   border-radius: 22px;
   padding: 8px 16px 8px 24px;
-  background: white;
+  background: var(--bq-paper);
   box-shadow: 0 6px 20px #40327008;
 }
 .bq-discover-input:focus-within {
@@ -75,15 +75,15 @@
   margin: 12px auto 6px;
 }
 .bq-discover-prompts button {
-  border: 1px solid #e9e6f2;
+  border: 1px solid var(--bq-line);
   border-radius: 999px;
-  background: #ffffffb0;
+  background: var(--bq-paper);
   padding: 7px 12px;
   font-size: 12px;
   cursor: pointer;
 }
 .bq-discover-prompts button:hover {
-  background: #eae6ff;
+  background: var(--bq-lilac);
 }
 .bq-discover-status {
   height: 44px;
@@ -147,12 +147,12 @@
   top: calc(100% + 2px);
   left: 50%;
   transform: translateX(-50%);
-  color: #39324c;
+  color: var(--bq-ink);
   font-size: 11px;
   font-weight: 750;
   line-height: 1.2;
   padding: 1px 5px;
-  background: #f6f3ff;
+  background: var(--bq-lilac);
   border-radius: 4px;
 }
 .is-match .bq-discover-ticker,
@@ -193,8 +193,8 @@
 .bq-discover-detail {
   padding: 24px;
   margin: auto;
-  background: white;
-  border: 1px solid #e6e6ef;
+  background: var(--bq-paper);
+  border: 1px solid var(--bq-line);
   border-radius: 24px;
   max-width: 760px;
 }
@@ -666,5 +666,152 @@
     touch-action: none;
     user-select: none;
     -webkit-touch-callout: none;
+  }
+}
+
+/* Keep transparent dark brand marks readable without changing their colors. */
+[data-theme="dark"] .bq-discover-coin:not(.is-match) {
+  filter: drop-shadow(0 0 0.5px #ffffff40);
+}
+
+/* Static fallback keeps native taps and scrolling, without a drag overlay. */
+.bq-discover-scene[data-physics-quality="static"] .bq-discover-touch-zone {
+  display: none;
+}
+
+.bq-discover-shell .bq-discover {
+  max-width: none;
+  padding: 8px 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.bq-discover-shell .bq-discover-heading {
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+.bq-discover-shell .bq-discover-heading .bq-eyebrow {
+  display: none;
+}
+.bq-discover-shell .bq-discover-heading h1 {
+  font-size: 26px;
+  letter-spacing: -1px;
+  margin: 0;
+}
+.bq-discover-shell .bq-discover-playground {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding-top: 12px;
+}
+.bq-discover-shell .bq-discover-input {
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+.bq-discover-shell .bq-discover-prompts {
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  max-width: 100%;
+  justify-content: center;
+  margin: 8px auto 0;
+}
+.bq-discover-shell .bq-discover-prompts button {
+  white-space: nowrap;
+  min-height: 40px;
+  flex-shrink: 0;
+}
+.bq-discover-shell .bq-discover-status {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 4px 28px;
+}
+.bq-discover-shell .bq-discover-scene {
+  height: auto;
+  min-height: 0;
+  flex: 1;
+}
+.bq-discover-info {
+  position: absolute;
+  right: 20px;
+  bottom: 12px;
+  z-index: 10;
+}
+.bq-discover-info > summary {
+  background: var(--bq-paper);
+}
+.bq-discover-info > .dropdown-content {
+  width: min(300px, calc(100vw - 40px));
+  padding: 16px;
+  font-size: 13px;
+}
+.bq-discover-info p {
+  margin: 0 0 12px;
+}
+.bq-discover-info a {
+  color: var(--bq-brand);
+}
+@media (max-width: 650px) {
+  .bq-discover-shell .bq-discover {
+    padding: 4px 6px 6px;
+  }
+  .bq-discover-shell .bq-discover-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .bq-discover-shell .bq-discover-input input {
+    font-size: 16px;
+  }
+  .bq-discover-shell .bq-discover-bottom {
+    display: flex;
+    padding-inline: 12px;
+    gap: 6px;
+  }
+  .bq-discover-shell .bq-discover-bottom .btn {
+    min-height: 44px;
+    height: 44px;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .bq-discover-shell .bq-discover-actions {
+    top: 150px;
+  }
+}
+@media (max-height: 480px) {
+  .bq-discover-shell .bq-discover-prompts {
+    display: none;
+  }
+  .bq-discover-shell .bq-discover-heading {
+    display: none;
+  }
+  .bq-discover-shell .bq-discover-coin.is-match {
+    left: var(--match-x);
+    top: 28px;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  .bq-discover-shell .bq-discover-actions {
+    top: 64px;
+  }
+}
+@media (pointer: coarse) {
+  .bq-discover-shell .bq-discover-playground:has(input:focus) .bq-discover-scene {
+    visibility: hidden;
+  }
+}
+
+@media (min-width: 901px) {
+  .bq-discover-shell .bq-discover {
+    max-width: 1328px;
+    padding-inline: 40px;
+  }
+  .bq-discover-info {
+    right: 48px;
   }
 }

@@ -23,7 +23,16 @@ function origin(request: NextRequest) {
   return value;
 }
 function cookieOptions(requestOrigin: string, maxAge: number) {
-  return { httpOnly: true, secure: requestOrigin.startsWith("https:"), sameSite: "strict" as const, path: "/", maxAge };
+  const secure = requestOrigin.startsWith("https:");
+  // Farcaster embeds the app cross-site; partition cookies by the embedding site.
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? ("none" as const) : ("strict" as const),
+    partitioned: secure,
+    path: "/",
+    maxAge,
+  };
 }
 export async function GET(request: NextRequest) {
   return reply(getSession(request.cookies.get(SESSION_COOKIE)?.value) ?? { address: null });
@@ -51,6 +60,11 @@ export async function POST(request: NextRequest) {
     const chainId = parseSiweMessage(body.message).chainId;
     const chain = scaffoldConfig.targetNetworks.find(c => c.id === chainId);
     if (!chain) return reply({ error: "Unsupported sign-in network." }, 400);
+    if (!request.cookies.get(CHALLENGE_COOKIE)?.value)
+      return reply(
+        { error: "Sign-in cookie is missing. Reopen the app and try again.", code: "missing_challenge_cookie" },
+        401,
+      );
     const client = createPublicClient({ chain, transport: http(undefined, { timeout: 10000, retryCount: 0 }) });
     const session = await verifyChallenge(
       request.cookies.get(CHALLENGE_COOKIE)?.value ?? "",

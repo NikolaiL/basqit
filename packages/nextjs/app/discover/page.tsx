@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { StockDiscovery } from "~~/components/discover/StockDiscovery";
 import { type DiscoveryAsset, discoveryCatalog } from "~~/services/discover/catalog";
 import { shareLayout, shareOrigin, shareSelection } from "~~/services/discover/share";
+import { miniappEmbed } from "~~/services/farcaster";
 
 type Search = { theme?: string; similar?: string; stocks?: string; layout?: string };
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
@@ -28,6 +29,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     title,
     description,
     openGraph: { title, description, type: "website", images: [image] },
+    other: { "fc:miniapp": miniappEmbed(origin, `/discover/og/farcaster?v=1&${query}`) },
     twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }

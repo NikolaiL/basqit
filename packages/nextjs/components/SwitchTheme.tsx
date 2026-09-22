@@ -2,42 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
+import { ComputerDesktopIcon, MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 
-export const SwitchTheme = ({ className }: { className?: string }) => {
-  const { setTheme, resolvedTheme } = useTheme();
+const modes = [
+  { name: "light", label: "Light", icon: SunIcon },
+  { name: "dark", label: "Dark", icon: MoonIcon },
+  { name: "system", label: "System", icon: ComputerDesktopIcon },
+];
+
+export const SwitchTheme = ({ className = "" }: { className?: string }) => {
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  const isDarkMode = resolvedTheme === "dark";
-
-  const handleToggle = () => {
-    if (isDarkMode) {
-      setTheme("light");
-      return;
-    }
-    setTheme("dark");
-  };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
+  const index = modes.findIndex(mode => mode.name === (mounted ? theme : "system"));
+  const current = modes[index] ?? modes[2];
+  const next = modes[(index + 1) % modes.length];
+  const Icon = current.icon;
 
   return (
-    <div className={`flex space-x-2 h-8 items-center justify-center text-sm ${className}`}>
-      {/* [--depth:0] removes DaisyUI's glossy top highlight so the indicator is a single flat color */}
-      <input
-        id="theme-toggle"
-        type="checkbox"
-        className="toggle bg-secondary toggle-primary hover:bg-accent transition-all [--depth:0]"
-        onChange={handleToggle}
-        checked={isDarkMode}
-      />
-      <label htmlFor="theme-toggle" className={`swap swap-rotate ${!isDarkMode ? "swap-active" : ""}`}>
-        <SunIcon className="swap-on h-5 w-5" />
-        <MoonIcon className="swap-off h-5 w-5" />
-      </label>
-    </div>
+    <button
+      type="button"
+      aria-label={`${current.label} mode. Switch to ${next.label.toLowerCase()} mode`}
+      title={`${current.label} mode`}
+      className={`btn btn-ghost btn-square bq-theme-switch ${className}`}
+      disabled={!mounted}
+      onClick={() => setTheme(next.name)}
+    >
+      <Icon className="h-6 w-6" aria-hidden="true" />
+    </button>
   );
 };

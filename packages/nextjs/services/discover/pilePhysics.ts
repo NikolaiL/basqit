@@ -1,3 +1,4 @@
+import { attachLitePile } from "./litePile";
 import silhouettes from "./logo-bodies.json";
 import Matter from "matter-js";
 
@@ -42,9 +43,18 @@ export function pileWalls(width: number, height: number, radius: number) {
   return walls;
 }
 
-export function stepPile(engine: Matter.Engine) {
+export function stepPile(engine: Matter.Engine, lite = false) {
   // Thin alpha-mask parts need substeps to avoid tunnelling through each other.
-  for (let i = 0; i < 16; i++) Engine.update(engine, 1000 / 960);
+  const bodies = Composite.allBodies(engine.world);
+  const speed = bodies.reduce(
+    (max, body) =>
+      body.isStatic || body.isSleeping
+        ? max
+        : Math.max(max, body.speed + Math.abs(body.angularSpeed) * Math.sqrt(body.area)),
+    0,
+  );
+  const steps = lite ? 4 : Math.min(16, Math.max(4, Math.ceil(speed * 4)));
+  for (let i = 0; i < steps; i++) Engine.update(engine, 1000 / (60 * steps));
 }
 
 export function spawnLogo(
@@ -134,19 +144,51 @@ export function logoBody(symbol: string, size: number) {
     scale: 1,
     returnScale: 1,
     returnAt: 0,
+    drawnTransform: "",
     origin: { ...body.position },
     imageTransform: `translate(${-left * imageSize}px, ${-top * imageSize}px) scale(${1 / extent})`,
   };
 }
 
+/** A single convex collider replaces the many alpha-mask strips on slow devices. */
+export function simplifyLogo(body: Matter.Body) {
+  const center = { ...body.position };
+  const hull = Matter.Vertices.hull(
+    body.parts
+      .slice(1)
+      .flatMap(part => part.vertices)
+      .map((vertex, index) => ({ ...vertex, index, body, isInternal: false })),
+  );
+  if (hull.length < 3) return;
+  const centroid = Matter.Vertices.centre(hull);
+  const part = Bodies.fromVertices(centroid.x, centroid.y, [hull]);
+  Body.setParts(body, [body, part], false);
+  Body.setCentre(body, center);
+}
+
+export function needsLitePile(samples: { frame: number; work: number }[]) {
+  // Require sustained slow frames AND expensive simulation, not loading or a 30 Hz screen.
+  if (samples.length < 24) return false;
+  const slow = samples.filter(sample => sample.frame > 50 && sample.work > 25);
+  return slow.length >= samples.length * 0.8;
+}
+
 /** DOM stays accessible; Matter only controls the decorative pile's placement. */
 export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement) => void) {
+  let staticCleanup: (() => void) | undefined;
   const engine = createPileEngine();
   const container = scene.closest<HTMLElement>(".bq-discover-playground");
   const coins = [...scene.querySelectorAll<HTMLElement>(".bq-discover-coin")];
   const entries = new Map<HTMLElement, ReturnType<typeof logoBody>>();
   const matchedPositions = new Map<HTMLElement, { x: number; y: number; size: number }>();
   let sampleUntil = 0;
+  let measureAfter = performance.now() + 750;
+  const samples: { frame: number; work: number }[] = [];
+  scene.dataset.physicsQuality = "full";
+  function enableLite() {
+    cleanup();
+    staticCleanup = attachLitePile(scene);
+  }
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   let width = 0,
     height = 0,
@@ -180,18 +222,36 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
   }
 
   function draw() {
-    for (const [coin, { body, origin, scale }] of entries) {
+    for (const [coin, entry] of entries) {
+      const { body, origin, scale } = entry;
+      const transform = `translate3d(${body.position.x - origin.x}px, ${body.position.y - origin.y}px, 0) rotate(${body.angle}rad) scale(${scale})`;
+      if (entry.drawnTransform === transform) continue;
+      entry.drawnTransform = transform;
       coin.dataset.physics = "active";
-      coin.style.left = `${body.position.x}px`;
-      coin.style.top = `${body.position.y}px`;
-      coin.style.transformOrigin = `${origin.x}px ${origin.y}px`;
-      coin.style.transform = `translate(${-origin.x}px, ${-origin.y}px) rotate(${body.angle}rad) scale(${scale})`;
+      coin.style.transform = transform;
     }
+  }
+  const typing = () =>
+    matchMedia("(pointer: coarse)").matches &&
+    document.activeElement?.tagName === "INPUT" &&
+    !!container?.contains(document.activeElement);
+  function inputFocus() {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    last = 0;
+    queueMicrotask(() => {
+      if (!typing()) {
+        resize();
+        wake();
+      }
+    });
   }
   function tick(time: number) {
     frame = 0;
-    if (disposed || !visible || document.hidden) return;
-    accumulated += motion.matches ? 200 : last ? Math.min(1000 / 30, time - last) : 1000 / 60;
+    if (disposed || !visible || document.hidden || typing()) return;
+    const started = performance.now();
+    const frameTime = last ? time - last : 0;
+    accumulated += motion.matches ? 200 : last ? Math.min(50, time - last) : 1000 / 60;
     const steps = Math.floor(accumulated / (1000 / 60));
     accumulated -= steps * (1000 / 60);
     last = time;
@@ -199,17 +259,29 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
       entries.forEach(entry => shrinkLogo(entry, engine.timing.timestamp));
       stepPile(engine);
     }
-    captureMatches();
+    if (time < sampleUntil) captureMatches();
     if (motion.matches && (settleSteps += steps) >= 600) entries.forEach(({ body }) => Sleeping.set(body, true));
     if (!motion.matches || [...entries.values()].every(({ body }) => body.isSleeping || body.isStatic)) draw();
+    if (!motion.matches && steps && !drag && last && time >= measureAfter && frameTime > 0) {
+      samples.push({ frame: frameTime, work: performance.now() - started });
+      if (samples.length > 24) samples.shift();
+      if (needsLitePile(samples)) {
+        enableLite();
+        return;
+      }
+    }
     if (
       time < sampleUntil ||
       [...entries.values()].some(({ body, scale }) => scale !== 1 || (!body.isSleeping && !body.isStatic))
     )
       wake();
+    else {
+      last = 0;
+      samples.length = 0;
+    }
   }
   function wake() {
-    if (!frame && visible && !document.hidden && !disposed) frame = requestAnimationFrame(tick);
+    if (!frame && visible && !document.hidden && !disposed && !typing()) frame = requestAnimationFrame(tick);
   }
   function resetCoin(coin: HTMLElement) {
     for (const property of ["left", "top", "transform", "transform-origin", "--physics-size", "--logo-transform"])
@@ -255,6 +327,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
       entries.set(coin, entry);
       Composite.add(engine.world, entry.body);
       coin.dataset.physics = "active";
+      coin.style.left = "0px";
+      coin.style.top = "0px";
+      coin.style.transformOrigin = `${entry.origin.x}px ${entry.origin.y}px`;
       coin.style.setProperty("--physics-size", `${size}px`);
       coin.style.setProperty("--logo-transform", entry.imageTransform);
       // Reduced-motion users see the settled layout, never the initial fall.
@@ -266,12 +341,15 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     wake();
   }
   function resize() {
+    if (typing()) return;
     const nextWidth = scene.clientWidth,
       nextHeight = scene.clientHeight;
     const nextHeadroom = container
       ? scene.getBoundingClientRect().top - container.getBoundingClientRect().top - container.clientTop
       : 0;
     if (nextWidth === width && nextHeight === height && nextHeadroom === headroom) return;
+    measureAfter = performance.now() + 750;
+    samples.length = 0;
     release();
     width = nextWidth;
     height = nextHeight;
@@ -312,8 +390,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     const dx = event.clientX - drag.x,
       dy = event.clientY - drag.y;
     if (!drag.moved && Math.hypot(dx, dy) < (event.pointerType === "touch" ? 8 : 5)) return;
+    if (!drag.moved) entries.forEach(({ body }) => Sleeping.set(body, false));
     drag.moved = true;
-    entries.forEach(({ body }) => Sleeping.set(body, false));
     const body = drag.entry.body;
     Body.translate(body, { x: dx, y: dy });
     Body.translate(body, {
@@ -348,7 +426,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     if ((event.target as Element).closest(".bq-discover-coin:not(.is-match)")) event.preventDefault();
   }
   function visibility() {
+    measureAfter = performance.now() + 750;
     last = 0;
+    samples.length = 0;
     wake();
   }
   const observer = new MutationObserver(sync);
@@ -370,14 +450,19 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
   scene.addEventListener("lostpointercapture", release);
   document.addEventListener("visibilitychange", visibility);
   motion.addEventListener("change", visibility);
+  container?.addEventListener("focusin", inputFocus);
+  container?.addEventListener("focusout", inputFocus);
   resize();
-  return () => {
+  function cleanup() {
     disposed = true;
+    container?.removeEventListener("focusin", inputFocus);
+    container?.removeEventListener("focusout", inputFocus);
     release();
     cancelAnimationFrame(frame);
     observer.disconnect();
     boundsObserver.disconnect();
     scene.style.removeProperty("--physics-headroom");
+    delete scene.dataset.physicsQuality;
     intersection.disconnect();
     scene.removeEventListener("click", click, true);
     scene.removeEventListener("dragstart", preventNativeDrag);
@@ -391,5 +476,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     coins.forEach(resetCoin);
     Composite.clear(engine.world, false);
     Engine.clear(engine);
+  }
+  return () => {
+    cleanup();
+    staticCleanup?.();
   };
 }

@@ -212,7 +212,7 @@ export function PortfolioDashboard({
   const [eventToken, setEventToken] = useState(initialToken);
   const [eventLimit, setEventLimit] = useState(20);
   const loadMoreRef = useRef<HTMLButtonElement>(null);
-  const address = watchedAddress ?? connectedAddress;
+  const address = eventsPage ? connectedAddress : (watchedAddress ?? connectedAddress);
   const walletQuery = useStockPortfolio(address);
   const ownPortfolio = useStockPortfolio(connectedAddress);
   const ownBalances = new Map(
@@ -293,9 +293,42 @@ export function PortfolioDashboard({
         </div>
       </div>
 
+      {eventsPage && (
+        <section className="bq-events-intro" aria-label="About corporate events">
+          <p>
+            Companies sometimes pay dividends or split their shares. These events can change how much stock each Stock
+            Token represents.
+          </p>
+          <details>
+            <summary>Read more</summary>
+            <p>
+              <strong>Dividends</strong> are payments a company makes to shareholders. For Robinhood Stock Tokens, the
+              adjustment is reflected in how much stock each token represents, rather than a cash payment to your
+              wallet.
+            </p>
+            <p>
+              <strong>Stock splits</strong> divide shares into smaller pieces. Think of cutting a pizza into more
+              slices: more pieces do not mean more pizza.
+            </p>
+            <p>
+              Your token count can stay the same. A number called the <strong>multiplier</strong> tracks how many
+              underlying shares each token represents. For example, 10 tokens with a multiplier of 1.02 represent
+              exposure to 10.2 shares.
+            </p>
+            <a
+              className="link"
+              href="https://docs.robinhood.com/chain/stock-tokens/#corporate-actions-the-multiplier"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Robinhood documentation ↗
+            </a>
+          </details>
+        </section>
+      )}
       {(!eventsPage || scope === "holdings") && (
         <>
-          <div className="bq-wallet-bar" hidden={!authenticated}>
+          <div className="bq-wallet-bar" hidden={eventsPage || !authenticated}>
             <div className="bq-wallet-label">
               <WalletIcon />
               <span>
@@ -309,7 +342,7 @@ export function PortfolioDashboard({
             </span>
           </div>
 
-          {!authenticated && (
+          {!eventsPage && !authenticated && (
             <div className="bq-connect-panel card">
               <div>
                 <h2>A clearer view of your holdings.</h2>
@@ -490,7 +523,7 @@ export function PortfolioDashboard({
           </section>
         </>
       )}
-      {authenticated && (!eventsPage || scope === "holdings") && (
+      {authenticated && !eventsPage && (
         <details className="bq-watch-disclosure">
           <summary>{watchedAddress ? "Watching another wallet · Change" : "Watch another wallet"}</summary>
           <WalletWatchlist
@@ -625,40 +658,6 @@ export function PortfolioDashboard({
               </div>
             )}
           </div>
-          <details className="bq-explainer card">
-            <summary>How corporate events work</summary>
-            <span className="bq-explainer-icon">
-              <InformationCircleIcon />
-            </span>
-            <div className="bq-eyebrow">A LITTLE CLARITY</div>
-            <h2>
-              Same tokens.
-              <br />
-              Updated share exposure.
-            </h2>
-            <p>
-              A dividend or split can change how many underlying shares a token represents. Your token count can stay
-              the same.
-            </p>
-            <div className="bq-formula">
-              <span>Token balance</span>
-              <b>×</b>
-              <span>Shares per token</span>
-              <hr />
-              <strong>Share equivalent</strong>
-            </div>
-            <p className="bq-fine-print">
-              An issuer event is not a cash deposit into your wallet. Processing dates are not payment dates.
-            </p>
-            <a
-              className="link"
-              href="https://docs.robinhood.com/chain/building-with-stock-tokens/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Read about adjustments ↗
-            </a>
-          </details>
         </section>
       )}
       <div className="bq-data-note">

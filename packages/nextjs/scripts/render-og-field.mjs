@@ -16,7 +16,7 @@ vm.runInNewContext(
   ts.transpileModule(await readFile("services/discover/pilePhysics.ts", "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2022 },
   }).outputText,
-  { exports, require: name => (name === "./logo-bodies.json" ? shapes : require(name)) },
+  { exports, require: name => (name === "./logo-bodies.json" ? shapes : name === "./litePile" ? {} : require(name)) },
 );
 const { logoBody, createPileEngine, stepPile, pileLogoSize, pileWalls, spawnLogo } = exports;
 const width = 1200,

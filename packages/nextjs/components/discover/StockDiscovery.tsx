@@ -4,6 +4,7 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import "./discovery.css";
 import { ShareIcon } from "@heroicons/react/24/outline";
+import { useMiniapp } from "~~/components/MiniappProvider";
 import { StockLogo } from "~~/components/StockLogo";
 import { AssetDetails } from "~~/components/atlas/AssetDetails";
 import { BatchBuyDialog } from "~~/components/trading/BatchBuyDialog";
@@ -28,6 +29,7 @@ export function StockDiscovery({
   similar?: string;
   sharedSymbols?: string[];
 }) {
+  const { isMiniApp, composeCast, openLink } = useMiniapp();
   const [theme, setTheme] = useState(initialTheme);
   const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>(() => ({
     theme: normalizeTheme(initialTheme) ?? "",
@@ -150,11 +152,12 @@ export function StockDiscovery({
       const intent = new URL("https://x.com/intent/post");
       intent.searchParams.set("text", text);
       intent.searchParams.set("url", url.href);
-      window.open(intent.href, "_blank", "noopener,noreferrer");
+      await openLink(intent.href);
       return;
     }
     try {
-      if (navigator.share) await navigator.share({ title: "My stock mood · Basqit", text, url: url.href });
+      if (isMiniApp) await composeCast({ text, embeds: [url.href] });
+      else if (navigator.share) await navigator.share({ title: "My stock mood · Basqit", text, url: url.href });
       else {
         await navigator.clipboard.writeText(url.href);
         setShareStatus("Link copied");
@@ -332,17 +335,18 @@ export function StockDiscovery({
           }}
         />
       )}
-      <div className="bq-discover-results">
-        <div className="bq-discover-hint">
-          {matches.length
-            ? "A theme is a starting point. Tap a match, learn what it does, then decide."
-            : "Explore AI, biotech, space—or try “orange color logo”."}
+      <details className="bq-discover-info dropdown dropdown-top dropdown-end">
+        <summary className="btn btn-ghost btn-circle btn-sm" aria-label="About Discover">
+          ⓘ
+        </summary>
+        <div className="dropdown-content bg-base-100 rounded-box shadow-lg">
+          <p>
+            Matches are AI-generated business or logo associations, not predictions of returns or personalized
+            investment advice.
+          </p>
+          <Link href="/atlas">Browse all assets →</Link>
         </div>
-        <p className="bq-discover-note">
-          Matches are AI-generated business or logo associations, not predictions of returns or personalized investment
-          advice. <Link href="/atlas">Browse all assets →</Link>
-        </p>
-      </div>
+      </details>
       {buyList.length > 0 && <BatchBuyDialog assets={buyList} onClose={() => setBuyList([])} />}
       {trade && <TradeDialog selection={trade} onClose={() => setTrade(undefined)} />}
     </main>

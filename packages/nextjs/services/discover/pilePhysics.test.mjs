@@ -12,10 +12,60 @@ vm.runInNewContext(
   ts.transpileModule(readFileSync(new URL("./pilePhysics.ts", import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2022 },
   }).outputText,
-  { exports, require: name => (name === "./logo-bodies.json" ? shapes : require(name)) },
+  { exports, require: name => (name === "./logo-bodies.json" ? shapes : name === "./litePile" ? {} : require(name)) },
 );
 const { Body, Composite, Query } = Matter;
-const { logoBody, createPileEngine, stepPile, pileLogoSize, pileWalls, spawnLogo, shrinkLogo, pickLogo } = exports;
+const {
+  logoBody,
+  createPileEngine,
+  stepPile: fullStep,
+  pileLogoSize,
+  pileWalls,
+  spawnLogo,
+  shrinkLogo,
+  pickLogo,
+  simplifyLogo,
+  needsLitePile,
+} = exports;
+const lite = process.env.PILE_TEST_LITE === "1";
+let activeLite = lite;
+const stepPile = engine => fullStep(engine, activeLite);
+assert.equal(needsLitePile(Array(24).fill({ frame: 16, work: 3 })), false);
+assert.equal(needsLitePile(Array(24).fill({ frame: 34, work: 15 })), false, "30 Hz devices retain animation");
+assert.equal(
+  needsLitePile(Array(24).fill({ frame: 100, work: 3 })),
+  false,
+  "external delays do not indicate expensive physics",
+);
+assert.equal(needsLitePile([{ frame: 300, work: 100 }, ...Array(23).fill({ frame: 16, work: 3 })]), false);
+assert.equal(needsLitePile(Array(2).fill({ frame: 100, work: 80 })), false, "startup spikes cannot select static mode");
+assert.equal(needsLitePile(Array(23).fill({ frame: 80, work: 45 })), false);
+assert.equal(
+  needsLitePile(Array(24).fill({ frame: 80, work: 45 })),
+  true,
+  "sustained expensive frames select static mode",
+);
+// Slow bodies use fewer updates; fast bodies retain the fine collision steps.
+const timingEngine = createPileEngine();
+const timingBody = logoBody("AAPL", 24).body;
+Composite.add(timingEngine.world, timingBody);
+const update = Matter.Engine.update;
+let updates = 0;
+Matter.Engine.update = (...args) => {
+  updates++;
+  return update(...args);
+};
+try {
+  stepPile(timingEngine);
+  assert.equal(updates, lite ? 4 : 4);
+  assert.ok(Math.abs(timingEngine.timing.timestamp - 1000 / 60) < 1e-6);
+  Body.setVelocity(timingBody, { x: 10, y: 0 });
+  updates = 0;
+  stepPile(timingEngine);
+  assert.equal(updates, lite ? 4 : 16, "fast logos retain collision accuracy");
+} finally {
+  Matter.Engine.update = update;
+}
 assert.equal(Object.keys(shapes).length, 195);
 for (const symbol of Object.keys(shapes)) {
   const { body, origin } = logoBody(symbol, 32);
@@ -42,14 +92,23 @@ for (const [width, size, count] of [
   [320, pileLogoSize(320, 350, 195), 195],
   [900, pileLogoSize(900, 300, 195), 195],
 ]) {
+  activeLite = lite;
   const engine = createPileEngine();
   const floorY = width <= 650 ? 350 : 300;
   Composite.add(engine.world, pileWalls(width, floorY, 32));
-  let seed = 123456;
+  let seed = Number(process.env.PILE_TEST_SEED || 123456);
   const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
   const bodies = [];
   for (const symbol of Object.keys(shapes).slice(0, count)) {
     const { body } = logoBody(symbol, size);
+    if (lite) {
+      const position = { ...body.position };
+      const bounds = JSON.stringify(body.bounds);
+      simplifyLogo(body);
+      assert.deepEqual({ ...body.position }, position, "simplification preserves visual anchor");
+      assert.equal(JSON.stringify(body.bounds), bounds);
+      assert.ok(body.parts.length <= 2, "one convex collider per logo");
+    }
     spawnLogo(body, width, size, bodies, random);
     assert.equal(Query.collides(body, bodies).length, 0, "random spawn starts without overlap");
     bodies.push(body);
@@ -57,7 +116,18 @@ for (const [width, size, count] of [
   assert.equal(new Set(bodies.map(body => body.position.y)).size, count, "random starting heights, no rows");
   Composite.add(engine.world, bodies);
   function checkSettled() {
-    for (let i = 0; i < 600; i++) stepPile(engine);
+    for (let i = 0; i < 600; i++) {
+      if (process.env.PILE_TEST_LITE === "switch" && i === 60 && !activeLite) {
+        bodies.forEach(body => {
+          simplifyLogo(body);
+          Matter.Sleeping.set(body, false);
+        });
+        Matter.Engine.clear(engine);
+        engine.world.isModified = true;
+        activeLite = true;
+      }
+      stepPile(engine);
+    }
     assert.ok(
       bodies.every(body => body.isSleeping),
       "entire pile must sleep, including bottom layer",

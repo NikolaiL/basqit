@@ -6,6 +6,8 @@ import { ThemeProvider } from "~~/components/ThemeProvider";
 import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-eth/getMetadata";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = getMetadata({
   title: "Basqit",
   description: "Your Stock Token balances and corporate events, in one place.",
@@ -16,7 +18,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
     <html lang="en" suppressHydrationWarning>
       <body>
         <AnalyticsScripts />
-        <ThemeProvider attribute="data-theme" defaultTheme="light" forcedTheme="light" enableSystem={false}>
+        <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
         </ThemeProvider>
       </body>

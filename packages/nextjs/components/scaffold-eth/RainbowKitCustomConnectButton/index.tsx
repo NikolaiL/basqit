@@ -7,12 +7,14 @@ import { RevealBurnerPKModal } from "./RevealBurnerPKModal";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { getBlockExplorerAddressLink } from "@scaffold-ui/hooks";
 import { Address } from "viem";
+import { useMiniapp } from "~~/components/MiniappProvider";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
 
 /**
  * Custom Wagmi Connect Button (watch balance + custom design)
  */
 export const RainbowKitCustomConnectButton = () => {
+  const { isMiniApp, connectWallet, walletError } = useMiniapp();
   const { targetNetwork } = useTargetNetwork();
 
   return (
@@ -30,7 +32,8 @@ export const RainbowKitCustomConnectButton = () => {
                 return (
                   <button
                     className="btn btn-primary btn-sm"
-                    onClick={openConnectModal}
+                    onClick={isMiniApp && !connected ? () => void connectWallet() : openConnectModal}
+                    title={walletError || undefined}
                     type="button"
                     disabled={!mounted || authenticationStatus === "loading"}
                   >

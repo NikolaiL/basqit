@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { farcasterOrigin, miniappEmbed } from "~~/services/farcaster";
 
 const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -18,6 +19,7 @@ export const getMetadata = ({
 
   return {
     metadataBase: new URL(baseUrl),
+    other: { "fc:miniapp": miniappEmbed(farcasterOrigin(), "/og/farcaster?v=1", "/") },
     title: {
       default: title,
       template: titleTemplate,

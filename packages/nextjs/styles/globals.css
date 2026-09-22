@@ -43,22 +43,22 @@
 @plugin "daisyui/theme" {
   name: "dark";
 
-  --color-primary: #141a2e;
-  --color-primary-content: #f9fbff;
-  --color-secondary: #323f61;
-  --color-secondary-content: #f9fbff;
-  --color-accent: #4969a6;
-  --color-accent-content: #f9fbff;
-  --color-neutral: #f9fbff;
-  --color-neutral-content: #385183;
-  --color-base-100: #385183;
-  --color-base-200: #2a3655;
-  --color-base-300: #141a2e;
-  --color-base-content: #f9fbff;
-  --color-info: #385183;
-  --color-success: #7a70f0;
+  --color-primary: #7568f0;
+  --color-primary-content: #ffffff;
+  --color-secondary: #302b50;
+  --color-secondary-content: #eeecff;
+  --color-accent: #a99dff;
+  --color-accent-content: #141a2e;
+  --color-neutral: #eeecff;
+  --color-neutral-content: #191b29;
+  --color-base-100: #191b29;
+  --color-base-200: #11131e;
+  --color-base-300: #2b2d40;
+  --color-base-content: #eeecf7;
+  --color-info: #a99dff;
+  --color-success: #8dd6ac;
   --color-warning: #ffcf72;
-  --color-error: #ff8863;
+  --color-error: #ff9d99;
 
   --radius-field: 0.75rem;
   --radius-box: 1.5rem;
@@ -129,7 +129,34 @@
   --bq-paper: #ffffff;
   --bq-mist: #f4f5fa;
   --bq-amber: #ffb020;
+  --bq-danger: #9f2438;
 }
+[data-theme="dark"] {
+  --bq-ink: #eeecf7;
+  --bq-muted: #a7a7bd;
+  --bq-brand: #a99dff;
+  --bq-lilac: #302b50;
+  --bq-line: #323448;
+  --bq-paper: #191b29;
+  --bq-mist: #11131e;
+  --bq-danger: #ff9d99;
+}
+.bq-theme-switch {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  border: 0;
+  background-color: var(--bq-mist);
+  color: var(--bq-ink);
+}
+[data-theme="dark"] .bq-brand > img {
+  background: #fff;
+  border-radius: 10px;
+  padding: 3px;
+}
+
 body {
   color: var(--bq-ink);
   font-family: Arial, Helvetica, sans-serif;
@@ -157,7 +184,7 @@ summary {
   min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 68px;
+  gap: 24px;
 }
 .bq-brand {
   display: flex;
@@ -327,7 +354,7 @@ summary {
   margin-bottom: 30px;
 }
 .bq-value-card {
-  background: var(--bq-ink);
+  background: #141a2e;
   color: white;
   padding: 26px 30px 22px;
   border-radius: 16px;
@@ -389,7 +416,7 @@ summary {
   background: var(--bq-amber);
 }
 .bq-stat-card {
-  background: white;
+  background: var(--bq-paper);
   border: 1px solid var(--bq-line);
   padding: 24px 28px;
   border-radius: 16px;
@@ -425,7 +452,7 @@ summary {
   margin: 8px 0 0;
 }
 .bq-section {
-  background: white;
+  background: var(--bq-paper);
   border: 1px solid var(--bq-line);
   border-radius: 16px;
   overflow: hidden;
@@ -460,7 +487,7 @@ summary {
   width: 210px;
   height: 38px;
   border-color: var(--bq-line);
-  background: #fafbfe;
+  background: var(--bq-mist);
   box-shadow: none;
   border-radius: 8px;
 }
@@ -480,7 +507,7 @@ summary {
   width: 100%;
 }
 .bq-holdings-table thead {
-  background: #fafbfe;
+  background: var(--bq-mist);
   color: var(--bq-muted);
   font-size: 9px;
   letter-spacing: 0.8px;
@@ -572,7 +599,7 @@ summary {
   gap: 8px;
   font-size: 10px;
   color: var(--bq-muted);
-  background: #fcfcff;
+  background: var(--bq-paper);
   border-top: 1px solid var(--bq-line);
   padding: 14px 26px;
   line-height: 1.6;
@@ -644,7 +671,7 @@ summary {
   border-radius: 5px;
 }
 .bq-tabs .tab-active {
-  background: white;
+  background: var(--bq-paper);
   color: var(--bq-brand);
   box-shadow: 0 1px 4px #141a2e0c;
 }
@@ -709,7 +736,7 @@ summary {
   transform: rotate(45deg);
 }
 .bq-event[open] {
-  background: #fafaff;
+  background: var(--bq-mist);
 }
 .bq-event-detail {
   padding: 0 26px 22px;
@@ -730,9 +757,9 @@ summary {
   color: var(--bq-brand);
 }
 .bq-explainer {
-  background: #eeedfa;
+  background: var(--bq-lilac);
   padding: 26px;
-  border: 1px solid #e3e0f5;
+  border: 1px solid var(--bq-line);
   border-radius: 16px;
 }
 .bq-explainer-icon {
@@ -759,13 +786,13 @@ summary {
 .bq-explainer p {
   font-size: 12px;
   line-height: 1.8;
-  color: #6d6985;
+  color: var(--bq-muted);
   margin: 12px 0;
 }
 .bq-formula {
-  background: #ffffff80;
+  background: var(--bq-paper);
   padding: 16px;
-  border: 1px solid #ffffff;
+  border: 1px solid var(--bq-line);
   border-radius: 9px;
   font-size: 11px;
   display: flex;
@@ -850,7 +877,7 @@ summary {
 }
 @media (max-width: 1100px) {
   .bq-header-inner {
-    gap: 35px;
+    gap: 16px;
   }
   .bq-events-layout {
     grid-template-columns: minmax(0, 1fr) 250px;
@@ -876,15 +903,27 @@ summary {
   }
   .bq-nav {
     order: 3;
-    width: 100%;
-    gap: 26px;
-    height: 36px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    gap: 20px;
+    height: 44px;
+  }
+  .bq-theme-switch {
+    order: 4;
+    min-height: 44px;
+    margin-bottom: 4px;
   }
   .bq-nav a {
     font-size: 12px;
   }
   .bq-header-wallet {
     margin-left: auto;
+  }
+  .bq-header-inner::after {
+    content: "";
+    order: 2;
+    flex-basis: 100%;
   }
   .bq-dashboard {
     padding: 28px 20px 16px;
@@ -993,7 +1032,7 @@ summary {
   font-size: 12px;
 }
 .bq-wallet-error {
-  color: #9f2438;
+  color: var(--bq-danger);
 }
 .bq-wallet-list {
   list-style: none;
@@ -1026,7 +1065,7 @@ summary {
 }
 .bq-wallet-choice[aria-pressed="true"] {
   border-color: var(--bq-brand);
-  background: #f0edff;
+  background: var(--bq-lilac);
 }
 
 .bq-dividend-link {
@@ -1146,7 +1185,7 @@ summary {
 }
 .bq-catalog-toolbar input {
   width: 100%;
-  background: white;
+  background: var(--bq-paper);
 }
 .bq-catalog-grid {
   display: grid;
@@ -1192,7 +1231,7 @@ summary {
   height: 40px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: #f0edff;
+  background: var(--bq-lilac);
   color: var(--bq-brand);
   font-weight: 600;
 }
@@ -1928,7 +1967,7 @@ summary {
 }
 .bq-converter .bq-swap-errors {
   height: 45px;
-  color: #9f2438;
+  color: var(--bq-danger);
 }
 .bq-converter-progress {
   margin: 0 0 12px;
@@ -2568,4 +2607,114 @@ summary {
 }
 .bq-wallet-dropdown .menu > li > :not(ul) {
   border-radius: 12px;
+}
+
+/* Insets supplied by the miniapp host; ordinary browsers keep their existing layout. */
+body {
+  padding-top: var(--safe-area-inset-top, 0px);
+  padding-right: var(--safe-area-inset-right, 0px);
+  padding-bottom: var(--safe-area-inset-bottom, 0px);
+  padding-left: var(--safe-area-inset-left, 0px);
+}
+
+/* Discover is an app-sized surface; other routes retain normal document scrolling. */
+body:has(.bq-discover-shell) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.bq-discover-shell {
+  position: fixed;
+  inset: var(--discover-top, 0px) 0 auto;
+  height: var(--discover-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    var(--safe-area-inset-right, env(safe-area-inset-right, 0px))
+    var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+}
+.bq-header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 30;
+}
+.bq-mobile-menu {
+  display: none;
+}
+@media (max-width: 900px) {
+  .bq-header-inner {
+    min-height: 56px;
+    padding: 4px 12px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .bq-header-inner::after,
+  .bq-header-inner > .bq-nav,
+  .bq-header-inner > .bq-theme-switch {
+    display: none;
+  }
+  .bq-brand {
+    font-size: 22px;
+  }
+  .bq-brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .bq-mobile-menu {
+    display: block;
+    order: 5;
+    flex-shrink: 0;
+  }
+  .bq-mobile-menu > .dropdown-content {
+    width: 230px;
+    padding: 12px;
+  }
+  .bq-mobile-menu nav {
+    display: flex;
+    flex-direction: column;
+  }
+  .bq-mobile-menu nav a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+  }
+  .bq-mobile-menu .bq-theme-switch {
+    margin: 8px 0 0 12px;
+  }
+}
+@media (max-width: 360px) {
+  .bq-brand > span {
+    display: none;
+  }
+}
+
+.bq-mobile-menu a[aria-current="page"] {
+  color: var(--bq-brand);
+  background: var(--bq-lilac);
+  border-radius: 12px;
+}
+
+.bq-events-intro {
+  margin: 0 0 24px;
+  max-width: 760px;
+  color: var(--bq-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.bq-events-intro p {
+  margin: 0 0 12px;
+}
+.bq-events-intro summary {
+  color: var(--bq-brand);
+  cursor: pointer;
+  width: fit-content;
+  padding: 4px 0;
+}
+.bq-events-intro details[open] summary {
+  margin-bottom: 12px;
+}
+.bq-events-intro strong {
+  color: var(--bq-ink);
 }
