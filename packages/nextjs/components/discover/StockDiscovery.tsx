@@ -133,7 +133,7 @@ export function StockDiscovery({
     };
   }, [query, retry, source, initialTheme, sharedSymbols]);
 
-  async function share(target: "x" | "system") {
+  async function share(target: "x" | "farcaster" | "system") {
     if (!query) return;
     trackDiscovery("share", query, { method: target, stocks: matchSymbols });
     const url = new URL(
@@ -156,7 +156,7 @@ export function StockDiscovery({
       return;
     }
     try {
-      if (isMiniApp) await composeCast({ text, embeds: [url.href] });
+      if (target === "farcaster") await composeCast({ text, embeds: [url.href] });
       else if (navigator.share) await navigator.share({ title: "My stock mood · Basqit", text, url: url.href });
       else {
         await navigator.clipboard.writeText(url.href);
@@ -308,13 +308,13 @@ export function StockDiscovery({
                   Share My Stock Mood on X
                 </button>
                 <button
-                  className="btn btn-secondary btn-square"
+                  className={`btn btn-secondary${isMiniApp ? "" : " btn-square"}`}
                   disabled={!query || loading || !!error || !matches.length}
-                  onClick={() => void share("system")}
-                  aria-label="More sharing options"
-                  title="Share via your device, or copy the link"
+                  onClick={() => void share(isMiniApp ? "farcaster" : "system")}
+                  aria-label={isMiniApp ? "Share on Farcaster" : "More sharing options"}
+                  title={isMiniApp ? "Share your stock mood on Farcaster" : "Share via your device, or copy the link"}
                 >
-                  <ShareIcon className="h-5 w-5" aria-hidden="true" />
+                  {isMiniApp ? "Share on Farcaster" : <ShareIcon className="h-5 w-5" aria-hidden="true" />}
                 </button>
               </div>
               <span className="bq-discover-share-status" role="status">
@@ -341,8 +341,8 @@ export function StockDiscovery({
         </summary>
         <div className="dropdown-content bg-base-100 rounded-box shadow-lg">
           <p>
-            Matches are AI-generated business or logo associations, not predictions of returns or personalized
-            investment advice.
+            Matches are business associations generated using the JEV AI model, not predictions of returns or
+            personalized investment advice.
           </p>
           <Link href="/atlas">Browse all assets →</Link>
         </div>

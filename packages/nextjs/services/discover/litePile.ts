@@ -1,5 +1,9 @@
 import layouts from "./lite-pile-layouts.json";
 
+export function settledPileLayout(width: number) {
+  return layouts.find(layout => layout.width >= width) ?? layouts[layouts.length - 1];
+}
+
 /** Precomputed positions: no animation loop or collision engine on slow devices. */
 export function attachLitePile(scene: HTMLElement) {
   const coins = [...scene.querySelectorAll<HTMLElement>(".bq-discover-coin")];
@@ -10,7 +14,7 @@ export function attachLitePile(scene: HTMLElement) {
   }
   function render() {
     const width = scene.clientWidth;
-    const layout = layouts.find(layout => layout.width >= width) ?? layouts[layouts.length - 1];
+    const layout = settledPileLayout(width);
     const scale = width / layout.width;
     for (const coin of coins) {
       if (coin.classList.contains("is-match")) {

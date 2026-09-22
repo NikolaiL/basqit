@@ -1,4 +1,4 @@
-import { attachLitePile } from "./litePile";
+import { attachLitePile, settledPileLayout } from "./litePile";
 import silhouettes from "./logo-bodies.json";
 import Matter from "matter-js";
 
@@ -173,7 +173,18 @@ export function needsLitePile(samples: { frame: number; work: number }[]) {
   return slow.length >= samples.length * 0.8;
 }
 
-/** DOM stays accessible; Matter only controls the decorative pile's placement. */
+/** Restore the offline simulation; startup needs no collision steps. */
+export function placeSettledLogo(symbol: string, width: number, height: number) {
+  const layout = settledPileLayout(width);
+  const scale = width / layout.width;
+  const placement = layout.coins[symbol as keyof typeof layout.coins];
+  const entry = logoBody(symbol, layout.size * scale);
+  Body.setPosition(entry.body, { x: placement.x * scale, y: height + placement.y * scale });
+  Body.setAngle(entry.body, placement.angle);
+  Sleeping.set(entry.body, true);
+  return entry;
+}
+
 export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement) => void) {
   let staticCleanup: (() => void) | undefined;
   const engine = createPileEngine();
@@ -181,6 +192,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
   const coins = [...scene.querySelectorAll<HTMLElement>(".bq-discover-coin")];
   const entries = new Map<HTMLElement, ReturnType<typeof logoBody>>();
   const matchedPositions = new Map<HTMLElement, { x: number; y: number; size: number }>();
+  let initializing = true;
+  let firstEntrance = true;
+  const entrance = new Map<HTMLElement, Animation>();
   let sampleUntil = 0;
   let measureAfter = performance.now() + 750;
   const samples: { frame: number; work: number }[] = [];
@@ -257,7 +271,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     last = time;
     for (let i = 0; i < steps; i++) {
       entries.forEach(entry => shrinkLogo(entry, engine.timing.timestamp));
-      stepPile(engine);
+      if ([...entries.values()].some(({ body, scale }) => scale !== 1 || (!body.isSleeping && !body.isStatic)))
+        stepPile(engine);
     }
     if (time < sampleUntil) captureMatches();
     if (motion.matches && (settleSteps += steps) >= 600) entries.forEach(({ body }) => Sleeping.set(body, true));
@@ -286,6 +301,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
   function resetCoin(coin: HTMLElement) {
     for (const property of ["left", "top", "transform", "transform-origin", "--physics-size", "--logo-transform"])
       coin.style.removeProperty(property);
+    entrance.get(coin)?.cancel();
+    entrance.delete(coin);
     delete coin.dataset.physics;
   }
   function sync() {
@@ -299,12 +316,14 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
         entries.forEach(({ body }) => Sleeping.set(body, false));
       }
     }
-    sampleUntil = performance.now() + 1000;
+    sampleUntil = selected.size < coins.length ? performance.now() + 1000 : 0;
     for (const coin of selected) {
       if (entries.has(coin)) continue;
-      const entry = logoBody(coin.dataset.symbol!, size);
+      const entry = initializing
+        ? placeSettledLogo(coin.dataset.symbol!, width, height)
+        : logoBody(coin.dataset.symbol!, size);
       const previous = matchedPositions.get(coin);
-      if (previous) {
+      if (previous && !initializing) {
         const scale = motion.matches ? 1 : previous.size / size;
         entry.returnScale = entry.scale = scale;
         entry.returnAt = engine.timing.timestamp;
@@ -314,7 +333,7 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
           y: previous.y + entry.origin.y * scale,
         });
         matchedPositions.delete(coin);
-      } else {
+      } else if (!initializing) {
         spawnLogo(
           entry.body,
           width,
@@ -333,9 +352,25 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
       coin.style.setProperty("--physics-size", `${size}px`);
       coin.style.setProperty("--logo-transform", entry.imageTransform);
       // Reduced-motion users see the settled layout, never the initial fall.
-      if (motion.matches) coin.dataset.physics = "settling";
+      if (motion.matches && !initializing) coin.dataset.physics = "settling";
     }
-    if (!motion.matches) draw();
+    if (!motion.matches || initializing) draw();
+    if (initializing && firstEntrance && !motion.matches) {
+      for (const [coin] of entries) {
+        const transform = coin.style.transform;
+        const animation = coin.animate(
+          [
+            { transform: `translateY(-32px) ${transform}`, opacity: 0 },
+            { transform, opacity: 1 },
+          ],
+          { duration: 450, easing: "ease-out" },
+        );
+        entrance.set(coin, animation);
+        animation.onfinish = () => entrance.delete(coin);
+      }
+    }
+    initializing = false;
+    firstEntrance = false;
     captureMatches();
     settleSteps = 0;
     wake();
@@ -355,7 +390,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     height = nextHeight;
     headroom = nextHeadroom;
     scene.style.setProperty("--physics-headroom", `${headroom}px`);
-    size = pileLogoSize(width, height, coins.length);
+    const layout = settledPileLayout(width);
+    size = layout.size * (width / layout.width);
+    initializing = true;
     Composite.clear(engine.world, false);
     entries.forEach((_entry, coin) => resetCoin(coin));
     entries.clear();
@@ -380,6 +417,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     );
     if (!hit) return;
     const [coin, entry] = [...entries].find(([, entry]) => entry.body === hit)!;
+    entrance.forEach(animation => animation.cancel());
+    entrance.clear();
     drag = { coin, entry, id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
     scene.setPointerCapture(event.pointerId);
     Body.setStatic(hit, true);

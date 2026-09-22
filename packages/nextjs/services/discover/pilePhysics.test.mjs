@@ -7,12 +7,21 @@ import ts from "typescript";
 
 const require = createRequire(import.meta.url);
 const shapes = JSON.parse(readFileSync(new URL("./logo-bodies.json", import.meta.url)));
+const layouts = JSON.parse(readFileSync(new URL("./lite-pile-layouts.json", import.meta.url)));
 const exports = {};
 vm.runInNewContext(
   ts.transpileModule(readFileSync(new URL("./pilePhysics.ts", import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2022 },
   }).outputText,
-  { exports, require: name => (name === "./logo-bodies.json" ? shapes : name === "./litePile" ? {} : require(name)) },
+  {
+    exports,
+    require: name =>
+      name === "./logo-bodies.json"
+        ? shapes
+        : name === "./litePile"
+          ? { settledPileLayout: width => layouts.find(l => l.width >= width) ?? layouts.at(-1) }
+          : require(name),
+  },
 );
 const { Body, Composite, Query } = Matter;
 const {
@@ -201,3 +210,23 @@ assert.ok(
   ) < 1e-6,
 );
 console.log("Random non-overlapping spawns and smooth return scaling passed.");
+
+// Startup restores settled geometry without advancing the physics clock.
+for (const width of [320, 390, 768, 1400]) {
+  const engine = createPileEngine();
+  const started = performance.now();
+  const entries = Object.keys(shapes).map(symbol => exports.placeSettledLogo(symbol, width, 400));
+  Composite.add(
+    engine.world,
+    entries.map(e => e.body),
+  );
+  assert.equal(engine.timing.timestamp, 0);
+  assert.ok(entries.every(e => e.body.isSleeping));
+  for (const { body } of entries) {
+    assert.ok(body.bounds.min.x >= -1 && body.bounds.max.x <= width + 1);
+    assert.ok(body.bounds.max.y <= 401);
+  }
+  console.log(
+    `Settled startup ${width}px: ${entries.length} logos, ${(performance.now() - started).toFixed(1)}ms, zero simulation steps`,
+  );
+}

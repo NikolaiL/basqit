@@ -141,6 +141,13 @@
   box-shadow: 0 8px 25px #5a4fe029;
   border-color: #c4baf5;
 }
+[data-theme="dark"] .bq-discover-coin.is-match {
+  background: var(--bq-lilac);
+  border-color: var(--bq-line);
+}
+[data-theme="dark"] .bq-discover-coin.is-match .bq-stock-logo {
+  background: transparent;
+}
 .bq-discover-ticker {
   display: none;
   position: absolute;
