@@ -3,7 +3,12 @@ export type DiscoveryMatch = { symbol: string; score: number };
 export function normalizeTheme(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const theme = value.trim().replace(/\s+/g, " ");
-  return theme.length >= 3 && theme.length <= 180 ? theme : null;
+  return theme.length >= 1 && theme.length <= 180 ? theme : null;
+}
+
+export function exactSymbolMatches(theme: string, symbols: string[]): DiscoveryMatch[] {
+  const query = theme.trim().replace(/^\$/, "").toUpperCase();
+  return symbols.filter(symbol => symbol.toUpperCase() === query).map(symbol => ({ symbol, score: 3 }));
 }
 
 export function selectMatches(payload: unknown, symbols: string[]): DiscoveryMatch[] {

@@ -1,9 +1,15 @@
-import { normalizeTheme, selectMatches } from "./matching.ts";
+import { exactSymbolMatches, normalizeTheme, selectMatches } from "./matching.ts";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
 assert.equal(normalizeTheme("  chips   for robots  "), "chips for robots");
-for (const input of [null, {}, "x", "x".repeat(181)]) assert.equal(normalizeTheme(input), null);
+for (const input of [null, {}, " ", "x".repeat(181)]) assert.equal(normalizeTheme(input), null);
+for (const query of ["SMH", "smh", "$SMH", " smh "])
+  assert.deepEqual(exactSymbolMatches(query, ["SMH", "SOXX"]), [{ symbol: "SMH", score: 3 }]);
+assert.equal(normalizeTheme("F"), "F");
+assert.deepEqual(exactSymbolMatches("F", ["F", "FICO"]), [{ symbol: "F", score: 3 }]);
+assert.deepEqual(exactSymbolMatches("semiconductor funds", ["SMH"]), []);
+assert.deepEqual(exactSymbolMatches("SM", ["SMH"]), []);
 const score = (value, confidence = 0.9) => ({ type: "score", score: value, confidence });
 assert.deepEqual(
   selectMatches({ answers: { A: score(2.8), B: score(2.9, 0.2), C: score(1), EVIL: score(3) } }, ["A", "B", "C"]),
@@ -19,7 +25,7 @@ const profiles = JSON.parse(readFileSync(new URL("./profiles.json", import.meta.
 assert.equal(Object.keys(logos).length, 195);
 assert.deepEqual(Object.keys(logos).sort(), Object.keys(profiles).sort());
 for (const path of Object.values(logos)) {
-  assert.match(path, /^\/stock-logos\/[A-Z0-9]+\.png$/);
+  assert.match(path, /^\/stock-logos\/[A-Z0-9]+\.(png|svg)$/);
   assert.ok(existsSync(new URL(`../../public${path}`, import.meta.url)), path);
 }
 console.log("Discovery validation, matching bounds and 195 local logos passed");

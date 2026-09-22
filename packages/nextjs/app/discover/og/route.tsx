@@ -5,12 +5,12 @@ import type { NextRequest } from "next/server";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import logos from "~~/services/discover/logos.json";
-import { shareSelection } from "~~/services/discover/share";
+import { shareLayout, shareSelection } from "~~/services/discover/share";
 
 export const runtime = "nodejs";
-let field: Promise<string> | undefined;
-function stockField() {
-  return (field ??= readFile(path.join(process.cwd(), "public/og/stock-field.png")).then(
+const fields: Promise<string>[] = [];
+function stockField(variant: number) {
+  return (fields[variant] ??= readFile(path.join(process.cwd(), `public/og/stock-field-${variant}.png`)).then(
     data => `data:image/png;base64,${data.toString("base64")}`,
   ));
 }
@@ -21,12 +21,13 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("stocks"),
   );
   const [background, selected] = await Promise.all([
-    stockField(),
+    stockField(shareLayout(request.nextUrl.searchParams.get("layout"), theme)),
     Promise.all(
       symbols.map(async symbol => {
         const file = (logos as Record<string, string>)[symbol];
         const data = await readFile(path.join(process.cwd(), "public", file)).catch(() => null);
-        return { symbol, src: data ? `data:image/png;base64,${data.toString("base64")}` : null };
+        const mime = file.endsWith(".svg") ? "image/svg+xml" : "image/png";
+        return { symbol, src: data ? `data:${mime};base64,${data.toString("base64")}` : null };
       }),
     ),
   ]);

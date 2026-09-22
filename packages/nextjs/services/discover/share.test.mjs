@@ -9,7 +9,18 @@ registerHooks({
     return next(url, context);
   },
 });
-const { shareSelection, shareOrigin } = await import("./share.ts");
+const { shareSelection, shareOrigin, shareLayout, discoveryPath } = await import("./share.ts");
+const resultUrl = new URL(discoveryPath("AI & chips", ["SMH", "NVDA"], "AMD"), "https://basqit.vercel.app");
+assert.equal(resultUrl.searchParams.get("theme"), "AI & chips");
+assert.equal(resultUrl.searchParams.get("stocks"), "SMH,NVDA");
+assert.equal(resultUrl.searchParams.get("similar"), "AMD");
+assert.equal(new URL(discoveryPath("no matches", []), resultUrl).searchParams.has("stocks"), false);
+assert.equal(discoveryPath("", []), "/discover");
+for (let i = 0; i < 4; i++) assert.equal(shareLayout(String(i), "AI"), i);
+for (const input of [null, "../secret", "4", "-1", {}]) {
+  assert.equal(shareLayout(input, "SMH"), shareLayout(undefined, "SMH"));
+  assert.ok(shareLayout(input, "SMH") >= 0 && shareLayout(input, "SMH") < 4);
+}
 assert.deepEqual(shareSelection(" AI\nCompanies ", "nvda,NVDA,../../secret,MSFT,constructor"), {
   theme: "AI Companies",
   symbols: ["NVDA", "MSFT"],

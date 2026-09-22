@@ -4,6 +4,7 @@ import companyContext from "~~/services/discover/company-context.json";
 import logoColors from "~~/services/discover/logo-colors.json";
 import {
   type DiscoveryMatch,
+  exactSymbolMatches,
   normalizeTheme,
   randomMatches,
   randomTokenCount,
@@ -20,16 +21,14 @@ export async function GET(request: NextRequest) {
   const reply = (body: unknown, status = 200) =>
     NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
   const theme = normalizeTheme(request.nextUrl.searchParams.get("theme"));
-  if (!theme) return reply({ error: "Describe a theme in 3–180 characters." }, 400);
+  if (!theme) return reply({ error: "Enter a stock symbol or theme in 1–180 characters." }, 400);
   const randomCount = randomTokenCount(theme);
   if (randomCount !== null && (randomCount < 1 || randomCount > 8))
     return reply({ error: "Choose between 1 and 8 random tokens." }, 400);
   const key = process.env.TYPESAFE_API_KEY;
-  if (!key && randomCount === null) return reply({ error: "Stock discovery is not configured yet." }, 503);
   const similar = request.nextUrl.searchParams.get("similar");
   const cacheKey = JSON.stringify(["themes-v3", theme.toLowerCase(), similar]);
   const hit = cache.get(cacheKey);
-  if (randomCount === null && hit && hit.until > Date.now()) return reply({ matches: hit.matches, theme });
   // Per-process budget for this preview; move to a shared limiter before running multiple instances.
   if (Date.now() - windowStarted > 60000) {
     windowStarted = Date.now();
@@ -43,10 +42,19 @@ export async function GET(request: NextRequest) {
     const source = similar ? assets.find(asset => asset.symbol === similar) : undefined;
     if (similar && !source) return reply({ error: "Unknown source stock." }, 400);
     const candidates = assets.filter(asset => asset.symbol !== source?.symbol);
+    if (!source) {
+      const exact = exactSymbolMatches(
+        theme,
+        candidates.map(asset => asset.symbol),
+      );
+      if (exact.length) return reply({ matches: exact, theme });
+    }
     if (randomCount !== null) {
       const symbols = candidates.filter(asset => asset.active).map(asset => asset.symbol);
       return reply({ matches: randomMatches(symbols, randomCount), theme });
     }
+    if (hit && hit.until > Date.now()) return reply({ matches: hit.matches, theme });
+    if (!key) return reply({ error: "Stock discovery is not configured yet." }, 503);
     const questions = Object.fromEntries(
       candidates.map(asset => [
         asset.symbol,

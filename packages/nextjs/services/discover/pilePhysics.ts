@@ -1,0 +1,395 @@
+import silhouettes from "./logo-bodies.json";
+import Matter from "matter-js";
+
+const { Bodies, Body, Composite, Engine, Query, Sleeping } = Matter;
+type Rect = number[];
+
+export function pileLogoSize(width: number, height: number, count: number) {
+  const pileHeight = Math.min(120, height * 0.35);
+  return 1.3225 * Math.min(width <= 650 ? 24 : 32, Math.sqrt((width * pileHeight) / (Math.max(1, count) * 1.8)));
+}
+
+export function createPileEngine() {
+  return Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 8 });
+}
+
+export function pileWalls(width: number, height: number, radius: number) {
+  const wall = { isStatic: true, friction: 0.8 };
+  const walls = [
+    Bodies.rectangle(width / 2, height + 25, width + 100, 50, wall),
+    Bodies.rectangle(-25, height / 2 - 500, 50, height + 2000, wall),
+    Bodies.rectangle(width + 25, height / 2 - 500, 50, height + 2000, wall),
+  ];
+  const r = Math.max(0, Math.min(radius, width / 2, height));
+  if (!r) return walls;
+  // Small convex strips follow the bottom corner arcs, with chords on the safe side.
+  for (const right of [false, true]) {
+    for (let i = 0; i < 16; i++) {
+      const a = ((i / 16) * Math.PI) / 2;
+      const b = (((i + 1) / 16) * Math.PI) / 2;
+      const x = (angle: number) => r - r * Math.cos(angle);
+      const y = (angle: number) => height - r + r * Math.sin(angle);
+      const vertices = [
+        { x: -25, y: y(a) },
+        { x: x(a), y: y(a) },
+        { x: x(b), y: y(b) },
+        { x: -25, y: y(b) },
+      ].map(point => ({ x: right ? width - point.x : point.x, y: point.y }));
+      const center = Matter.Vertices.centre(vertices);
+      walls.push(Bodies.fromVertices(center.x, center.y, [vertices], wall));
+    }
+  }
+  return walls;
+}
+
+export function stepPile(engine: Matter.Engine) {
+  // Thin alpha-mask parts need substeps to avoid tunnelling through each other.
+  for (let i = 0; i < 16; i++) Engine.update(engine, 1000 / 960);
+}
+
+export function spawnLogo(
+  body: Matter.Body,
+  width: number,
+  size: number,
+  others: Matter.Body[],
+  random = Math.random,
+  top = 0,
+) {
+  Body.setAngle(body, (random() - 0.5) * Math.PI * 2);
+  for (let attempt = 0; attempt < 32; attempt++) {
+    Body.setPosition(body, {
+      x: size + random() * Math.max(0, width - size * 2),
+      y: top - size * (2 + random() * Math.max(6, ((others.length * size) / width) * 4)),
+    });
+    if (!Query.collides(body, others).length) return;
+  }
+  Body.setPosition(body, {
+    x: body.position.x,
+    y: Math.min(top - size, ...others.map(other => other.bounds.min.y)) - size * 2,
+  });
+}
+
+export function shrinkLogo(entry: ReturnType<typeof logoBody>, time: number) {
+  const progress = Math.min(1, Math.max(0, (time - entry.returnAt) / 600));
+  const scale = 1 + (entry.returnScale - 1) * (1 - progress) ** 3;
+  if (scale !== entry.scale) {
+    Body.scale(entry.body, scale / entry.scale, scale / entry.scale);
+    entry.scale = scale;
+  }
+}
+
+export function pickLogo(bodies: Matter.Body[], point: Matter.Vector, touch: boolean) {
+  const exact = Query.point(bodies, point).at(-1);
+  if (exact || !touch) return exact;
+  let nearest: Matter.Body | undefined;
+  let distance = 22;
+  for (const body of [...bodies].reverse()) {
+    for (const part of body.parts.length > 1 ? body.parts.slice(1) : body.parts) {
+      for (let i = 0; i < part.vertices.length; i++) {
+        const a = part.vertices[i],
+          b = part.vertices[(i + 1) % part.vertices.length];
+        const dx = b.x - a.x,
+          dy = b.y - a.y;
+        const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / (dx * dx + dy * dy || 1)));
+        const d = Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy);
+        if (d < distance) {
+          distance = d;
+          nearest = body;
+        }
+      }
+    }
+  }
+  return nearest;
+}
+
+function logoBounds(symbol: string) {
+  const shape = (silhouettes as Record<string, Rect[]>)[symbol];
+  if (!shape?.length) throw new Error(`Missing silhouette: ${symbol}`);
+  const left = Math.min(...shape.map(([x]) => x));
+  const top = Math.min(...shape.map(([, y]) => y));
+  const extent = Math.max(
+    Math.max(...shape.map(([x, , w]) => x + w)) - left,
+    Math.max(...shape.map(([, y, , h]) => y + h)) - top,
+  );
+  return { shape, left, top, extent };
+}
+
+export function logoBody(symbol: string, size: number) {
+  const { shape, left, top, extent } = logoBounds(symbol);
+  // Normalize visible bounds, not the PNG canvas, for both rendering and collisions.
+  const imageSize = size / extent;
+  const parts = shape.map(([x, y, w, h]) =>
+    Bodies.rectangle((x - left + w / 2) * imageSize, (y - top + h / 2) * imageSize, w * imageSize, h * imageSize),
+  );
+  const body = Body.create({
+    parts,
+    friction: 0.6,
+    frictionStatic: 0.9,
+    restitution: 0.12,
+    frictionAir: 0.025,
+    sleepThreshold: 45,
+  });
+  return {
+    body,
+    scale: 1,
+    returnScale: 1,
+    returnAt: 0,
+    origin: { ...body.position },
+    imageTransform: `translate(${-left * imageSize}px, ${-top * imageSize}px) scale(${1 / extent})`,
+  };
+}
+
+/** DOM stays accessible; Matter only controls the decorative pile's placement. */
+export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement) => void) {
+  const engine = createPileEngine();
+  const container = scene.closest<HTMLElement>(".bq-discover-playground");
+  const coins = [...scene.querySelectorAll<HTMLElement>(".bq-discover-coin")];
+  const entries = new Map<HTMLElement, ReturnType<typeof logoBody>>();
+  const matchedPositions = new Map<HTMLElement, { x: number; y: number; size: number }>();
+  let sampleUntil = 0;
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  let width = 0,
+    height = 0,
+    headroom = 0,
+    size = 32,
+    frame = 0,
+    settleSteps = 0,
+    last = 0,
+    accumulated = 0,
+    visible = true,
+    disposed = false;
+  let drag:
+    | { coin: HTMLElement; entry: ReturnType<typeof logoBody>; id: number; x: number; y: number; moved: boolean }
+    | undefined;
+  function captureMatches() {
+    const sceneBounds = scene.getBoundingClientRect();
+    for (const coin of coins) {
+      if (!coin.classList.contains("is-match")) continue;
+      const img = coin.querySelector("img");
+      if (!img) continue;
+      const rect = img.getBoundingClientRect();
+      const padding = (parseFloat(getComputedStyle(img).paddingLeft) * rect.width) / img.offsetWidth;
+      const canvas = Math.min(rect.width, rect.height) - padding * 2;
+      const imageBounds = logoBounds(coin.dataset.symbol!);
+      matchedPositions.set(coin, {
+        x: rect.left - sceneBounds.left + padding + imageBounds.left * canvas,
+        y: rect.top - sceneBounds.top + padding + imageBounds.top * canvas,
+        size: canvas * imageBounds.extent,
+      });
+    }
+  }
+
+  function draw() {
+    for (const [coin, { body, origin, scale }] of entries) {
+      coin.dataset.physics = "active";
+      coin.style.left = `${body.position.x}px`;
+      coin.style.top = `${body.position.y}px`;
+      coin.style.transformOrigin = `${origin.x}px ${origin.y}px`;
+      coin.style.transform = `translate(${-origin.x}px, ${-origin.y}px) rotate(${body.angle}rad) scale(${scale})`;
+    }
+  }
+  function tick(time: number) {
+    frame = 0;
+    if (disposed || !visible || document.hidden) return;
+    accumulated += motion.matches ? 200 : last ? Math.min(1000 / 30, time - last) : 1000 / 60;
+    const steps = Math.floor(accumulated / (1000 / 60));
+    accumulated -= steps * (1000 / 60);
+    last = time;
+    for (let i = 0; i < steps; i++) {
+      entries.forEach(entry => shrinkLogo(entry, engine.timing.timestamp));
+      stepPile(engine);
+    }
+    captureMatches();
+    if (motion.matches && (settleSteps += steps) >= 600) entries.forEach(({ body }) => Sleeping.set(body, true));
+    if (!motion.matches || [...entries.values()].every(({ body }) => body.isSleeping || body.isStatic)) draw();
+    if (
+      time < sampleUntil ||
+      [...entries.values()].some(({ body, scale }) => scale !== 1 || (!body.isSleeping && !body.isStatic))
+    )
+      wake();
+  }
+  function wake() {
+    if (!frame && visible && !document.hidden && !disposed) frame = requestAnimationFrame(tick);
+  }
+  function resetCoin(coin: HTMLElement) {
+    for (const property of ["left", "top", "transform", "transform-origin", "--physics-size", "--logo-transform"])
+      coin.style.removeProperty(property);
+    delete coin.dataset.physics;
+  }
+  function sync() {
+    const selected = new Set(coins.filter(coin => !coin.classList.contains("is-match")));
+    for (const [coin, entry] of entries) {
+      if (!selected.has(coin)) {
+        if (drag?.coin === coin) release();
+        Composite.remove(engine.world, entry.body);
+        entries.delete(coin);
+        resetCoin(coin);
+        entries.forEach(({ body }) => Sleeping.set(body, false));
+      }
+    }
+    sampleUntil = performance.now() + 1000;
+    for (const coin of selected) {
+      if (entries.has(coin)) continue;
+      const entry = logoBody(coin.dataset.symbol!, size);
+      const previous = matchedPositions.get(coin);
+      if (previous) {
+        const scale = motion.matches ? 1 : previous.size / size;
+        entry.returnScale = entry.scale = scale;
+        entry.returnAt = engine.timing.timestamp;
+        Body.scale(entry.body, scale, scale);
+        Body.setPosition(entry.body, {
+          x: previous.x + entry.origin.x * scale,
+          y: previous.y + entry.origin.y * scale,
+        });
+        matchedPositions.delete(coin);
+      } else {
+        spawnLogo(
+          entry.body,
+          width,
+          size,
+          [...entries.values()].map(({ body }) => body),
+          Math.random,
+          -headroom,
+        );
+      }
+      entries.set(coin, entry);
+      Composite.add(engine.world, entry.body);
+      coin.dataset.physics = "active";
+      coin.style.setProperty("--physics-size", `${size}px`);
+      coin.style.setProperty("--logo-transform", entry.imageTransform);
+      // Reduced-motion users see the settled layout, never the initial fall.
+      if (motion.matches) coin.dataset.physics = "settling";
+    }
+    if (!motion.matches) draw();
+    captureMatches();
+    settleSteps = 0;
+    wake();
+  }
+  function resize() {
+    const nextWidth = scene.clientWidth,
+      nextHeight = scene.clientHeight;
+    const nextHeadroom = container
+      ? scene.getBoundingClientRect().top - container.getBoundingClientRect().top - container.clientTop
+      : 0;
+    if (nextWidth === width && nextHeight === height && nextHeadroom === headroom) return;
+    release();
+    width = nextWidth;
+    height = nextHeight;
+    headroom = nextHeadroom;
+    scene.style.setProperty("--physics-headroom", `${headroom}px`);
+    size = pileLogoSize(width, height, coins.length);
+    Composite.clear(engine.world, false);
+    entries.forEach((_entry, coin) => resetCoin(coin));
+    entries.clear();
+    const radius = container ? parseFloat(getComputedStyle(container).borderBottomLeftRadius) || 0 : 0;
+    Composite.add(engine.world, pileWalls(width, height, radius));
+    sync();
+  }
+  function down(event: PointerEvent) {
+    if (
+      !event.isPrimary ||
+      event.button !== 0 ||
+      drag ||
+      (event.target as Element).closest(".is-match, .bq-discover-actions")
+    )
+      return;
+    const bounds = scene.getBoundingClientRect();
+    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    const hit = pickLogo(
+      [...entries.values()].map(entry => entry.body),
+      point,
+      event.pointerType === "touch",
+    );
+    if (!hit) return;
+    const [coin, entry] = [...entries].find(([, entry]) => entry.body === hit)!;
+    drag = { coin, entry, id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    scene.setPointerCapture(event.pointerId);
+    Body.setStatic(hit, true);
+    event.preventDefault();
+  }
+  function move(event: PointerEvent) {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x,
+      dy = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < (event.pointerType === "touch" ? 8 : 5)) return;
+    drag.moved = true;
+    entries.forEach(({ body }) => Sleeping.set(body, false));
+    const body = drag.entry.body;
+    Body.translate(body, { x: dx, y: dy });
+    Body.translate(body, {
+      x: Math.max(0, -body.bounds.min.x) - Math.max(0, body.bounds.max.x - width),
+      y: Math.max(0, -headroom - body.bounds.min.y) - Math.max(0, body.bounds.max.y - height),
+    });
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+    draw();
+    wake();
+  }
+  function release(event?: PointerEvent) {
+    if (!drag || (event && event.pointerId !== drag.id)) return;
+    const current = drag;
+    drag = undefined;
+    if (scene.hasPointerCapture(current.id)) scene.releasePointerCapture(current.id);
+    Body.setStatic(current.entry.body, false);
+    Sleeping.set(current.entry.body, false);
+    settleSteps = 0;
+    if (current.moved) onDrop(current.coin);
+    else if (event?.type === "pointerup") current.coin.click();
+    wake();
+  }
+  function click(event: MouseEvent) {
+    // Pointer picking uses the alpha body; only synthetic/keyboard clicks reach React.
+    if (event.detail && (event.target as Element).closest(".bq-discover-coin:not(.is-match)")) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  function preventNativeDrag(event: DragEvent) {
+    if ((event.target as Element).closest(".bq-discover-coin:not(.is-match)")) event.preventDefault();
+  }
+  function visibility() {
+    last = 0;
+    wake();
+  }
+  const observer = new MutationObserver(sync);
+  observer.observe(scene, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  const boundsObserver = new ResizeObserver(resize);
+  boundsObserver.observe(scene);
+  if (container) boundsObserver.observe(container);
+  const intersection = new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    visibility();
+  });
+  intersection.observe(scene);
+  scene.addEventListener("click", click, true);
+  scene.addEventListener("dragstart", preventNativeDrag);
+  scene.addEventListener("pointerdown", down);
+  scene.addEventListener("pointermove", move);
+  scene.addEventListener("pointerup", release);
+  scene.addEventListener("pointercancel", release);
+  scene.addEventListener("lostpointercapture", release);
+  document.addEventListener("visibilitychange", visibility);
+  motion.addEventListener("change", visibility);
+  resize();
+  return () => {
+    disposed = true;
+    release();
+    cancelAnimationFrame(frame);
+    observer.disconnect();
+    boundsObserver.disconnect();
+    scene.style.removeProperty("--physics-headroom");
+    intersection.disconnect();
+    scene.removeEventListener("click", click, true);
+    scene.removeEventListener("dragstart", preventNativeDrag);
+    scene.removeEventListener("pointerdown", down);
+    scene.removeEventListener("pointermove", move);
+    scene.removeEventListener("pointerup", release);
+    scene.removeEventListener("pointercancel", release);
+    scene.removeEventListener("lostpointercapture", release);
+    document.removeEventListener("visibilitychange", visibility);
+    motion.removeEventListener("change", visibility);
+    coins.forEach(resetCoin);
+    Composite.clear(engine.world, false);
+    Engine.clear(engine);
+  };
+}

@@ -11,9 +11,8 @@ import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDia
 import { trackDiscovery } from "~~/services/analytics/events";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
-import { attachPileDrag } from "~~/services/discover/pileDrag";
-import { pilePosition } from "~~/services/discover/pileLayout";
 import { surpriseIdeas } from "~~/services/discover/prompts";
+import { discoveryPath } from "~~/services/discover/share";
 
 const noSharedSymbols: string[] = [];
 const ideas = ["AI Companies", "Tech Giants", "Biotech", "Semiconductors", "Clean Energy", "Space & Satellites"];
@@ -45,16 +44,29 @@ export function StockDiscovery({
   const [shareStatus, setShareStatus] = useState("");
   const entryMethod = useRef(initialTheme ? "shared_link" : "typed");
   const sharedTracked = useRef(false);
+  const shareVariant = useRef<number | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const query = normalizeTheme(theme);
   const matches = result?.theme === query ? result.matches : [];
   const matchSymbols = matches.map(match => match.symbol).join(",");
+  const dragQuery = useRef(query);
   useEffect(() => {
-    if (scene.current)
-      return attachPileDrag(scene.current, coin =>
-        trackDiscovery("token_drag", query ?? "", { symbol: coin.dataset.symbol }),
-      );
-  }, [query, matchSymbols]);
+    dragQuery.current = query;
+  }, [query]);
+  useEffect(() => {
+    let stopped = false;
+    let cleanup: (() => void) | undefined;
+    void import("~~/services/discover/pilePhysics").then(({ attachPilePhysics }) => {
+      if (!stopped && scene.current)
+        cleanup = attachPilePhysics(scene.current, coin =>
+          trackDiscovery("token_drag", dragQuery.current ?? "", { symbol: coin.dataset.symbol }),
+        );
+    });
+    return () => {
+      stopped = true;
+      cleanup?.();
+    };
+  }, []);
   const source = theme === initialTheme ? similar : undefined;
   const current = assets.find(asset => asset.symbol === selected);
 
@@ -64,6 +76,7 @@ export function StockDiscovery({
     setSelected(undefined);
     if (!query) {
       setLoading(false);
+      window.history.replaceState(null, "", discoveryPath("", []));
       return;
     }
     if (query === normalizeTheme(initialTheme) && sharedSymbols.length && retry === 0) {
@@ -88,6 +101,15 @@ export function StockDiscovery({
         if (!response.ok) throw new Error(body.error ?? "Could not match this idea.");
         if (!controller.signal.aborted) {
           setResult({ theme: query, matches: body.matches });
+          window.history.replaceState(
+            null,
+            "",
+            discoveryPath(
+              query,
+              body.matches.map((match: DiscoveryMatch) => match.symbol),
+              source,
+            ),
+          );
           trackDiscovery("results", query, {
             entry_method: entry,
             result_count: body.matches.length,
@@ -112,11 +134,17 @@ export function StockDiscovery({
   async function share(target: "x" | "system") {
     if (!query) return;
     trackDiscovery("share", query, { method: target, stocks: matchSymbols });
-    const url = new URL("/discover", window.location.origin);
-    url.searchParams.set("theme", query);
-    url.searchParams.set("card", "3");
-    if (matches.length) url.searchParams.set("stocks", matches.map(match => match.symbol).join(","));
-    if (source) url.searchParams.set("similar", source);
+    const url = new URL(
+      discoveryPath(
+        query,
+        matches.map(match => match.symbol),
+        source,
+      ),
+      window.location.origin,
+    );
+    shareVariant.current =
+      shareVariant.current === null ? Math.floor(Math.random() * 4) : (shareVariant.current + 1) % 4;
+    url.searchParams.set("layout", String(shareVariant.current));
     const text = `My stock mood: “${query}”${matches.length ? ` — ${matches.map(match => match.symbol).join(", ")}` : ""}. What’s yours?`;
     if (target === "x") {
       const intent = new URL("https://x.com/intent/post");
@@ -212,6 +240,7 @@ export function StockDiscovery({
           )}
         </div>
         <div ref={scene} className={`bq-discover-scene ${loading ? "is-thinking" : ""}`} aria-busy={loading}>
+          <div className="bq-discover-touch-zone" aria-hidden="true" />
           {loading && (
             <div className="bq-discover-loading" aria-hidden="true">
               <span className="bq-discover-loading-orbit">
@@ -220,16 +249,11 @@ export function StockDiscovery({
             </div>
           )}
           {!matches.length && !loading && <span className="bq-discover-shelf">LET CURIOSITY DO THE SORTING</span>}
-          {assets.map((asset, index) => {
-            const pile = pilePosition(asset.symbol, index, assets.length);
+          {assets.map(asset => {
             const rank = matches.findIndex(match => match.symbol === asset.symbol);
             const matched = rank >= 0;
             const rowSize = Math.min(4, matches.length - Math.floor(rank / 4) * 4);
             const style = {
-              "--pile-x": `${pile.x}%`,
-              "--pile-y": `${pile.y}px`,
-              "--mobile-pile-y": `${pile.mobileY}px`,
-              "--tilt": `${pile.tilt}deg`,
               "--match-x": `${((rank + 0.5) * 100) / Math.max(matches.length, 1)}%`,
               "--mobile-x": `${((rank % 4) + 0.5 + (4 - rowSize) / 2) * 25}%`,
               "--mobile-y": `${Math.floor(rank / 4) * 76 + 26}px`,
@@ -239,7 +263,7 @@ export function StockDiscovery({
               <button
                 key={asset.symbol}
                 data-symbol={asset.symbol}
-                className={`bq-discover-coin ${matched ? "is-match" : ""} ${pile.grounded ? "is-grounded" : ""} ${pile.mobileGrounded ? "is-mobile-grounded" : ""}`}
+                className={`bq-discover-coin ${matched ? "is-match" : ""}`}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}

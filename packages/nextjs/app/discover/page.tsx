@@ -3,9 +3,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { StockDiscovery } from "~~/components/discover/StockDiscovery";
 import { type DiscoveryAsset, discoveryCatalog } from "~~/services/discover/catalog";
-import { shareOrigin, shareSelection } from "~~/services/discover/share";
+import { shareLayout, shareOrigin, shareSelection } from "~~/services/discover/share";
 
-type Search = { theme?: string; similar?: string; stocks?: string };
+type Search = { theme?: string; similar?: string; stocks?: string; layout?: string };
 export async function generateMetadata({ searchParams }: { searchParams: Promise<Search> }): Promise<Metadata> {
   const params = await searchParams;
   const requestHeaders = await headers();
@@ -18,8 +18,12 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const description = symbols.length
     ? `${symbols.join(" · ")}. Explore this stock selection and find your own mood with Basqit.`
     : "Turn an idea into a stock selection. What’s your stock mood?";
-  const query = new URLSearchParams({ theme, stocks: symbols.join(",") });
-  const image = { url: `${origin}/discover/og?v=3&${query}`, width: 1200, height: 630, alt: title };
+  const query = new URLSearchParams({
+    theme,
+    stocks: symbols.join(","),
+    layout: String(shareLayout(params.layout, theme)),
+  });
+  const image = { url: `${origin}/discover/og?v=4&${query}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,

@@ -24,6 +24,7 @@
   font-size: 18px;
 }
 .bq-discover-playground {
+  --pile-inset: 24px;
   padding: 18px 24px 0;
   background: linear-gradient(155deg, #fff 25%, #f3f0ff);
   border: 1px solid var(--bq-line, #e6e6ef);
@@ -93,6 +94,7 @@
   padding: 8px;
 }
 .bq-discover-scene {
+  margin-inline: calc(-1 * var(--pile-inset));
   height: 300px;
   position: relative;
   isolation: isolate;
@@ -109,9 +111,6 @@
 }
 .bq-discover-coin {
   position: absolute;
-  left: var(--pile-x);
-  top: var(--pile-y);
-  transform: translate(-50%, -50%) rotate(var(--tilt));
   border-radius: 50%;
   padding: 6px;
   background: white;
@@ -134,13 +133,6 @@
   cursor: grab;
   touch-action: none;
   user-select: none;
-}
-.bq-discover-coin.is-dragging,
-.bq-discover-coin.is-falling {
-  z-index: 6 !important;
-}
-.bq-discover-coin.is-dragging {
-  cursor: grabbing;
 }
 .bq-discover-coin.is-match {
   left: var(--match-x);
@@ -258,6 +250,7 @@
     letter-spacing: -1.5px;
   }
   .bq-discover-playground {
+    --pile-inset: 12px;
     padding: 14px 12px 0;
     border-radius: 24px;
   }
@@ -279,7 +272,6 @@
   }
   .bq-discover-coin {
     padding: 6px;
-    top: var(--mobile-pile-y);
   }
   .bq-discover-scene {
     height: 350px;
@@ -597,10 +589,7 @@
     justify-self: center;
   }
   .bq-discover-scene {
-    height: 390px;
-  }
-  .bq-discover-coin:not(.is-match) {
-    top: calc(var(--mobile-pile-y) + 40px);
+    height: clamp(350px, calc(100svh - 470px), 390px);
   }
   .bq-batch-buy {
     padding: 14px;
@@ -616,17 +605,66 @@
   }
 }
 
-/* The supporting layer rests on the floor at every viewport size. */
-.bq-discover-coin.is-grounded:not(.is-match) {
-  top: auto;
-  bottom: 0;
-  transform: translateX(-50%) rotate(var(--tilt));
+/* The physics body follows the image alpha, not a decorative coin. */
+.bq-discover-scene {
+  overflow: visible;
+}
+.bq-discover-input,
+.bq-discover-prompts,
+.bq-discover-status {
+  position: relative;
+  z-index: 5;
+}
+.bq-discover-coin:not(.is-match) {
+  width: var(--physics-size, 32px);
+  height: var(--physics-size, 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px #32206b25);
+}
+.bq-discover-coin:not(.is-match):not([data-physics="active"]) {
+  visibility: hidden;
+}
+.bq-discover-coin:not(.is-match) .bq-stock-logo {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+.bq-discover-coin:not(.is-match) img {
+  padding: 0;
+  transform-origin: 0 0;
+  transform: var(--logo-transform);
+  pointer-events: none;
+}
+.bq-discover-coin:not(.is-match):focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: 3px;
 }
 
-@media (max-width: 650px) {
-  .bq-discover-coin.is-grounded:not(.is-mobile-grounded):not(.is-match) {
-    top: calc(var(--mobile-pile-y) + 40px);
-    bottom: auto;
-    transform: translate(-50%, -50%) rotate(var(--tilt));
+.bq-discover-coin[data-physics="active"]:not(.is-match) {
+  pointer-events: auto;
+}
+
+.bq-discover-touch-zone {
+  display: none;
+}
+@media (any-pointer: coarse) {
+  .bq-discover-touch-zone {
+    display: block;
+    position: absolute;
+    inset: auto 0 0;
+    height: calc(100% + var(--physics-headroom, 0px));
+    z-index: 2;
+    touch-action: none;
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 }
