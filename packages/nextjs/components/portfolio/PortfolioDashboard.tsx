@@ -18,8 +18,8 @@ import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
+import { RobinhoodBalance } from "~~/components/trading/RobinhoodBalance";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
-import { USDGBalance } from "~~/components/trading/USDGBalance";
 import { useStockActions, useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
@@ -289,7 +289,7 @@ export function PortfolioDashboard({
               </span>
               {address && <Address address={address} chain={robinhoodChain} />}
               {authenticated && address && address.toLowerCase() === connectedAddress?.toLowerCase() && !eventsPage && (
-                <USDGBalance address={address} />
+                <RobinhoodBalance address={address} />
               )}
             </div>
             <span className="bq-network">

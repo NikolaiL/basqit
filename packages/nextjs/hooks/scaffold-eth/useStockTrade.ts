@@ -4,6 +4,7 @@ import { encodeFunctionData } from "viem";
 import { useWalletClient } from "wagmi";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { atlasClient, robinhoodChain } from "~~/services/atlas/client";
+import { NATIVE } from "~~/services/funding/shared";
 import { ALLOWANCE_HOLDER, type ExecutionQuote, ZEROX_ENABLED } from "~~/services/trading/quote";
 import { V3_ROUTER } from "~~/services/trading/uniswap";
 
@@ -96,7 +97,10 @@ export function useTradeBalance(token: `0x${string}`, owner?: `0x${string}`) {
     queryKey: ["trade-balance", robinhoodChain.id, token, owner],
     enabled: !!owner,
     staleTime: 15000,
+    refetchInterval: 15000,
     queryFn: async () => {
+      if (token.toLowerCase() === NATIVE)
+        return { balance: await atlasClient.getBalance({ address: owner! }), decimals: 18 };
       const [balance, decimals] = await Promise.all([
         atlasClient.readContract({ address: token, abi: tradeTokenAbi, functionName: "balanceOf", args: [owner!] }),
         atlasClient.readContract({ address: token, abi: tradeTokenAbi, functionName: "decimals" }),

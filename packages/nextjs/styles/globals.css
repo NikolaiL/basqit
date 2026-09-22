@@ -1766,20 +1766,47 @@ summary {
   font-weight: 700;
   white-space: nowrap;
 }
-.bq-wallet-usdg {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
+.bq-wallet-funds > section {
+  display: block;
+  min-width: 250px;
+  padding: 10px;
+  cursor: default;
 }
-.bq-wallet-usdg .bq-funding {
+.bq-wallet-fund-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+.bq-wallet-fund-row .bq-funding,
+.bq-gas-notice .bq-funding {
   margin: 0;
   border: 0;
+  padding: 0;
 }
-.bq-wallet-usdg .bq-funding > button {
-  min-height: 28px;
-  padding: 2px 8px;
+.bq-wallet-fund-row .bq-funding > button,
+.bq-gas-notice .bq-funding > button {
+  min-height: 36px;
+  padding: 4px 8px;
   font-size: 12px;
+  color: var(--bq-brand);
+}
+.bq-gas-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bq-muted);
+}
+.bq-gas-notice p {
+  margin: 0;
+}
+.bq-gas-notice .bq-funding {
+  flex-shrink: 0;
 }
 
 .bq-buy-unavailable > span:nth-child(3) {

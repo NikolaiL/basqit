@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { GasFundingNotice } from "./GasFundingNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
 import { useQueryClient } from "@tanstack/react-query";
@@ -331,6 +332,7 @@ export function TradeDialog({
             </a>
           </p>
         )}
+        {!hash && <GasFundingNotice disabled={!!busy} />}
         <div className="bq-trade-footer">
           {hash ? (
             <button className="btn btn-primary" onClick={onClose}>

@@ -11,7 +11,8 @@ registerHooks({
     return next(specifier, context);
   },
 });
-const { fundingTokens, parseFundingInput, terminalStatus, fundingStatusLabel, NATIVE } = await import("./shared.ts");
+const { fundingTokens, parseFundingInput, terminalStatus, fundingStatusLabel, NATIVE, assertFundingGasReserve } =
+  await import("./shared.ts");
 const { getFundingQuote } = await import("./provider.ts");
 const { USDG, ALLOWANCE_HOLDER } = await import("../trading/quote.ts");
 const wallet = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6",
@@ -72,7 +73,8 @@ const env = { ...process.env },
   nowBefore = Date.now;
 let now = 100000,
   calls = 0,
-  modify = x => x;
+  modify = x => x,
+  expectedBuyToken = USDG;
 Date.now = () => now;
 function response() {
   return {
@@ -99,7 +101,7 @@ function response() {
 globalThis.fetch = async (url, opts) => {
   calls++;
   const u = new URL(url);
-  assert.equal(u.searchParams.get("buyToken"), USDG);
+  assert.equal(u.searchParams.get("buyToken"), expectedBuyToken);
   assert.equal(u.searchParams.get("destinationAddress"), wallet);
   assert.equal(u.searchParams.get("destinationChain"), "4663");
   assert.equal(u.searchParams.get("feeBps"), process.env.BASQIT_SWAP_FEE_BPS === "0" ? null : "15");
@@ -147,6 +149,27 @@ try {
     modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees }] });
     await assert.rejects(getFundingQuote(params()), /fee/);
   }
+  globalThis.basqitFundingProvider.cache.clear();
+  expectedBuyToken = NATIVE;
+  const ethParams = params();
+  ethParams.set("destination", "ETH");
+  modify = d => ({
+    ...d,
+    buyToken: NATIVE,
+    quotes: [{ ...d.quotes[0], buyAmount: "9000000000000000", minBuyAmount: "8900000000000000" }],
+  });
+  const eth = await getFundingQuote(ethParams);
+  assert.equal(eth.destination, "ETH");
+  assert.equal(eth.buyAmount, "9000000000000000");
+  globalThis.basqitFundingProvider.cache.clear();
+  modify = d => d;
+  await assert.rejects(getFundingQuote(ethParams), /valid funding quote/, "reject USDG output for ETH requests");
+  expectedBuyToken = USDG;
+  globalThis.basqitFundingProvider.cache.clear();
+  const badDestination = params();
+  badDestination.set("destination", token);
+  assert.throws(() => parseFundingInput(badDestination), /destination/);
+  assert.equal(fundingStatusLabel({ status: "bridge_filled" }, "ETH"), "ETH received");
   process.env.BASQIT_SWAP_FEE_BPS = "0";
   modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees: null }] });
   assert.equal((await getFundingQuote(params())).basqitFee.amount, "0");
@@ -197,3 +220,9 @@ assert.equal(
     .logo,
   "https://static.alchemyapi.io/images/assets/1027.png",
 );
+
+assert.throws(() => assertFundingGasReserve(100n, 100n, 0n, true), /ETH/);
+assert.throws(() => assertFundingGasReserve(100n, 90n, 10n, true), /future/);
+assert.doesNotThrow(() => assertFundingGasReserve(100n, 80n, 10n, true));
+assert.doesNotThrow(() => assertFundingGasReserve(100n, 90n, 10n, false));
+assert.throws(() => assertFundingGasReserve(99n, 90n, 10n, false), /gas/);

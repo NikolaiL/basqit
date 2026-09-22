@@ -4,12 +4,9 @@
 import { AddressInfoDropdown } from "./AddressInfoDropdown";
 import { AddressQRCodeModal } from "./AddressQRCodeModal";
 import { RevealBurnerPKModal } from "./RevealBurnerPKModal";
-import { WrongNetworkDropdown } from "./WrongNetworkDropdown";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { getBlockExplorerAddressLink } from "@scaffold-ui/hooks";
 import { Address } from "viem";
-import { FundingPanel } from "~~/components/trading/FundingPanel";
-import { USDGBalance } from "~~/components/trading/USDGBalance";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
 
 /**
@@ -20,7 +17,7 @@ export const RainbowKitCustomConnectButton = () => {
 
   return (
     <ConnectButton.Custom>
-      {({ account, chain, openConnectModal, mounted, authenticationStatus }) => {
+      {({ account, openConnectModal, mounted, authenticationStatus }) => {
         const connected = mounted && account;
         const blockExplorerAddressLink = account
           ? getBlockExplorerAddressLink(targetNetwork, account.address)
@@ -28,12 +25,6 @@ export const RainbowKitCustomConnectButton = () => {
 
         return (
           <>
-            {connected && (
-              <div className="bq-wallet-usdg">
-                <USDGBalance address={account.address as Address} />
-                <FundingPanel />
-              </div>
-            )}
             {(() => {
               if (!connected || authenticationStatus === "unauthenticated" || authenticationStatus === "loading") {
                 return (
@@ -50,10 +41,6 @@ export const RainbowKitCustomConnectButton = () => {
                       : "Connect Wallet"}
                   </button>
                 );
-              }
-
-              if (!chain || chain.unsupported || chain.id !== targetNetwork.id) {
-                return <WrongNetworkDropdown />;
               }
 
               return (

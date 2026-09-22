@@ -1,6 +1,6 @@
-import { ALLOWANCE_HOLDER, USDG, swapFeeConfig } from "../trading/quote";
+import { ALLOWANCE_HOLDER, swapFeeConfig } from "../trading/quote";
 import { ScanError } from "./balances";
-import { type FundingQuote, parseFundingInput } from "./shared";
+import { type FundingQuote, fundingDestinations, parseFundingInput } from "./shared";
 
 // ponytail: development-only process budget; shared durable quotas are required before production.
 const globals = globalThis as typeof globalThis & {
@@ -66,7 +66,7 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
       originChain: String(p.chainId),
       destinationChain: "4663",
       sellToken: p.token,
-      buyToken: USDG,
+      buyToken: fundingDestinations[p.destination].address,
       sellAmount: p.amount,
       originAddress: p.wallet,
       destinationAddress: p.wallet,
@@ -85,7 +85,7 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     data.originChainId !== p.chainId ||
     data.destinationChainId !== 4663 ||
     data.sellToken?.toLowerCase() !== p.token.toLowerCase() ||
-    data.buyToken?.toLowerCase() !== USDG.toLowerCase() ||
+    data.buyToken?.toLowerCase() !== fundingDestinations[p.destination].address.toLowerCase() ||
     q.sellAmount !== p.amount ||
     !/^\d+$/.test(q.buyAmount) ||
     !/^[1-9]\d*$/.test(q.minBuyAmount) ||
@@ -116,6 +116,7 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
   )
     throw new ScanError("Funding quote fee does not match the configured Basqit fee.", 502);
   return {
+    destination: p.destination,
     basqitFee: { ...fee, token: p.token, amount: expectedFee.toString() },
     wallet: p.wallet,
     chainId: p.chainId,

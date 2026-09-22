@@ -1,8 +1,8 @@
 import { useTransactor } from "./useTransactor";
-import { createPublicClient, encodeFunctionData, erc20Abi, http } from "viem";
+import { BaseError, createPublicClient, encodeFunctionData, erc20Abi, http } from "viem";
 import { useConfig, useWalletClient } from "wagmi";
 import { getWalletClient, switchChain } from "wagmi/actions";
-import { type FundingQuote, NATIVE, fundingChains } from "~~/services/funding/shared";
+import { type FundingQuote, NATIVE, assertFundingGasReserve, fundingChains } from "~~/services/funding/shared";
 
 export function useFundingTransfer() {
   const config = useConfig();
@@ -43,7 +43,12 @@ export function useFundingTransfer() {
       await transact(() => signer.sendTransaction(tx));
     }
   }
-  async function send(q: FundingQuote, beforeSend: () => void, submitted: (hash: `0x${string}`) => void) {
+  async function send(
+    q: FundingQuote,
+    beforeSend: () => void,
+    submitted: (hash: `0x${string}`) => void,
+    rejected: () => void,
+  ) {
     const { chain, signer, rpc } = await clients(q);
     if (Date.now() >= q.expiresAt) throw new Error("Funding quote expired. Refresh it first.");
     const native = await rpc.getBalance({ address: q.wallet });
@@ -65,14 +70,29 @@ export function useFundingTransfer() {
     };
     const gas = await rpc.estimateGas(tx),
       fees = await rpc.estimateFeesPerGas();
-    if (native < tx.value + ((gas * 120n) / 100n) * (fees.maxFeePerGas ?? fees.gasPrice ?? 0n))
-      throw new Error("Leave more ETH on the source network for gas.");
+    assertFundingGasReserve(
+      native,
+      tx.value,
+      ((gas * 120n) / 100n) * (fees.maxFeePerGas ?? fees.gasPrice ?? 0n),
+      q.token.toLowerCase() === NATIVE,
+    );
     await clients(q);
     if (Date.now() >= q.expiresAt) throw new Error("Funding quote expired. Refresh it first.");
     await transact(async () => {
       // Persist before opening the wallet; an uncertain send must never be retried automatically.
       beforeSend();
-      const hash = await signer.sendTransaction(tx);
+      let hash: `0x${string}`;
+      try {
+        hash = await signer.sendTransaction(tx);
+      } catch (error) {
+        const cause =
+          error instanceof BaseError
+            ? error.walk(e => !!e && typeof e === "object" && "code" in e && e.code === 4001)
+            : error;
+        // Only an explicit wallet rejection proves this intent was not submitted.
+        if (cause && typeof cause === "object" && "code" in cause && cause.code === 4001) rejected();
+        throw error;
+      }
       submitted(hash);
       return hash;
     });

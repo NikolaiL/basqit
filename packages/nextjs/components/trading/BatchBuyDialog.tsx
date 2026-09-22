@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { GasFundingNotice } from "./GasFundingNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -298,6 +299,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             ))}
           </details>
         </div>
+        {!hash && <GasFundingNotice disabled={!!busy} />}
         <p className="bq-batch-status" role="alert">
           {error || quotes.error?.message}
         </p>

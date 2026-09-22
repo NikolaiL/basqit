@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { FundingTokenLogo } from "./FundingTokenLogo";
 import { FundingTokenPicker } from "./FundingTokenPicker";
+import { RobinhoodBalance } from "./RobinhoodBalance";
 import { SwapDivider } from "./SwapDivider";
-import { USDGBalance } from "./USDGBalance";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
@@ -16,10 +16,13 @@ import { useFundingTransfer } from "~~/hooks/scaffold-eth/useFundingTransfer";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { atlasClient } from "~~/services/atlas/client";
 import {
+  type FundingDestination,
   type FundingQuote,
   type FundingStatus,
   type FundingTransfer,
+  NATIVE,
   fundingChains,
+  fundingDestinations,
   fundingStatusLabel,
   fundingTokens,
   terminalStatus,
@@ -35,12 +38,14 @@ async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
 }
 export function FundingPanel({
   disabled = false,
-  triggerLabel = "Convert to USDG",
+  destination = "USDG",
+  triggerLabel = `Get ${destination}`,
   onBusy,
   onFunded,
 }: {
   disabled?: boolean;
   triggerLabel?: string;
+  destination?: FundingDestination;
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
 }) {
@@ -48,10 +53,11 @@ export function FundingPanel({
   // Remount on account change: a previous wallet's quote or transfer must never become actionable.
   return address && isAddress(address) ? (
     <WalletFunding
-      key={address.toLowerCase()}
+      key={`${address.toLowerCase()}:${destination}`}
       address={address as `0x${string}`}
       chainId={chainId}
       disabled={disabled}
+      destination={destination}
       triggerLabel={triggerLabel}
       onBusy={onBusy}
       onFunded={onFunded}
@@ -59,6 +65,7 @@ export function FundingPanel({
   ) : null;
 }
 function WalletFunding({
+  destination,
   address,
   chainId,
   disabled,
@@ -66,6 +73,7 @@ function WalletFunding({
   onBusy,
   onFunded,
 }: {
+  destination: FundingDestination;
   address: `0x${string}`;
   chainId?: number;
   disabled: boolean;
@@ -73,6 +81,7 @@ function WalletFunding({
   onBusy?: (busy: string) => void;
   onFunded?: (balance: string) => void;
 }) {
+  const destinationDecimals = fundingDestinations[destination].decimals;
   const [executionQuoteLoading, setQuoteLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerContainer = useRef<HTMLDivElement>(null);
@@ -89,14 +98,10 @@ function WalletFunding({
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const { openConnectModal, connectModalOpen } = useWalletConnectModal();
-  useEffect(() => {
-    if (open && !connectModalOpen) dialog.current?.showModal();
-    else dialog.current?.close();
-  }, [open, connectModalOpen]);
   const transfer = useFundingTransfer(),
     queryClient = useQueryClient(),
     { switchChainAsync } = useSwitchChain();
-  const storageKey = `basqit-funding-v1:${address.toLowerCase()}`;
+  const storageKey = `basqit-funding-v1:${address.toLowerCase()}${destination === "ETH" ? ":ETH" : ""}`;
   const saved = useQuery<FundingTransfer | null>({
     queryKey: [storageKey],
     queryFn: async () => {
@@ -116,6 +121,12 @@ function WalletFunding({
     retry: false,
   });
   const pending = saved.data;
+  // A saved intent protects against duplicate sends; it is not a recovery case while the wallet is responding.
+  const showDialog = open && !(pending && !pending.hash && busy);
+  useEffect(() => {
+    if (showDialog && !connectModalOpen) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [showDialog, connectModalOpen]);
   function save(value: FundingTransfer | null) {
     if (value) localStorage.setItem(storageKey, JSON.stringify(value));
     else {
@@ -152,13 +163,28 @@ function WalletFunding({
     if (open && !pending && authenticated && hasNextPage && !isFetching && !isError) void fetchNextPage();
   }, [open, pending, authenticated, hasNextPage, isFetching, isError, pageCount, fetchNextPage]);
   const tokens = fundingTokens(scans.data?.pages.flatMap(page => page.tokens) ?? []);
+  const suggestedEth = tokens.find(t => t.address.toLowerCase() === NATIVE);
+  const suggestedEthKey = suggestedEth ? `${suggestedEth.chainId}:${suggestedEth.address}` : "";
+  useEffect(() => {
+    if (destination === "ETH" && !selected && !loadingTokens && suggestedEthKey) setSelected(suggestedEthKey);
+  }, [destination, selected, loadingTokens, suggestedEthKey]);
   const token = tokens.find(t => `${t.chainId}:${t.address}` === selected);
+  const nativeSource = token?.address.toLowerCase() === NATIVE;
   const validAmount =
     !!token && /^\d{1,40}(\.\d{1,36})?$/.test(amount) && (amount.split(".")[1]?.length ?? 0) <= token.decimals;
   const units = validAmount ? parseUnits(amount, token!.decimals) : 0n;
+  const spendingAllEth = !!token && nativeSource && units >= BigInt(token.balance);
   const canQuote =
-    open && authenticated && !pending && !disabled && !!token && units > 0n && units <= BigInt(token.balance);
+    open &&
+    authenticated &&
+    !pending &&
+    !disabled &&
+    !!token &&
+    units > 0n &&
+    units <= BigInt(token.balance) &&
+    !spendingAllEth;
   const params = new URLSearchParams({
+    destination,
     wallet: address,
     chainId: String(token?.chainId ?? ""),
     token: token?.address ?? "",
@@ -217,11 +243,13 @@ function WalletFunding({
     if (!token || !/^\d+(\.\d+)?$/.test(amount) || (amount.split(".")[1]?.length ?? 0) > token.decimals)
       throw new Error("Enter a valid source amount.");
     const units = parseUnits(amount, token.decimals);
+    if (token.address.toLowerCase() === NATIVE && units >= BigInt(token.balance))
+      throw new Error("Keep some ETH on the source network for transaction fees.");
     if (units <= 0n || units > BigInt(token.balance)) throw new Error("Amount exceeds your available balance.");
     setQuoteLoading(true);
     try {
       const q = await read<FundingQuote>(
-        `/api/funding/quote?${new URLSearchParams({ wallet: address, chainId: String(token.chainId), token: token.address, amount: units.toString() })}`,
+        `/api/funding/quote?${new URLSearchParams({ destination, wallet: address, chainId: String(token.chainId), token: token.address, amount: units.toString() })}`,
       );
       setQuoteState({ key: params, loading: false, quote: q });
       return q;
@@ -230,15 +258,21 @@ function WalletFunding({
     }
   }
   async function finish() {
-    const [balance, gas] = await Promise.all([
-      atlasClient.readContract({ address: USDG, abi: tradeTokenAbi, functionName: "balanceOf", args: [address] }),
-      atlasClient.getBalance({ address }),
-    ]);
-    if (onFunded && gas === 0n)
+    const gas = await atlasClient.getBalance({ address });
+    const balance =
+      destination === "ETH"
+        ? gas
+        : await atlasClient.readContract({
+            address: USDG,
+            abi: tradeTokenAbi,
+            functionName: "balanceOf",
+            args: [address],
+          });
+    if (destination === "USDG" && onFunded && gas === 0n)
       throw new Error("USDG has arrived. Add ETH on Robinhood Chain for the stock purchase, then continue.");
     if (onFunded) await switchChainAsync({ chainId: 4663 });
     await queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
-    onFunded?.(formatUnits(balance, 6));
+    onFunded?.(formatUnits(destination === "ETH" ? gas : balance, destinationDecimals));
     save(null);
     setOpen(false);
   }
@@ -252,7 +286,7 @@ function WalletFunding({
       )
     : 50;
   function choosePercentage(value: number) {
-    if (!token) return;
+    if (!token || (nativeSource && value === 100)) return;
     setAmount(balancePercentage(BigInt(token.balance), token.decimals, value, 8));
     setError("");
   }
@@ -268,9 +302,9 @@ function WalletFunding({
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        {pending ? "View USDG transfer" : triggerLabel}
+        {pending ? `View ${destination} transfer` : triggerLabel}
       </button>
-      {open &&
+      {showDialog &&
         createPortal(
           <dialog
             ref={dialog}
@@ -289,9 +323,13 @@ function WalletFunding({
             <div className="modal-box bq-trade-dialog bq-converter">
               <div className="bq-trade-heading">
                 <div>
-                  <h2 id={titleId}>{pending ? "USDG transfer" : "Get USDG"}</h2>
+                  <h2 id={titleId}>{pending ? `${destination} transfer` : `Get ${destination}`}</h2>
                   <small>
-                    {pending ? "Track your transfer" : "You need USDG to buy stock tokens on Robinhood Chain."}
+                    {pending
+                      ? "Track your transfer"
+                      : destination === "ETH"
+                        ? "You need ETH on Robinhood Chain for stock purchases. Suggested top-up: $1–2 of ETH. Choose your amount; network fees vary."
+                        : "You need USDG to buy stock tokens on Robinhood Chain."}
                   </small>
                 </div>
                 <button
@@ -306,7 +344,7 @@ function WalletFunding({
               </div>
               <div className="bq-converter-balance">
                 <span>Available on Robinhood</span>
-                <USDGBalance address={address} />
+                <RobinhoodBalance address={address} asset={destination} />
               </div>
               <div className="bq-funding-content">
                 {saved.isError && <p role="alert">{saved.error.message}</p>}
@@ -317,7 +355,7 @@ function WalletFunding({
                         ? "Check your wallet"
                         : status.isError
                           ? "Status unavailable — your transfer is still saved."
-                          : fundingStatusLabel(status.data)}
+                          : fundingStatusLabel(status.data, destination)}
                     </p>
                     {pending.hash && (
                       <a
@@ -377,13 +415,13 @@ function WalletFunding({
                       <>
                         <p>
                           {onFunded
-                            ? "USDG delivered. Continue with your available balance and a fresh stock quote."
-                            : "USDG delivered to your wallet on Robinhood Chain."}
+                            ? `${destination} delivered. Continue with your available balance and a fresh stock quote.`
+                            : `${destination} delivered to your wallet on Robinhood Chain.`}
                         </p>
                         <button
                           className="btn btn-primary w-full"
                           disabled={blocked}
-                          onClick={() => void run("Updating USDG balance…", finish)}
+                          onClick={() => void run(`Updating ${destination} balance…`, finish)}
                         >
                           {busy || (onFunded ? "Continue to stock purchase" : "Done")}
                         </button>
@@ -444,7 +482,10 @@ function WalletFunding({
                             {token ? (
                               <>
                                 <strong>{token.symbol}</strong>
-                                <small>{fundingChains.find(c => c.id === token.chainId)?.name}</small>
+                                <small>
+                                  {fundingChains.find(c => c.id === token.chainId)?.name}
+                                  {destination === "ETH" && selected === suggestedEthKey ? " · Suggested" : ""}
+                                </small>
                               </>
                             ) : (
                               "Choose a token"
@@ -475,7 +516,9 @@ function WalletFunding({
                             onSelect={t => {
                               setSelected(`${t.chainId}:${t.address}`);
                               setError("");
-                              setAmount(balancePercentage(BigInt(t.balance), t.decimals, 50, 8));
+                              setAmount(
+                                destination === "ETH" ? "" : balancePercentage(BigInt(t.balance), t.decimals, 50, 8),
+                              );
                               setPickerOpen(false);
                               pickerTrigger.current?.focus();
                             }}
@@ -501,7 +544,7 @@ function WalletFunding({
                       <input
                         type="range"
                         min="0"
-                        max="100"
+                        max={nativeSource ? 99 : 100}
                         step="1"
                         style={{ width: "100%", minHeight: 44, accentColor: "var(--bq-brand)" }}
                         aria-label={`Percentage of ${token?.symbol ?? "token"} balance`}
@@ -515,7 +558,8 @@ function WalletFunding({
                           <button
                             key={p}
                             className="btn btn-ghost"
-                            disabled={blocked || !token}
+                            disabled={blocked || !token || (nativeSource && p === 100)}
+                            title={nativeSource && p === 100 ? "Keep ETH for network fees" : undefined}
                             type="button"
                             aria-pressed={!!token && sliderPercentage === p}
                             onClick={() => choosePercentage(p)}
@@ -550,18 +594,18 @@ function WalletFunding({
                         <span>No eligible balances found on Ethereum, Base, Arbitrum or Optimism.</span>
                       )}
                     </div>
-                    <SwapDivider loading={quoteLoading} directionLabel="Convert to USDG" />
+                    <SwapDivider loading={quoteLoading} directionLabel={`Convert to ${destination}`} />
                     <section className="bq-converter-receive" aria-label="You receive">
                       <div className="bq-swap-caption">
                         <span>You receive</span>
                         <span>Robinhood Chain</span>
                       </div>
                       <div className="bq-swap-amount-row">
-                        <strong className="bq-swap-token">USDG</strong>
+                        <strong className="bq-swap-token">{destination}</strong>
                         <output className="bq-swap-output" aria-live="polite">
                           {quote ? (
                             <>
-                              ~<TokenAmount value={formatUnits(BigInt(quote.buyAmount), 6)} />
+                              ~<TokenAmount value={formatUnits(BigInt(quote.buyAmount), destinationDecimals)} />
                             </>
                           ) : (
                             "—"
@@ -571,8 +615,8 @@ function WalletFunding({
                       <small>
                         {quote ? (
                           <>
-                            Minimum <TokenAmount value={formatUnits(BigInt(quote.minBuyAmount), 6)} /> USDG · About{" "}
-                            {quote.seconds}s
+                            Minimum <TokenAmount value={formatUnits(BigInt(quote.minBuyAmount), destinationDecimals)} />{" "}
+                            {destination} · About {quote.seconds}s
                           </>
                         ) : quoteLoading ? (
                           "Updating amount…"
@@ -595,7 +639,7 @@ function WalletFunding({
                           </div>
                           <div>
                             <dt>To</dt>
-                            <dd>USDG · Robinhood Chain</dd>
+                            <dd>{destination} · Robinhood Chain</dd>
                           </div>
                           {quote && (
                             <div>
@@ -613,15 +657,33 @@ function WalletFunding({
                             </div>
                           )}
                         </dl>
-                        <p>This conversion sends USDG to your connected wallet. Stock purchases are a separate step.</p>
+                        <p>
+                          This conversion sends {destination} to your connected wallet. Stock purchases are a separate
+                          step.
+                        </p>
                       </details>
                     )}
                     <p className="bq-converter-note">
-                      {quote ? "Basqit and provider fees are included in the estimate. " : ""}Network fees are paid
-                      separately in ETH. Keep ETH on Robinhood Chain for stock purchases.
+                      {nativeSource ? (
+                        <>
+                          Keep ETH on {fundingChains.find(c => c.id === token?.chainId)?.name} for future fees. You
+                          won’t be able to transact there without it. Gas is reserved before sending.
+                        </>
+                      ) : (
+                        <>
+                          {quote ? "Basqit and provider fees are included in the estimate. " : ""}Network fees are paid
+                          separately in ETH on the source network.{" "}
+                          {destination === "USDG"
+                            ? "Keep ETH on Robinhood Chain for stock purchases."
+                            : "No ETH is needed on Robinhood Chain to receive this transfer."}
+                        </>
+                      )}
                     </p>
                     <div className="bq-swap-errors" role="alert">
                       {error ||
+                        (spendingAllEth
+                          ? "You cannot transfer all your ETH. Leave some on the source network for transaction fees."
+                          : "") ||
                         (canQuote
                           ? activeState?.error
                           : token && amount && units > BigInt(token.balance)
@@ -632,6 +694,7 @@ function WalletFunding({
                       className="btn btn-primary w-full"
                       disabled={
                         blocked ||
+                        spendingAllEth ||
                         quoteLoading ||
                         !token ||
                         (!quote && !activeState?.error) ||
@@ -651,6 +714,8 @@ function WalletFunding({
                           await transfer.approve(quote);
                           const fresh = await getQuote();
                           if (
+                            fresh.destination !== destination ||
+                            quote.destination !== destination ||
                             fresh.wallet.toLowerCase() !== quote.wallet.toLowerCase() ||
                             fresh.token.toLowerCase() !== quote.token.toLowerCase() ||
                             fresh.chainId !== quote.chainId ||
@@ -674,6 +739,7 @@ function WalletFunding({
                               save(record);
                             },
                             hash => save({ ...record, hash }),
+                            () => save(null),
                           );
                         })
                       }
@@ -686,10 +752,12 @@ function WalletFunding({
                             : !quote
                               ? activeState?.error
                                 ? "Try again"
-                                : "Enter an amount"
+                                : spendingAllEth
+                                  ? "Leave ETH for network fees"
+                                  : "Enter an amount"
                               : chainId !== quote.chainId
                                 ? `Switch to ${fundingChains.find(c => c.id === quote.chainId)?.name}`
-                                : "Convert to USDG")}
+                                : `Convert to ${destination}`)}
                     </button>
                     <p className="bq-converter-note bq-converter-next">
                       {quote

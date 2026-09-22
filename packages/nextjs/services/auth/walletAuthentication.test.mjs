@@ -175,7 +175,7 @@ vm.runInNewContext(buttonCode, {
   },
 });
 const button = buttonExports.RainbowKitCustomConnectButton().children;
-const label = params => button({ mounted: true, ...params }).children[1].children;
+const label = params => button({ mounted: true, ...params }).children.children;
 assert.equal(label({ account: undefined }), "Connect Wallet");
 assert.equal(
   label({ account: { address: "0x1" }, authenticationStatus: "unauthenticated" }),

@@ -1,3 +1,4 @@
+import { USDG } from "../trading/quote";
 import { arbitrum, base, mainnet, optimism } from "viem/chains";
 
 export const fundingChains = [mainnet, base, arbitrum, optimism] as const;
@@ -8,6 +9,11 @@ export const networkIds: Record<string, number> = {
   "opt-mainnet": 10,
 };
 export const NATIVE = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+export const fundingDestinations = {
+  USDG: { address: USDG, decimals: 6 },
+  ETH: { address: NATIVE, decimals: 18 },
+} as const;
+export type FundingDestination = keyof typeof fundingDestinations;
 export type FundingToken = {
   chainId: number;
   address: `0x${string}`;
@@ -19,6 +25,7 @@ export type FundingToken = {
   name?: string;
 };
 export type FundingQuote = {
+  destination: FundingDestination;
   basqitFee: { bps: number; recipient: string | null; token: string; amount: string };
   wallet: `0x${string}`;
   chainId: number;
@@ -50,9 +57,9 @@ export type FundingTransfer = {
   hash?: `0x${string}`;
   createdAt: number;
 };
-export function fundingStatusLabel(data?: FundingStatus) {
+export function fundingStatusLabel(data?: FundingStatus, destination: FundingDestination = "USDG") {
   if (!data) return "Checking your transfer…";
-  if (data.status === "bridge_filled") return "USDG received";
+  if (data.status === "bridge_filled") return `${destination} received`;
   if (data.status === "origin_tx_reverted") return "Transfer was not completed";
   if (data.failure?.status === "refund_succeeded") return "Refund completed";
   if (data.failure?.status === "refund_pending") return "Refund in progress";
@@ -69,10 +76,12 @@ export function terminalStatus(data?: FundingStatus) {
 }
 export function parseFundingInput(params: URLSearchParams) {
   if (
-    [...params.keys()].some(k => !["wallet", "chainId", "token", "amount"].includes(k)) ||
+    [...params.keys()].some(k => !["wallet", "chainId", "token", "amount", "destination"].includes(k)) ||
     [...params.keys()].some(k => params.getAll(k).length !== 1)
   )
     throw new Error("Invalid quote parameters.");
+  const destination = params.get("destination") ?? "USDG";
+  if (destination !== "USDG" && destination !== "ETH") throw new Error("Unsupported destination token.");
   const wallet = params.get("wallet") ?? "",
     token = params.get("token") ?? "",
     amount = params.get("amount") ?? "",
@@ -87,7 +96,13 @@ export function parseFundingInput(params: URLSearchParams) {
     BigInt(amount) >= 2n ** 256n
   )
     throw new Error("Invalid wallet, network, token or amount.");
-  return { wallet: wallet as `0x${string}`, token: token as `0x${string}`, chainId, amount };
+  return {
+    wallet: wallet as `0x${string}`,
+    token: token as `0x${string}`,
+    chainId,
+    amount,
+    destination: destination as FundingDestination,
+  };
 }
 // Only positively priced balances are offered. This reduces spam, but is not a token endorsement.
 export function fundingTokens(rows: unknown[]): FundingToken[] {
@@ -136,4 +151,13 @@ export function fundingTokens(rows: unknown[]): FundingToken[] {
     }
   }
   return result.sort((a, b) => b.usd - a.usd);
+}
+
+export function assertFundingGasReserve(balance: bigint, value: bigint, gasCost: bigint, nativeSource: boolean) {
+  if (balance < value + gasCost * (nativeSource ? 2n : 1n) || (nativeSource && balance <= value))
+    throw new Error(
+      nativeSource
+        ? "Leave more ETH on the source network for this transfer and future transaction fees."
+        : "Leave more ETH on the source network for gas.",
+    );
 }

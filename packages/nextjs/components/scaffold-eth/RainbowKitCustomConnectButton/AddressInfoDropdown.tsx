@@ -14,6 +14,9 @@ import {
   QrCodeIcon,
 } from "@heroicons/react/24/outline";
 import { BlockieAvatar } from "~~/components/scaffold-eth";
+import { FundingPanel } from "~~/components/trading/FundingPanel";
+import { GasFundingNotice } from "~~/components/trading/GasFundingNotice";
+import { RobinhoodBalance } from "~~/components/trading/RobinhoodBalance";
 import { useCopyToClipboard, useOutsideClick } from "~~/hooks/scaffold-eth";
 import { getTargetNetworks } from "~~/utils/scaffold-eth";
 import { isENS } from "~~/utils/scaffold-eth/common";
@@ -63,6 +66,20 @@ export const AddressInfoDropdown = ({
         </summary>
         <ul className="dropdown-content menu z-2 p-2 mt-2 shadow-lg bg-base-200 gap-1">
           <NetworkOptions hidden={!selectingNetwork} />
+          {!selectingNetwork && (
+            <li className="bq-wallet-funds">
+              <section>
+                <strong>Robinhood Chain</strong>
+                {(["USDG", "ETH"] as const).map(asset => (
+                  <div className="bq-wallet-fund-row" key={asset}>
+                    <RobinhoodBalance address={address} asset={asset} />
+                    <FundingPanel destination={asset} triggerLabel={`Get ${asset}`} />
+                  </div>
+                ))}
+                <GasFundingNotice showAction={false} />
+              </section>
+            </li>
+          )}
           <li className={selectingNetwork ? "hidden" : ""}>
             <div
               className="h-8 btn-sm flex gap-3 py-3 cursor-pointer"
