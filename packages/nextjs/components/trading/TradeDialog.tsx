@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance } from "~~/hooks/scaffold-eth/useStockTrade";
+import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
 import { type QuoteState, watchQuote } from "~~/services/trading/autoQuote";
 import { type TradeAsset, USDG, ZEROX_ENABLED, balancePercentage } from "~~/services/trading/quote";
@@ -25,7 +25,7 @@ export function TradeDialog({
   onSuccess?: () => void;
 }) {
   const { address, chainId } = useAccount();
-  const { openConnectModal, connectModalOpen } = useConnectModal();
+  const { openConnectModal, connectModalOpen } = useWalletConnectModal();
   const { switchChainAsync } = useSwitchChain();
   const trade = useStockTrade();
   const queryClient = useQueryClient();

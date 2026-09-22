@@ -21,7 +21,7 @@ export const RainbowKitCustomConnectButton = () => {
   return (
     <ConnectButton.Custom>
       {({ account, chain, openConnectModal, mounted, authenticationStatus }) => {
-        const connected = mounted && account && chain;
+        const connected = mounted && account;
         const blockExplorerAddressLink = account
           ? getBlockExplorerAddressLink(targetNetwork, account.address)
           : undefined;
@@ -43,12 +43,16 @@ export const RainbowKitCustomConnectButton = () => {
                     type="button"
                     disabled={!mounted || authenticationStatus === "loading"}
                   >
-                    {connected ? "Sign in" : "Connect Wallet"}
+                    {connected
+                      ? authenticationStatus === "loading"
+                        ? "Confirm in wallet…"
+                        : "Sign in"
+                      : "Connect Wallet"}
                   </button>
                 );
               }
 
-              if (chain.unsupported || chain.id !== targetNetwork.id) {
+              if (!chain || chain.unsupported || chain.id !== targetNetwork.id) {
                 return <WrongNetworkDropdown />;
               }
 

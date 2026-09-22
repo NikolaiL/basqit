@@ -2,8 +2,8 @@
 
 import { FundingPanel } from "./FundingPanel";
 import { SwapDivider } from "./SwapDivider";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { TokenAmount } from "~~/components/TokenAmount";
+import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 
 type SwapPayPanelProps = {
   symbol: string;
@@ -40,7 +40,7 @@ export function SwapPayPanel({
   onFunded,
   onReverse,
 }: SwapPayPanelProps) {
-  const { openConnectModal } = useConnectModal();
+  const { openConnectModal } = useWalletConnectModal();
   return (
     <>
       <section className="bq-swap-panel" aria-label="You pay">

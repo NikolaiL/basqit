@@ -5,7 +5,6 @@ import { FundingTokenLogo } from "./FundingTokenLogo";
 import { FundingTokenPicker } from "./FundingTokenPicker";
 import { SwapDivider } from "./SwapDivider";
 import { USDGBalance } from "./USDGBalance";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
@@ -14,6 +13,7 @@ import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { useFundingTransfer } from "~~/hooks/scaffold-eth/useFundingTransfer";
+import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { atlasClient } from "~~/services/atlas/client";
 import {
   type FundingQuote,
@@ -88,7 +88,7 @@ function WalletFunding({
   const lock = useRef(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  const { openConnectModal, connectModalOpen } = useConnectModal();
+  const { openConnectModal, connectModalOpen } = useWalletConnectModal();
   useEffect(() => {
     if (open && !connectModalOpen) dialog.current?.showModal();
     else dialog.current?.close();

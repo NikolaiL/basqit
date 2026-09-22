@@ -9,6 +9,7 @@ import { BatchBuyDialog } from "~~/components/trading/BatchBuyDialog";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
+import { attachPileDrag } from "~~/services/discover/pileDrag";
 import { surpriseIdeas } from "~~/services/discover/prompts";
 
 const noSharedSymbols: string[] = [];
@@ -39,9 +40,14 @@ export function StockDiscovery({
   const [trade, setTrade] = useState<TradeSelection>();
   const [buyList, setBuyList] = useState<DiscoveryAsset[]>([]);
   const [shareStatus, setShareStatus] = useState("");
-  const resultPanel = useRef<HTMLDivElement>(null);
+  const scene = useRef<HTMLDivElement>(null);
+  const detailsDialog = useRef<HTMLDialogElement>(null);
   const query = normalizeTheme(theme);
   const matches = result?.theme === query ? result.matches : [];
+  const matchSymbols = matches.map(match => match.symbol).join(",");
+  useEffect(() => {
+    if (scene.current) return attachPileDrag(scene.current);
+  }, [query, matchSymbols]);
   const source = theme === initialTheme ? similar : undefined;
   const current = assets.find(asset => asset.symbol === selected);
 
@@ -80,15 +86,10 @@ export function StockDiscovery({
     };
   }, [query, retry, source, initialTheme, sharedSymbols]);
 
-  function choose(symbol: string) {
-    setSelected(symbol);
-    requestAnimationFrame(() =>
-      resultPanel.current?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-        block: "nearest",
-      }),
-    );
-  }
+  useEffect(() => {
+    if (current) detailsDialog.current?.showModal();
+    else detailsDialog.current?.close();
+  }, [current]);
 
   async function share(target: "x" | "system") {
     if (!query) return;
@@ -124,14 +125,13 @@ export function StockDiscovery({
         <h1>
           Find your <em>stock mood.</em>
         </h1>
-        <p>Drop an idea. Watch the stocks click.</p>
       </div>
       <section className="bq-discover-playground" aria-label="Explore Stock Tokens by theme">
         <div className="bq-discover-input">
           <span aria-hidden="true">✳</span>
           <input
             aria-label="Your stock theme"
-            placeholder="AI companies, biotech, orange logos…"
+            placeholder="Drop an idea. Watch the stocks click."
             value={theme}
             maxLength={180}
             onChange={event => setTheme(event.target.value)}
@@ -172,7 +172,7 @@ export function StockDiscovery({
             </button>
           )}
         </div>
-        <div className={`bq-discover-scene ${loading ? "is-thinking" : ""}`} aria-busy={loading}>
+        <div ref={scene} className={`bq-discover-scene ${loading ? "is-thinking" : ""}`} aria-busy={loading}>
           {loading && (
             <div className="bq-discover-loading" aria-hidden="true">
               <span className="bq-discover-loading-orbit">
@@ -186,20 +186,19 @@ export function StockDiscovery({
               </div>
             </div>
           )}
-          <span className="bq-discover-shelf">
-            {matches.length ? "YOUR CONNECTIONS" : "LET CURIOSITY DO THE SORTING"}
-          </span>
+          {!matches.length && <span className="bq-discover-shelf">LET CURIOSITY DO THE SORTING</span>}
           {assets.map((asset, index) => {
             const rank = matches.findIndex(match => match.symbol === asset.symbol);
             const matched = rank >= 0;
+            const rowSize = Math.min(4, matches.length - Math.floor(rank / 4) * 4);
             const style = {
               "--pile-x": `${5 + (((index * 73) % 191) / 191) * 90}%`,
-              "--pile-y": `${180 + ((index * 31) % 85)}px`,
-              "--mobile-pile-y": `${225 + ((index * 31) % 85)}px`,
+              "--pile-y": `${210 + ((index * 31) % 46)}px`,
+              "--mobile-pile-y": `${270 + ((index * 31) % 41)}px`,
               "--tilt": `${((index * 17) % 45) - 22}deg`,
               "--match-x": `${((rank + 0.5) * 100) / Math.max(matches.length, 1)}%`,
-              "--mobile-x": `${((rank % 4) + 0.5) * 25}%`,
-              "--mobile-y": `${Math.floor(rank / 4) * 88 + 60}px`,
+              "--mobile-x": `${((rank % 4) + 0.5 + (4 - rowSize) / 2) * 25}%`,
+              "--mobile-y": `${Math.floor(rank / 4) * 76 + 26}px`,
               zIndex: matched ? 3 : 1,
             } as CSSProperties;
             return (
@@ -209,54 +208,61 @@ export function StockDiscovery({
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}
-                onClick={() => choose(asset.symbol)}
+                onClick={() => setSelected(asset.symbol)}
               >
                 <StockLogo symbol={asset.symbol} size={46} />
                 <span className="bq-discover-ticker">{asset.symbol}</span>
               </button>
             );
           })}
-          <div className="bq-discover-ground" />
+          {matches.length > 0 && (
+            <div className="bq-discover-actions">
+              <div className="bq-discover-bottom">
+                <button
+                  className="btn btn-primary"
+                  disabled={loading || !!error || !matches.length}
+                  onClick={() => {
+                    setBuyList(matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol)));
+                  }}
+                >
+                  Buy these
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  disabled={!query || loading || !!error || !matches.length}
+                  onClick={() => void share("x")}
+                >
+                  Share My Stock Mood on X
+                </button>
+                <button
+                  className="btn btn-secondary btn-square"
+                  disabled={!query || loading || !!error || !matches.length}
+                  onClick={() => void share("system")}
+                  aria-label="More sharing options"
+                  title="Share via your device, or copy the link"
+                >
+                  <ShareIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+              <span className="bq-discover-share-status" role="status">
+                {shareStatus}
+              </span>
+            </div>
+          )}
         </div>
-        <div className="bq-discover-bottom">
-          <span>Powered by Jev · {assets.length} Stock Tokens</span>
-          <button
-            className="btn btn-primary"
-            disabled={loading || !!error || !matches.length}
-            onClick={() => {
-              setBuyList(matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol)));
-            }}
-          >
-            Buy these
-          </button>
-          <button
-            className="btn btn-primary"
-            disabled={!query || loading || !!error || !matches.length}
-            onClick={() => void share("x")}
-          >
-            Share my mood on X
-          </button>
-          <button
-            className="btn btn-ghost btn-square"
-            disabled={!query || loading || !!error || !matches.length}
-            onClick={() => void share("system")}
-            aria-label="More sharing options"
-            title="Share via your device, or copy the link"
-          >
-            <ShareIcon className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </div>
-        <span className="bq-discover-share-status" role="status">
-          {shareStatus}
-        </span>
       </section>
-      <div ref={resultPanel} className="bq-discover-results">
-        {current ? (
-          <article className="card bq-discover-detail">
+      <dialog
+        ref={detailsDialog}
+        className="modal"
+        aria-labelledby="discover-stock-title"
+        onClose={() => setSelected(undefined)}
+      >
+        {current && (
+          <article className="modal-box bq-discover-detail">
             <div className="bq-discover-detail-heading">
               <StockLogo symbol={current.symbol} size={56} />
               <div>
-                <h2>{current.symbol}</h2>
+                <h2 id="discover-stock-title">{current.symbol}</h2>
                 <p>{current.name}</p>
               </div>
               <button
@@ -272,7 +278,10 @@ export function StockDiscovery({
               <button
                 className="btn btn-primary"
                 disabled={!current.active}
-                onClick={() => setTrade({ asset: current, side: "buy" })}
+                onClick={() => {
+                  setSelected(undefined);
+                  setTrade({ asset: current, side: "buy" });
+                }}
               >
                 {current.active ? `Buy ${current.symbol}` : "Currently inactive"}
               </button>
@@ -290,13 +299,17 @@ export function StockDiscovery({
               )}
             </div>
           </article>
-        ) : (
-          <div className="bq-discover-hint">
-            {matches.length
-              ? "A theme is a starting point. Tap a match, learn what it does, then decide."
-              : "Explore AI, biotech, space—or try “orange color logo”."}
-          </div>
         )}
+        <form method="dialog" className="modal-backdrop">
+          <button aria-label="Close stock details">Close</button>
+        </form>
+      </dialog>
+      <div className="bq-discover-results">
+        <div className="bq-discover-hint">
+          {matches.length
+            ? "A theme is a starting point. Tap a match, learn what it does, then decide."
+            : "Explore AI, biotech, space—or try “orange color logo”."}
+        </div>
         <p className="bq-discover-note">
           Matches are AI-generated business or logo associations, not predictions of returns or personalized investment
           advice. <Link href="/atlas">Browse all assets →</Link>

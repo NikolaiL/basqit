@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Address } from "@scaffold-ui/components";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
@@ -22,6 +21,7 @@ import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
 import { USDGBalance } from "~~/components/trading/USDGBalance";
 import { useStockActions, useStockPortfolio } from "~~/hooks/scaffold-eth/useStockPortfolio";
+import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
 import { amount, dividendHistory, money } from "~~/services/portfolio/format";
 import type { CorporateAction } from "~~/services/portfolio/types";
@@ -204,7 +204,7 @@ export function PortfolioDashboard({
   const eventsPage = page === "events";
   const { address: connectedAddress } = useAccount();
   const { authenticated } = useWalletSession();
-  const { openConnectModal } = useConnectModal();
+  const { openConnectModal } = useWalletConnectModal();
   const [watchedAddress, setWatchedAddress] = useState<`0x${string}`>();
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<"holdings" | "all">(eventsPage ? "all" : "holdings");

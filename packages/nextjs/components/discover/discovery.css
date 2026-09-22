@@ -24,7 +24,7 @@
   font-size: 18px;
 }
 .bq-discover-playground {
-  padding: 22px 28px 0;
+  padding: 18px 24px 0;
   background: linear-gradient(155deg, #fff 25%, #f3f0ff);
   border: 1px solid var(--bq-line, #e6e6ef);
   border-radius: 32px;
@@ -37,7 +37,7 @@
   gap: 12px;
   margin: 0 auto;
   max-width: 760px;
-  min-height: 76px;
+  min-height: 64px;
   border: 1px solid #e3e0ef;
   border-radius: 22px;
   padding: 8px 16px 8px 24px;
@@ -71,13 +71,13 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  margin: 18px auto 10px;
+  margin: 12px auto 6px;
 }
 .bq-discover-prompts button {
   border: 1px solid #e9e6f2;
   border-radius: 999px;
   background: #ffffffb0;
-  padding: 9px 12px;
+  padding: 7px 12px;
   font-size: 12px;
   cursor: pointer;
 }
@@ -85,7 +85,8 @@
   background: #eae6ff;
 }
 .bq-discover-status {
-  min-height: 44px;
+  height: 44px;
+  overflow-y: auto;
   text-align: center;
   font-size: 13px;
   color: var(--bq-muted);
@@ -129,9 +130,21 @@
   box-shadow: 0 0 0 3px #a99cf7;
   outline: none;
 }
+.bq-discover-coin:not(.is-match) {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.bq-discover-coin.is-dragging,
+.bq-discover-coin.is-falling {
+  z-index: 6 !important;
+}
+.bq-discover-coin.is-dragging {
+  cursor: grabbing;
+}
 .bq-discover-coin.is-match {
   left: var(--match-x);
-  top: 65px;
+  top: 35px;
   transform: translate(-50%, -50%) rotate(0) scale(1.12);
   box-shadow: 0 8px 25px #5a4fe029;
   border-color: #c4baf5;
@@ -139,13 +152,14 @@
 .bq-discover-ticker {
   display: none;
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 2px);
   left: 50%;
   transform: translateX(-50%);
   color: #39324c;
   font-size: 11px;
   font-weight: 750;
-  padding: 2px 5px;
+  line-height: 1.2;
+  padding: 1px 5px;
   background: #f6f3ff;
   border-radius: 4px;
 }
@@ -154,20 +168,19 @@
 .bq-discover-coin:focus-visible .bq-discover-ticker {
   display: block;
 }
-.bq-discover-ground {
+.bq-discover-actions {
   position: absolute;
-  bottom: 5px;
+  top: 94px;
   left: 0;
   right: 0;
-  height: 1px;
-  background: #d6cfee;
+  z-index: 4;
 }
 .bq-discover-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-  padding: 14px 0 8px;
+  padding: 8px 0 4px;
 }
 .bq-discover-bottom > span {
   color: var(--bq-muted);
@@ -175,9 +188,10 @@
 }
 .bq-discover-share-status {
   display: block;
-  min-height: 24px;
+  height: 24px;
+  overflow-y: auto;
   font-size: 12px;
-  text-align: right;
+  text-align: center;
 }
 .bq-discover-hint {
   padding: 24px 12px 0;
@@ -186,7 +200,7 @@
 }
 .bq-discover-detail {
   padding: 24px;
-  margin: 20px auto 0;
+  margin: auto;
   background: white;
   border: 1px solid #e6e6ef;
   border-radius: 24px;
@@ -244,20 +258,20 @@
     letter-spacing: -1.5px;
   }
   .bq-discover-playground {
-    padding: 18px 12px 0;
+    padding: 14px 12px 0;
     border-radius: 24px;
   }
   .bq-discover-input {
     padding-left: 12px;
     gap: 8px;
-    min-height: 66px;
+    min-height: 56px;
   }
   .bq-discover-prompts {
     gap: 6px;
   }
   .bq-discover-prompts button {
     font-size: 11px;
-    padding: 8px;
+    padding: 7px;
   }
   .bq-discover-coin .bq-stock-logo {
     width: 32px !important;
@@ -270,16 +284,31 @@
   .bq-discover-scene {
     height: 350px;
   }
+  .bq-discover-actions {
+    top: 154px;
+  }
   .bq-discover-coin.is-match {
     left: var(--mobile-x);
     top: var(--mobile-y);
   }
   .bq-discover-status {
-    min-height: 58px;
+    height: 48px;
+  }
+  .bq-discover-bottom {
+    gap: 6px;
   }
   .bq-discover-bottom .btn {
-    font-size: 12px;
-    padding: 0 12px;
+    min-width: 0;
+    min-height: 44px;
+    flex-shrink: 1;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: normal;
+    padding: 0 8px;
+  }
+  .bq-discover-bottom .btn-square {
+    width: 44px;
+    flex-shrink: 0;
   }
   .bq-discover-bottom > span {
     max-width: 125px;
@@ -396,8 +425,29 @@
   min-width: 0;
 }
 .bq-batch-buy {
+  display: flex;
+  flex-direction: column;
   width: min(100% - 24px, 480px);
+  max-height: 90dvh;
   padding: 24px;
+  overflow: hidden;
+}
+.bq-batch-buy > * {
+  flex-shrink: 0;
+}
+.bq-batch-buy > .bq-batch-scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.bq-batch-buy > .bq-batch-status {
+  height: 32px;
+  margin: 4px 0;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.4;
 }
 .bq-batch-buy .bq-discover-detail-heading {
   margin-bottom: 4px;
@@ -416,12 +466,12 @@
   font-size: 11px;
   color: var(--bq-muted);
 }
-.bq-batch-buy > details {
+.bq-batch-scroll > details {
   margin: 8px 0 12px;
   font-size: 12px;
   color: var(--bq-muted);
 }
-.bq-batch-buy > details summary {
+.bq-batch-scroll > details summary {
   cursor: pointer;
   padding: 8px 0;
 }
@@ -458,5 +508,19 @@
   }
   .bq-discover-buy-row {
     gap: 8px;
+  }
+}
+
+@media (max-height: 600px) {
+  .bq-batch-buy {
+    padding: 12px;
+  }
+  .bq-batch-buy .bq-swap-panel {
+    padding: 4px 0;
+  }
+  .bq-batch-buy .bq-swap-amount-row,
+  .bq-batch-buy .bq-swap-amount.input {
+    min-height: 40px;
+    height: 40px;
   }
 }
