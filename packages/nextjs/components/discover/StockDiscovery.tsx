@@ -58,10 +58,14 @@ export function StockDiscovery({
   useEffect(() => {
     let stopped = false;
     let cleanup: (() => void) | undefined;
+    // Read before the URL is normalised below: ?yolo=1 shows the real fall instead of a settled pile.
+    const fall = new URLSearchParams(window.location.search).get("yolo") === "1";
     void import("~~/services/discover/pilePhysics").then(({ attachPilePhysics }) => {
       if (!stopped && scene.current)
-        cleanup = attachPilePhysics(scene.current, coin =>
-          trackDiscovery("token_drag", dragQuery.current ?? "", { symbol: coin.dataset.symbol }),
+        cleanup = attachPilePhysics(
+          scene.current,
+          coin => trackDiscovery("token_drag", dragQuery.current ?? "", { symbol: coin.dataset.symbol }),
+          fall,
         );
     });
     return () => {

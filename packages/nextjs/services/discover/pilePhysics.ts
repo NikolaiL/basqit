@@ -207,7 +207,7 @@ export function placeSettledLogo(symbol: string, width: number, height: number) 
   return entry;
 }
 
-export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement) => void) {
+export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement) => void, fall = false) {
   let staticCleanup: (() => void) | undefined;
   const engine = createPileEngine();
   const container = scene.closest<HTMLElement>(".bq-discover-playground");
@@ -226,6 +226,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     staticCleanup = attachLitePile(scene);
   }
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  // `fall` replays the real fall from mid-card on first load instead of restoring a settled pile.
+  const yolo = fall && !motion.matches;
   let width = 0,
     height = 0,
     headroom = 0,
@@ -350,11 +352,14 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
       }
     }
     sampleUntil = selected.size < coins.length ? performance.now() + 1000 : 0;
+    const falling = initializing && firstEntrance && yolo;
+    const middle = container ? container.clientHeight / 2 - headroom : 0;
     for (const coin of selected) {
       if (entries.has(coin)) continue;
-      const entry = initializing
-        ? placeSettledLogo(coin.dataset.symbol!, width, height)
-        : logoBody(coin.dataset.symbol!, size);
+      const entry =
+        initializing && !falling
+          ? placeSettledLogo(coin.dataset.symbol!, width, height)
+          : logoBody(coin.dataset.symbol!, size);
       const previous = matchedPositions.get(coin);
       if (previous && !initializing) {
         const scale = motion.matches ? 1 : previous.size / size;
@@ -367,15 +372,17 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
           y: previous.y + entry.origin.y * scale,
         });
         matchedPositions.delete(coin);
-      } else if (!initializing) {
+      } else if (!initializing || falling) {
         spawnLogo(
           entry.body,
           width,
           size,
           [...entries.values()].map(({ body }) => body),
           Math.random,
-          -headroom,
+          falling ? middle : -headroom,
         );
+        // ±5% per logo so a falling crowd does not move in lockstep.
+        entry.body.timeScale = 0.95 + Math.random() * 0.1;
       }
       entries.set(coin, entry);
       Composite.add(engine.world, entry.body);
@@ -389,7 +396,17 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
       if (motion.matches && !initializing) coin.dataset.physics = "settling";
     }
     if (!motion.matches || initializing) draw();
-    if (initializing && firstEntrance && !motion.matches) {
+    if (falling) {
+      // Opacity only: physics owns the transform while the logos fall.
+      for (const [coin] of entries) {
+        const animation = coin.animate([{ opacity: 0 }, { opacity: 1 }], {
+          duration: 700 + Math.random() * 700,
+          easing: "ease-out",
+        });
+        entrance.set(coin, animation);
+        animation.onfinish = () => entrance.delete(coin);
+      }
+    } else if (initializing && firstEntrance && !motion.matches) {
       for (const [coin] of entries) {
         const transform = coin.style.transform;
         const animation = coin.animate(
