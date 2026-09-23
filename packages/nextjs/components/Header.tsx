@@ -7,9 +7,9 @@ import { SwitchTheme } from "~~/components/SwitchTheme";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth/RainbowKitCustomConnectButton";
 
 const pages = [
-  { href: "/", label: "Portfolio" },
-  { href: "/atlas", label: "Assets" },
   { href: "/discover", label: "Discover" },
+  { href: "/portfolio", label: "Portfolio" },
+  { href: "/atlas", label: "Assets" },
   { href: "/corporate-events", label: "Corporate events" },
 ];
 
