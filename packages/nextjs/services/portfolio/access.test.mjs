@@ -1,4 +1,4 @@
-import { SESSION_COOKIE, deleteSession, issueChallenge, verifyChallenge } from "../auth/session.ts";
+import { SESSION_COOKIE, issueChallenge, verifyChallenge } from "../auth/session.ts";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { createPublicClient, custom } from "viem";
@@ -31,6 +31,7 @@ const request = token =>
   new NextRequest(`https://basqit.example/api/stocks/portfolio?address=${watched}`, {
     headers: token ? { cookie: `${SESSION_COOKIE}=${token}` } : {},
   });
+process.env.IRON_SESSION_SECRET = "test-only-session-secret-at-least-32-characters";
 assert.equal((await GET(request())).status, 401);
 assert.equal((await GET(request("forged"))).status, 401);
 assert.equal(globalThis.portfolioCalls, 0);
@@ -62,15 +63,11 @@ const session = await verifyChallenge(
   "https://basqit.example",
   client,
 );
-try {
-  const response = await GET(request(session.token));
-  assert.equal(response.status, 200, "signed-in viewer can watch another wallet");
-  assert.equal((await response.json()).address, watched);
-  assert.equal(response.headers.get("cache-control"), "private, no-store");
-  assert.equal(globalThis.portfolioCalls, 1);
-} finally {
-  deleteSession(session.token);
-}
-assert.equal((await GET(request(session.token))).status, 401);
+const response = await GET(request(session.token));
+assert.equal(response.status, 200, "signed-in viewer can watch another wallet");
+assert.equal((await response.json()).address, watched);
+assert.equal(response.headers.get("cache-control"), "private, no-store");
 assert.equal(globalThis.portfolioCalls, 1);
-console.log("Portfolio access: unsigned/forged/revoked sessions rejected; signed viewer can read another wallet.");
+assert.equal((await GET(request())).status, 401);
+assert.equal(globalThis.portfolioCalls, 1);
+console.log("Portfolio access: unsigned/forged sessions rejected; signed viewer can read another wallet.");

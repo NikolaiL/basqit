@@ -230,3 +230,17 @@ for (const width of [320, 390, 768, 1400]) {
     `Settled startup ${width}px: ${entries.length} logos, ${(performance.now() - started).toFixed(1)}ms, zero simulation steps`,
   );
 }
+
+// Matter's per-body speed variation changes the fall without moving its start.
+const speedEngine = createPileEngine();
+const variedFalls = [0.8, 1, 1.2].map((speed, index) => {
+  const { body } = logoBody("AAPL", 12);
+  body.timeScale = speed;
+  Body.setPosition(body, { x: index * 100, y: 0 });
+  return body;
+});
+Composite.add(speedEngine.world, variedFalls);
+for (let i = 0; i < 20; i++) fullStep(speedEngine);
+assert.ok(variedFalls[0].position.y < variedFalls[1].position.y);
+assert.ok(variedFalls[1].position.y < variedFalls[2].position.y);
+console.log("Return fall speeds: 80%, 100%, 120% fall in the expected order.");

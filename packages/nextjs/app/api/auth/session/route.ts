@@ -6,7 +6,6 @@ import {
   CHALLENGE_COOKIE,
   SESSION_COOKIE,
   SESSION_SECONDS,
-  deleteSession,
   getSession,
   issueChallenge,
   verifyChallenge,
@@ -35,7 +34,7 @@ function cookieOptions(requestOrigin: string, maxAge: number) {
   };
 }
 export async function GET(request: NextRequest) {
-  return reply(getSession(request.cookies.get(SESSION_COOKIE)?.value) ?? { address: null });
+  return reply((await getSession(request.cookies.get(SESSION_COOKIE)?.value)) ?? { address: null });
 }
 export async function POST(request: NextRequest) {
   try {
@@ -73,7 +72,6 @@ export async function POST(request: NextRequest) {
       requestOrigin,
       client as PublicClient,
     );
-    deleteSession(request.cookies.get(SESSION_COOKIE)?.value);
     const response = reply({ address: session.address, expires: session.expires });
     response.cookies.set(SESSION_COOKIE, session.token, cookieOptions(requestOrigin, SESSION_SECONDS));
     response.cookies.set(CHALLENGE_COOKIE, "", cookieOptions(requestOrigin, 0));
@@ -85,7 +83,6 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const requestOrigin = origin(request);
-    deleteSession(request.cookies.get(SESSION_COOKIE)?.value);
     const response = reply({ address: null });
     response.cookies.set(SESSION_COOKIE, "", cookieOptions(requestOrigin, 0));
     response.cookies.set(CHALLENGE_COOKIE, "", cookieOptions(requestOrigin, 0));

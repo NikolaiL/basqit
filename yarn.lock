@@ -3970,6 +3970,7 @@ __metadata:
     eslint-config-next: "npm:~16.2.4"
     eslint-config-prettier: "npm:~10.1.8"
     eslint-plugin-prettier: "npm:~5.5.5"
+    iron-session: "npm:^9.0.1"
     kubo-rpc-client: "npm:~6.1.0"
     matter-js: "npm:^0.20.0"
     next: "npm:~16.2.4"
@@ -8196,6 +8197,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cookie@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "cookie@npm:2.0.1"
+  checksum: 10/9fd785e98334f78e6337f4aafd5a3558a2ff49931b92c9cd9f1f3f042819532dc7f0730d55bd1666bb1d82b86090581d690388764aab1b84dfcd47eb0b959361
+  languageName: node
+  linkType: hard
+
 "core-util-is@npm:~1.0.0":
   version: 1.0.3
   resolution: "core-util-is@npm:1.0.3"
@@ -10964,10 +10972,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"iron-session@npm:^9.0.1":
+  version: 9.0.1
+  resolution: "iron-session@npm:9.0.1"
+  dependencies:
+    cookie: "npm:^2.0.1"
+    iron-webcrypto: "npm:^2.0.0"
+  checksum: 10/35f7c1f8b7d53ad24be9ada4dcb199b7affa89aa95f909bac11a69cbb08875843e3042683507e065f4f6243420c824728ef21a86f57f07b6ddb3fe1a1d2c266e
+  languageName: node
+  linkType: hard
+
 "iron-webcrypto@npm:^1.2.1":
   version: 1.2.1
   resolution: "iron-webcrypto@npm:1.2.1"
   checksum: 10/c1f52ccfe2780efa5438c134538ee4b26c96a87d22f351d896781219efbce25b4fe716d1cb7f248e02da96881760541135acbcc7c0622ffedf71cb0e227bebf9
+  languageName: node
+  linkType: hard
+
+"iron-webcrypto@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "iron-webcrypto@npm:2.0.0"
+  dependencies:
+    uint8array-extras: "npm:^1.5.0"
+  checksum: 10/60267105c8be16d8508088142f53090784622b36eb05777ec09ec9c7c788d6fb29e40504baf2cf74134e11458facf549abe72d2c389f5f99b7b43b17322bc426
   languageName: node
   linkType: hard
 
@@ -16564,6 +16591,13 @@ __metadata:
     uint8arraylist: "npm:^3.0.1"
     uint8arrays: "npm:^6.1.0"
   checksum: 10/9fa67e96077f7a4f839e0b282e9a4da541bb1ae543a1c9fec0a9ec4dc0ac0e723fa86d2779970dda5caa2298641884ef38b1b68897b9ac1f8e3793a9ed500d03
+  languageName: node
+  linkType: hard
+
+"uint8array-extras@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "uint8array-extras@npm:1.5.0"
+  checksum: 10/94fd56a2dda6a7445f5176f301f491814c87757d38e4b3c932299ab54d69ec504830e5d5c18ffa20cf694a69a210315be8b4a2c9952c6334da817ea2d2e1dce0
   languageName: node
   linkType: hard
 

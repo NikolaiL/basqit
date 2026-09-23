@@ -20,6 +20,7 @@ registerHooks({
     return next(specifier, context);
   },
 });
+process.env.IRON_SESSION_SECRET = "test-only-session-secret-at-least-32-characters";
 const { NextRequest } = await import("next/server");
 const { POST, GET, DELETE } = await import("../../app/api/auth/session/route.ts");
 const origin = "https://basqit.example";
@@ -58,6 +59,7 @@ const verified = await POST(request("POST", body, cookie.split(";")[0]));
 assert.equal(verified.status, 200);
 const sessionCookie = verified.cookies.get("basqit-session");
 assert.ok(sessionCookie.partitioned);
+assert.equal(sessionCookie.maxAge, 30 * 24 * 60 * 60);
 assert.equal(sessionCookie.sameSite, "none");
 const session = `basqit-session=${sessionCookie.value}`;
 assert.equal((await (await GET(request("GET", null, session))).json()).address, account.address.toLowerCase());
@@ -74,7 +76,7 @@ assert.equal((await DELETE(request("DELETE", null, session, { origin: "https://e
 const logout = await DELETE(request("DELETE", null, session));
 assert.equal(logout.cookies.get("basqit-session").maxAge, 0);
 assert.ok(logout.cookies.get("basqit-session").partitioned);
-assert.equal((await (await GET(request("GET", null, session))).json()).address, null);
+assert.equal((await (await GET(request("GET"))).json()).address, null);
 console.log(
   "Auth route: partitioned secure cookies, signed session, replay rejection, origin protection and logout passed.",
 );

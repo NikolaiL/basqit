@@ -4,7 +4,7 @@ import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { getPortfolio } from "~~/services/portfolio/server";
 
 export async function GET(request: NextRequest) {
-  if (!getSession(request.cookies.get(SESSION_COOKIE)?.value))
+  if (!(await getSession(request.cookies.get(SESSION_COOKIE)?.value)))
     return NextResponse.json(
       { error: "Sign in with your wallet to view stock portfolios." },
       { status: 401, headers: { "Cache-Control": "no-store" } },

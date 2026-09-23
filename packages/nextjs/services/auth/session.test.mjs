@@ -1,10 +1,11 @@
-import { deleteSession, getSession, issueChallenge, verifyChallenge } from "./session.ts";
+import { getSession, issueChallenge, verifyChallenge } from "./session.ts";
 import assert from "node:assert/strict";
 import { createPublicClient, custom } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { mainnet } from "viem/chains";
 import { createSiweMessage } from "viem/siwe";
 
+process.env.IRON_SESSION_SECRET = "test-only-session-secret-at-least-32-characters";
 const account = privateKeyToAccount(generatePrivateKey());
 const client = createPublicClient({
   chain: mainnet,
@@ -36,10 +37,31 @@ async function verify(challenge, overrides = {}) {
   return verifyChallenge(challenge.id, message, signature, origin, client);
 }
 try {
-  assert.equal(getSession("invented"), undefined);
+  assert.equal(await getSession("invented"), undefined);
   const first = issueChallenge();
   const session = await verify(first);
-  assert.equal(getSession(session.token).address, account.address.toLowerCase());
+  assert.equal((await getSession(session.token)).address, account.address.toLowerCase());
+  assert.equal(await getSession(session.token.slice(0, -8) + "tampered"), undefined);
+  const { spawnSync } = await import("node:child_process");
+  const fresh = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import { getSession } from './services/auth/session.ts';
+    let token = ''; for await (const chunk of process.stdin) token += chunk;
+    console.log(JSON.stringify(await getSession(token)));
+  `,
+    ],
+    { input: session.token, encoding: "utf8", env: process.env },
+  );
+  assert.equal(fresh.status, 0, fresh.stderr);
+  assert.equal(
+    JSON.parse(fresh.stdout).address,
+    account.address.toLowerCase(),
+    "session survives a fresh server process",
+  );
   await assert.rejects(verify(first), /expired/, "one-time challenge");
   for (const overrides of [
     { domain: "evil.example" },
@@ -58,14 +80,12 @@ try {
   const replaced = issueChallenge();
   issueChallenge(replaced.id);
   await assert.rejects(verify(replaced), /expired/);
-  deleteSession(session.token);
-  assert.equal(getSession(session.token), undefined);
   const expiring = await verify(issueChallenge());
   const expiredChallenge = issueChallenge();
-  Date.now = () => originalNow() + 25 * 3600000;
-  assert.equal(getSession(expiring.token), undefined);
+  Date.now = () => originalNow() + 31 * 24 * 3600000;
+  assert.equal(await getSession(expiring.token), undefined);
   await assert.rejects(verify(expiredChallenge), /expired/);
-  console.log("SIWE: signature, domain, URI, chain, nonce replay, logout and expiration checks passed");
+  console.log("SIWE: signature, domain, URI, chain, nonce replay and expiration checks passed");
 } finally {
   Date.now = originalNow;
 }

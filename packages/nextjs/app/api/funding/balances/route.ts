@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "no-store",
       },
     });
-  const session = getSession(request.cookies.get(SESSION_COOKIE)?.value);
+  const session = await getSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (!session) return reply({ error: "Sign in with your wallet to load balances." }, 401);
   if (request.headers.get("sec-fetch-site") === "cross-site")
     return reply({ error: "Cross-site requests are not allowed." }, 403);

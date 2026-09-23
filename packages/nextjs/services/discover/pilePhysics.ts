@@ -327,6 +327,7 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
         const scale = motion.matches ? 1 : previous.size / size;
         entry.returnScale = entry.scale = scale;
         entry.returnAt = engine.timing.timestamp;
+        entry.body.timeScale = motion.matches ? 1 : 0.8 + Math.random() * 0.4;
         Body.scale(entry.body, scale, scale);
         Body.setPosition(entry.body, {
           x: previous.x + entry.origin.x * scale,
