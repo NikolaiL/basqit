@@ -29,14 +29,7 @@ export async function GET(request: NextRequest) {
   const similar = request.nextUrl.searchParams.get("similar");
   const cacheKey = JSON.stringify(["themes-v3", theme.toLowerCase(), similar]);
   const hit = cache.get(cacheKey);
-  // Per-process budget for this preview; move to a shared limiter before running multiple instances.
-  if (Date.now() - windowStarted > 60000) {
-    windowStarted = Date.now();
-    requests = 0;
-  }
-  if (active >= 3 || requests >= 30) return reply({ error: "Lots of ideas arriving. Try again in a moment." }, 429);
-  active++;
-  requests++;
+  let counted = false;
   try {
     const assets = await discoveryCatalog();
     const source = similar ? assets.find(asset => asset.symbol === similar) : undefined;
@@ -55,6 +48,15 @@ export async function GET(request: NextRequest) {
     }
     if (hit && hit.until > Date.now()) return reply({ matches: hit.matches, theme });
     if (!key) return reply({ error: "Stock discovery is not configured yet." }, 503);
+    // Only upstream calls spend the budget; cached, exact-symbol and random answers are free.
+    // ponytail: per-process budget; move to a shared limiter before running multiple instances.
+    if (Date.now() - windowStarted > 60000) {
+      windowStarted = Date.now();
+      requests = 0;
+    }
+    if (active >= 3 || requests >= 30) return reply({ error: "Lots of ideas arriving. Try again in a moment." }, 429);
+    active++;
+    counted = true;
     const questions = Object.fromEntries(
       candidates.map(asset => [
         asset.symbol,
@@ -99,6 +101,7 @@ export async function GET(request: NextRequest) {
     const matches: DiscoveryMatch[] = [];
     for (let index = 0; index < batches.length; index++) {
       const batch = batches[index];
+      if (++requests > 30) return reply({ error: "Lots of ideas arriving. Try again in a moment." }, 429);
       const response = await fetch("https://api.typesafe.ai/v1/systemone", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -144,6 +147,6 @@ export async function GET(request: NextRequest) {
   } catch {
     return reply({ error: "Discovery is taking a break. Try again, or browse all assets." }, 503);
   } finally {
-    active--;
+    if (counted) active--;
   }
 }

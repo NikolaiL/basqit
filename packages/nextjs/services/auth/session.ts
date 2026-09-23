@@ -6,23 +6,12 @@ import { parseSiweMessage } from "viem/siwe";
 export const SESSION_COOKIE = "basqit-session";
 export const CHALLENGE_COOKIE = "basqit-challenge";
 export const SESSION_SECONDS = 30 * 24 * 60 * 60;
-// ponytail: one-time challenges remain process-local; use shared storage for multi-instance sign-in.
-const globals = globalThis as typeof globalThis & {
-  basqitAuth?: {
-    challenges: Map<string, { nonce: string; expires: number }>;
-  };
-};
-const state = (globals.basqitAuth ??= { challenges: new Map() });
-function prune() {
-  for (const [key, value] of state.challenges) if (value.expires <= Date.now()) state.challenges.delete(key);
-}
-export function issueChallenge(previous?: string) {
-  prune();
-  if (previous) state.challenges.delete(previous);
-  if (state.challenges.size >= 10000) throw new Error("Sign-in temporarily unavailable.");
-  const id = randomBytes(32).toString("hex");
+// The challenge lives in a sealed cookie, so sign-in works across server instances without shared storage.
+// ponytail: a sealed challenge can be replayed with its own signature for 5 minutes; that only re-issues the signer's session.
+const CHALLENGE_SECONDS = 5 * 60;
+export async function issueChallenge() {
   const nonce = randomBytes(16).toString("hex");
-  state.challenges.set(id, { nonce, expires: Date.now() + 5 * 60000 });
+  const id = await sealData({ nonce }, { password: sessionPassword(), ttl: CHALLENGE_SECONDS });
   return { id, nonce };
 }
 function sessionPassword() {
@@ -50,10 +39,11 @@ export async function verifyChallenge(
   origin: string,
   client: PublicClient,
 ) {
-  prune();
-  const challenge = state.challenges.get(id);
-  state.challenges.delete(id);
-  if (!challenge) throw new Error("Sign-in expired. Please try again.");
+  const challenge =
+    id.length <= 4096
+      ? await unsealData<{ nonce?: string }>(id, { password: sessionPassword(), ttl: CHALLENGE_SECONDS })
+      : {};
+  if (typeof challenge.nonce !== "string") throw new Error("Sign-in expired. Please try again.");
   const parsed = parseSiweMessage(message);
   if (
     parsed.uri !== origin ||

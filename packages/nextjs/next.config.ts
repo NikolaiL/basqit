@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["rhh.ngrok.dev", "basqit.ngrok.dev"],
+  allowedDevOrigins: process.env.BASQIT_DEV_ORIGINS?.split(",").filter(Boolean),
   reactStrictMode: true,
   outputFileTracingIncludes: {
     "/og/farcaster": ["./public/thumbnail.jpg"],

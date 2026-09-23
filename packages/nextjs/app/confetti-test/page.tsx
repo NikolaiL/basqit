@@ -11,7 +11,7 @@ export default function ConfettiTestPage() {
     <main className="mx-auto w-full max-w-lg p-6">
       <h1 className="text-3xl font-bold">Token confetti</h1>
       <p>
-        Preview the swap celebration with Apple and NVIDIA logos, plus the Robinhood fallback. No wallet or transaction
+        Preview the swap celebration with Apple and NVIDIA logos, plus the fallback logo. No wallet or transaction
         needed.
       </p>
       <p className="text-sm opacity-70">Animation respects your device’s reduced-motion setting.</p>

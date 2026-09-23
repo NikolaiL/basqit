@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (raw.length > 16000) return reply({ error: "Request too large." }, 413);
     const body = JSON.parse(raw);
     if (body.action === "nonce") {
-      const challenge = issueChallenge(request.cookies.get(CHALLENGE_COOKIE)?.value);
+      const challenge = await issueChallenge();
       const response = reply({ nonce: challenge.nonce });
       response.cookies.set(CHALLENGE_COOKIE, challenge.id, cookieOptions(requestOrigin, 300));
       return response;

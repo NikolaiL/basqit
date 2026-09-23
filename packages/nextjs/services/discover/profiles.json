@@ -1,23 +1,23 @@
 {
   "CRM": {
     "website": "https://www.salesforce.com/eu/?ir=1&bc=OTH",
-    "description": "Salesforce is the #1 Agentic AI CRM, helping companies become Agentic Enterprises where humans and agents drive success together through a unified AI, data, and Customer 360 platform."
+    "description": "Salesforce makes customer relationship management software, including sales, service, marketing and AI agent tools."
   },
   "P": {
     "website": "https://www.everpuredata.com/",
-    "description": "Simplify enterprise AI, cloud, and data storage with the Everpure platform. Reduce cost and risk, improve resilience, and move faster with built-in efficiency."
+    "description": "Everpure makes enterprise data storage systems and data management software for cloud and AI workloads."
   },
   "CIEN": {
     "website": "https://ciena.com",
-    "description": ""
+    "description": "Ciena makes optical networking equipment and software used by telecom carriers, cloud providers and data centers."
   },
   "ON": {
     "website": "https://onsemi.com",
-    "description": ""
+    "description": "onsemi makes power and sensing semiconductors used in cars, industrial equipment and energy systems."
   },
   "APLD": {
     "website": "https://www.applieddigital.com/",
-    "description": "Discover the epicenter of AI innovation at Applied Digital, where our purpose-built data centers are engineered for peak performance. Revolutionize accelerated computing with our state-of-the-art design and power-centric facilities."
+    "description": "Applied Digital builds and operates data centers for AI and high-performance computing."
   },
   "AEHR": {
     "website": "https://www.aehr.com/",
@@ -29,7 +29,7 @@
   },
   "QBTS": {
     "website": "https://www.dwavequantum.com/",
-    "description": "Unlike other quantum systems that are years away from practical use, D-Wave's annealing quantum computing technology is ready for real-world applications today."
+    "description": "D-Wave builds quantum computers, including annealing systems offered through its cloud service."
   },
   "SATS": {
     "website": "https://echostar.com",
@@ -37,7 +37,7 @@
   },
   "FIX": {
     "website": "https://comfortsystemsusa.com",
-    "description": ""
+    "description": "Comfort Systems USA installs and services mechanical and electrical systems such as HVAC in commercial buildings."
   },
   "MTSI": {
     "website": "https://www.macom.com/",
@@ -45,23 +45,23 @@
   },
   "SMCI": {
     "website": "https://supermicro.com",
-    "description": ""
+    "description": "Supermicro makes servers and storage systems, including rack-scale systems for AI data centers."
   },
   "DELL": {
     "website": "https://dell.com",
-    "description": ""
+    "description": "Dell Technologies sells PCs, servers, storage and IT services to consumers and businesses."
   },
   "MXL": {
     "website": "https://www.maxlinear.com/",
-    "description": ""
+    "description": "MaxLinear designs radio-frequency, analog and mixed-signal chips for broadband, connectivity and infrastructure."
   },
   "RUN": {
     "website": "https://www.sunrun.com/",
-    "description": "Join 1 million+ homes powered by Sunrun. Get reliable home battery storage & solar energy to lower your electric bills. Call (833) 324-5886 for an instant quote!"
+    "description": "Sunrun installs residential solar panels and home battery storage in the United States."
   },
   "WDAY": {
     "website": "https://www.workday.com/",
-    "description": "Experience a new way to work with Sana and agentic AI from Workday."
+    "description": "Workday makes cloud software for human resources, payroll and finance."
   },
   "SPCX": {
     "website": "https://www.spacex.com/",
@@ -69,7 +69,7 @@
   },
   "GLXY": {
     "website": "https://www.galaxy.com/",
-    "description": "Galaxy builds the economy that runs on code \u2014 investing across digital assets moving onchain and the AI data centers powering the future of finance."
+    "description": "Galaxy is a financial services company focused on digital assets, and also develops data center infrastructure."
   },
   "CRWD": {
     "website": "https://www.crowdstrike.com/en-us/",
@@ -77,7 +77,7 @@
   },
   "AVGO": {
     "website": "https://www.broadcom.com/",
-    "description": "Broadcom delivers semiconductors and infrastructure software for global enterprises\u2019 most complex, mission-critical needs."
+    "description": "Broadcom delivers semiconductors and infrastructure software for global enterprises’ most complex, mission-critical needs."
   },
   "SPY": {
     "website": "https://www.ssga.com/gr/en_gb/institutional",
@@ -85,7 +85,7 @@
   },
   "CCL": {
     "website": "https://www.carnivalcorp.com/",
-    "description": ""
+    "description": "Carnival operates cruise lines, including Carnival Cruise Line, Princess Cruises and Holland America."
   },
   "GLD": {
     "website": "https://www.ssga.com/gr/en_gb/institutional",
@@ -93,11 +93,11 @@
   },
   "SNOW": {
     "website": "https://snowflake.com",
-    "description": ""
+    "description": "Snowflake provides a cloud data platform for storing, analysing and sharing data."
   },
   "FICO": {
     "website": "https://www.fico.com/",
-    "description": ""
+    "description": "FICO makes analytics software and the FICO Score, a widely used consumer credit score."
   },
   "PR": {
     "website": "https://permianres.com",
@@ -109,19 +109,19 @@
   },
   "WYFI": {
     "website": "https://www.whitefiber.com/",
-    "description": "High-performance Infrastructure solutions for AI/ML."
+    "description": "WhiteFiber provides infrastructure and cloud services for AI and machine learning workloads."
   },
   "NNE": {
     "website": "https://nanonuclearenergy.com",
-    "description": ""
+    "description": "Nano Nuclear Energy is developing small portable nuclear microreactors."
   },
   "GE": {
     "website": "https://www.geaerospace.com/",
-    "description": "GE Aerospace is mobilizing a new era of growth in aerospace, aviation, and defense engineering. Explore GE Aerospace's commercial and general propulsion powers."
+    "description": "GE Aerospace designs and makes jet engines and systems for commercial and military aircraft."
   },
   "SNAP": {
     "website": "https://www.snap.com/",
-    "description": "We believe the camera presents the greatest opportunity to improve the way people live and communicate."
+    "description": "Snap makes Snapchat, a camera-based messaging and social app, and Spectacles smart glasses."
   },
   "SKHY": {
     "website": "https://www.skhynix.com/",
@@ -137,27 +137,27 @@
   },
   "TSM": {
     "website": "https://tsmc.com",
-    "description": ""
+    "description": "TSMC is the world's largest contract chipmaker, manufacturing chips designed by other companies."
   },
   "NU": {
     "website": "https://nubank.com.br/",
-    "description": "Saiba mais sobre o Nubank - sua vida financeira sem complica\u00e7\u00f5es, asteriscos ou letras mi\u00fadas."
+    "description": "Nu Holdings operates Nubank, a digital bank serving customers in Brazil, Mexico and Colombia."
   },
   "INTC": {
     "website": "https://intel.com",
-    "description": ""
+    "description": "Intel designs and manufactures processors for PCs and data centers, and offers contract chip manufacturing."
   },
   "MSFT": {
     "website": "https://microsoft.com",
-    "description": ""
+    "description": "Microsoft makes Windows, Office, the Azure cloud platform, Xbox and LinkedIn."
   },
   "RCAT": {
     "website": "https://redcat.red",
-    "description": "Defining the Future of All Domain Operations Our mission is to provide critical situational awareness and enhance the effectiveness and safety of military and security operations domestically and globally. Explore [\u2026]"
+    "description": "Red Cat makes drones and related systems for military and public safety use."
   },
   "RGTI": {
     "website": "https://www.rigetti.com/",
-    "description": "Practical quantum computing. Delivered over the cloud."
+    "description": "Rigetti builds superconducting quantum computers and offers access to them through the cloud."
   },
   "TTWO": {
     "website": "https://www.take2games.com/",
@@ -165,35 +165,35 @@
   },
   "META": {
     "website": "https://www.meta.com/",
-    "description": "Shop AI glasses, take photos, play music, and talk to AI. Explore Meta wearable tech for everyday life. Ray-Ban Meta, Oakley Meta & Quest 3S starting at $224."
+    "description": "Meta operates Facebook, Instagram, WhatsApp and Threads, and makes Quest headsets and AI glasses."
   },
   "VICR": {
     "website": "https://www.vicorpower.com/",
-    "description": "A better way to deliver power: Vicor is a leading, global power technology company, focused on advancing power delivery with modular power components."
+    "description": "Vicor designs and makes modular power components used in data centers, vehicles and industrial equipment."
   },
   "TSEM": {
     "website": "https://towersemi.com",
-    "description": ""
+    "description": "Tower Semiconductor is a contract chipmaker specialising in analog, radio-frequency and sensor chips."
   },
   "RDDT": {
     "website": "https://redditinc.com",
-    "description": "Homepage - Reddit"
+    "description": "Reddit runs a social platform of topic-based online communities."
   },
   "GLW": {
     "website": "https://corning.com",
-    "description": ""
+    "description": "Corning makes specialty glass, ceramics and optical fiber, including Gorilla Glass for phones."
   },
   "UPS": {
     "website": "https://www.ups.com/",
-    "description": ""
+    "description": "UPS delivers packages and provides freight and logistics services worldwide."
   },
   "PANW": {
     "website": "https://www.paloaltonetworks.com/",
-    "description": "Implement Zero Trust, Secure your Network, Cloud workloads, Hybrid Workforce, Leverage Threat Intelligence & Security Consulting. Cybersecurity Services & Education for CISO\u2019s, Head of Infrastructure, Network Security Engineers, Cloud Architects & SOC Managers"
+    "description": "Palo Alto Networks makes cybersecurity products for networks, cloud workloads and security operations."
   },
   "LHX": {
     "website": "https://www.l3harris.com/",
-    "description": "At L3Harris, we anticipate and mitigate risk with agile end-to-end solutions that meet our customers' mission-critical needs across all domains."
+    "description": "L3Harris makes defense and aerospace systems, including communications, sensors and space technology."
   },
   "FLY": {
     "website": "https://fireflyspace.com",
@@ -201,35 +201,35 @@
   },
   "SNDK": {
     "website": "https://www.sandisk.com/",
-    "description": ""
+    "description": "Sandisk makes flash memory and storage products, including SSDs and memory cards."
   },
   "BA": {
     "website": "https://www.boeing.com:443/",
-    "description": "Discover news and information about The Boeing Company, a leading global aerospace company that develops, manufactures and services commercial airplanes, defense products and space systems."
+    "description": "Boeing designs and builds commercial airplanes, defense systems and spacecraft."
   },
   "INTU": {
     "website": "https://intuit.com",
-    "description": ""
+    "description": "Intuit makes financial software including TurboTax, QuickBooks and Credit Karma."
   },
   "ELF": {
     "website": "https://www.elfbeauty.com/",
-    "description": "e.l.f. Beauty is a bold disruptor with a kind heart. We stand with every eye, lip, face, paw and fin. We\u2019re making the best of beauty accessible to everyone."
+    "description": "e.l.f. Beauty sells affordable cosmetics and skincare products."
   },
   "AMZN": {
     "website": "https://www.amazon.com/",
-    "description": ""
+    "description": "Amazon runs an online store, the AWS cloud platform, Prime Video and advertising services."
   },
   "NFLX": {
     "website": "https://www.netflix.com/gr-en/",
-    "description": "Watch Netflix movies & TV shows online or stream right to your smart TV, game console, PC, Mac, mobile, tablet and more."
+    "description": "Netflix is a subscription streaming service for films, TV series and games."
   },
   "CRCL": {
     "website": "https://www.circle.com/",
-    "description": "Build onchain with a trusted full-stack platform including Arc, CPN, and USDC. Power payments, trading, and access to the agentic economy."
+    "description": "Circle issues the USDC stablecoin and provides payment and blockchain infrastructure."
   },
   "USAR": {
     "website": "https://usare.com",
-    "description": ""
+    "description": "USA Rare Earth is developing a domestic supply chain for rare earth magnets."
   },
   "VST": {
     "website": "https://vistracorp.com",
@@ -237,7 +237,7 @@
   },
   "CSCO": {
     "website": "https://cisco.com",
-    "description": ""
+    "description": "Cisco makes networking equipment, security products and collaboration software such as Webex."
   },
   "FISV": {
     "website": "https://www.fiserv.com/",
@@ -245,27 +245,27 @@
   },
   "GOOGL": {
     "website": "https://abc.xyz",
-    "description": ""
+    "description": "Alphabet is the parent company of Google, including Search, YouTube, Android and Google Cloud."
   },
   "BB": {
     "website": "https://www.blackberry.com/en",
-    "description": "Learn how BlackBerry operates through two divisions \u2014 BlackBerry Secure Communications and QNX \u2014 delivering mission\u2011critical security and embedded software."
+    "description": "BlackBerry provides secure communications software and QNX embedded software used in cars."
   },
   "CVNA": {
     "website": "https://carvana.com",
-    "description": ""
+    "description": "Carvana sells and buys used cars online."
   },
   "AXTI": {
     "website": "https://www.axt.com/",
-    "description": "AXT (NASDAQ: AXTI) manufactures high-purity indium phosphide (InP), gallium arsenide (GaAs), and germanium (Ge) substrates with proprietary VGF crystal growth \u2014 one of only three high-quality InP suppliers worldwide."
+    "description": "AXT (NASDAQ: AXTI) manufactures high-purity indium phosphide (InP), gallium arsenide (GaAs), and germanium (Ge) substrates with proprietary VGF crystal growth — one of only three high-quality InP suppliers worldwide."
   },
   "MOD": {
     "website": "https://modine.com",
-    "description": ""
+    "description": "Modine makes thermal management products, including cooling systems for data centers and vehicles."
   },
   "LULU": {
     "website": "https://lululemon.com",
-    "description": ""
+    "description": "lululemon designs and sells athletic apparel."
   },
   "LMT": {
     "website": "https://lockheedmartin.com",
@@ -281,19 +281,19 @@
   },
   "OUST": {
     "website": "https://ouster.com",
-    "description": "Discover Ouster's digital lidar sensors, transforming autonomy in vehicles, robotics, and smart cities. Explore our cutting-edge technology today."
+    "description": "Ouster makes digital lidar sensors for vehicles, robotics and smart infrastructure."
   },
   "IREN": {
     "website": "https://iren.com",
-    "description": "Explore IREN's 100% renewable-powered data centers offering AI Cloud, GPU clusters, colocation, and build-to-suit infrastructure for scalable compute workloads."
+    "description": "IREN operates renewable-powered data centers for AI cloud computing and bitcoin mining."
   },
   "MRNA": {
     "website": "https://www.modernatx.com/",
-    "description": "Learn how we\u2019re changing the world of medicine. Discover career opportunities, our product pipeline, and browse media resources. Meet Moderna."
+    "description": "Moderna develops mRNA medicines, including vaccines."
   },
   "LRCX": {
     "website": "https://lamresearch.com",
-    "description": ""
+    "description": "Lam Research makes wafer fabrication equipment used to manufacture semiconductors."
   },
   "BND": {
     "website": "https://investor.vanguard.com/corporate-portal",
@@ -301,19 +301,19 @@
   },
   "CEG": {
     "website": "https://www.constellationenergy.com/",
-    "description": "Discover how Constellation's strategy and purpose makes us the nation's largest producer of clean, reliable energy for homes, businesses and industries."
+    "description": "Constellation Energy is the largest US producer of nuclear power and also sells electricity and gas."
   },
   "ALAB": {
     "website": "https://asteralabs.com",
-    "description": ""
+    "description": "Astera Labs makes connectivity chips that move data inside AI and cloud servers."
   },
   "TEM": {
     "website": "https://tempus.com",
-    "description": ""
+    "description": "Tempus uses AI and molecular testing to support diagnosis and treatment decisions in healthcare."
   },
   "BULL": {
     "website": "https://www.webull.com:443/",
-    "description": "Start investing with Webull's intuitive platform for stocks, options, and ETFs. Join now for free trading tools and community insights."
+    "description": "Webull runs an online brokerage app for trading stocks, options and ETFs."
   },
   "UNH": {
     "website": "https://www.unitedhealthgroup.com/",
@@ -321,19 +321,19 @@
   },
   "CLOV": {
     "website": "https://www.cloverhealth.com/",
-    "description": "With most plans at $0/month, Clover is a Medicare Advantage plan giving members more coverage for less cost, including dental, vision, hearing & more."
+    "description": "Clover Health offers Medicare Advantage insurance plans."
   },
   "BABA": {
     "website": "https://www.alibabagroup.com/en-US/",
-    "description": "Alibaba Group\u2019s mission is to make it easy to do business anywhere. We enable businesses to transform the way they market, sell and operate and improve their efficiencies. We provide the technology infrastructure and marketing reach to help merchants, brands, retailers and other businesses to leverage the power of new technology to engage with their users and customers and operate in a more efficient way."
+    "description": "Alibaba runs e-commerce marketplaces such as Taobao and Tmall, and a cloud computing business."
   },
   "SIMO": {
     "website": "https://siliconmotion.com",
-    "description": ""
+    "description": "Silicon Motion designs controller chips for flash memory storage devices."
   },
   "WDC": {
     "website": "https://www.westerndigital.com/",
-    "description": ""
+    "description": "Western Digital makes hard disk drives for data centers and consumers."
   },
   "CLSK": {
     "website": "https://www.cleanspark.com/",
@@ -341,7 +341,7 @@
   },
   "PLTR": {
     "website": "https://www.palantir.com/",
-    "description": "We build software that empowers organizations to effectively integrate their data, decisions, and operations."
+    "description": "Palantir makes data integration and analytics software for governments and businesses."
   },
   "MU": {
     "website": "https://www.micron.com/",
@@ -349,7 +349,7 @@
   },
   "ASTS": {
     "website": "https://ast-science.com",
-    "description": "The SpaceMobile Network Our BlueBird satellites provide full broadband directly to standard smartphones without specialized hardware or phone modifications. Make video calls, browse the web, and use your apps at 4G and 5G speeds from anywhere on Earth. How it Works How You Connect Limitless Possibilities Partnering for a Connected Planet We have partnered with nearly [\u2026]"
+    "description": "AST SpaceMobile is building a satellite network that connects directly to ordinary smartphones."
   },
   "POWL": {
     "website": "https://www.powellind.com/",
@@ -365,11 +365,11 @@
   },
   "TER": {
     "website": "https://teradyne.com",
-    "description": ""
+    "description": "Teradyne makes automated test equipment for semiconductors and industrial robots."
   },
   "CRWV": {
     "website": "https://coreweave.com",
-    "description": "CoreWeave is the force multiplier that empowers pioneers with momentum, magnitude, and mastery\u2014enabling them to innovate with confidence. Explore the #1 AI Cloud."
+    "description": "CoreWeave operates a cloud platform that rents out GPU computing for AI."
   },
   "CLS": {
     "website": "https://www.celestica.com/",
@@ -377,7 +377,7 @@
   },
   "FIG": {
     "website": "https://www.figma.com/",
-    "description": "Figma is the canvas where design, code, and AI come together. From first idea to shipped product \u2014 go from concept to production with your whole team, in one place."
+    "description": "Figma makes browser-based design and prototyping software."
   },
   "AMD": {
     "website": "https://www.amd.com/en.html",
@@ -393,7 +393,7 @@
   },
   "CRDO": {
     "website": "https://credosemi.com",
-    "description": ""
+    "description": "Credo makes high-speed connectivity chips and cables for data centers."
   },
   "SMH": {
     "website": "https://vaneck.com",
@@ -405,7 +405,7 @@
   },
   "NOW": {
     "website": "https://servicenow.com",
-    "description": ""
+    "description": "ServiceNow makes cloud software for automating IT, employee and customer service workflows."
   },
   "XLK": {
     "website": "https://www.ssga.com/gr/en_gb/institutional",
@@ -413,7 +413,7 @@
   },
   "AMBA": {
     "website": "https://ambarella.com",
-    "description": ""
+    "description": "Ambarella designs chips for video processing and AI vision in cameras and vehicles."
   },
   "NVDA": {
     "website": "https://www.nvidia.com/en-eu/",
@@ -421,11 +421,11 @@
   },
   "JOBY": {
     "website": "https://www.jobyaviation.com/",
-    "description": "Experience Joby Aviation\u2019s all-electric air taxi: vertical take-off and landing, seamless door to door travel, all from our app."
+    "description": "Joby Aviation is developing an all-electric air taxi that takes off and lands vertically."
   },
   "QUBT": {
     "website": "https://quantumcomputinginc.com",
-    "description": "Putting photons to work"
+    "description": "Quantum Computing Inc. develops photonic chips and quantum-inspired computing technology."
   },
   "USO": {
     "website": "https://www.uscfinvestments.com/",
@@ -437,7 +437,7 @@
   },
   "F": {
     "website": "https://ford.com",
-    "description": ""
+    "description": "Ford makes cars and trucks, including electric vehicles, and sells commercial vehicle services."
   },
   "ZS": {
     "website": "https://www.zscaler.com:443/",
@@ -445,15 +445,15 @@
   },
   "COIN": {
     "website": "https://coinbase.com",
-    "description": ""
+    "description": "Coinbase operates a cryptocurrency exchange and related financial services."
   },
   "XOM": {
     "website": "https://corporate.exxonmobil.com",
-    "description": "ExxonMobil scientists are pioneering new research & technologies to reduce emissions. Learn how we are responsibly meeting the world's energy needs."
+    "description": "ExxonMobil produces oil and natural gas, and makes fuels and chemicals."
   },
   "NBIS": {
     "website": "https://nebius.com",
-    "description": "Build and scale faster on the purpose-built AI cloud, engineered from silicon to API."
+    "description": "Nebius operates a cloud platform built for AI training and inference."
   },
   "SHY": {
     "website": "https://www.blackrock.com/corporate/global-directory#ishares",
@@ -461,19 +461,19 @@
   },
   "SMR": {
     "website": "https://www.nuscalepower.com/",
-    "description": "We are the global leaders in SMR nuclear technology with our groundbreaking NuScale Power Module."
+    "description": "NuScale Power designs small modular nuclear reactors."
   },
   "SOUN": {
     "website": "https://www.soundhound.com/",
-    "description": "SoundHound AI's OASYS platform powers voice-native AI agents that resolve service, operations, and commerce conversations for enterprise brands."
+    "description": "SoundHound AI makes voice AI software for businesses, cars and restaurants."
   },
   "POET": {
     "website": "https://www.poet-technologies.com/",
-    "description": "Explore POET Technologies\u2019 innovative opto-electronic solutions driving the future of AI and telecommunications.\u201d"
+    "description": "POET Technologies develops opto-electronic chips for AI data centers and telecom."
   },
   "APP": {
     "website": "https://applovin.com/en",
-    "description": "Reach over a billion daily users in mobile games. AppLovin helps consumer brands and gaming apps scale their business profitably."
+    "description": "AppLovin provides software that helps apps and brands advertise and grow in mobile games."
   },
   "AAOI": {
     "website": "https://ao-inc.com",
@@ -481,23 +481,23 @@
   },
   "LITE": {
     "website": "https://www.lumentum.com/",
-    "description": "Discover how Lumentum enables innovation through optical and photonic technologies for cloud networking, 3D sensing, lasers, and advanced manufacturing."
+    "description": "Lumentum makes optical and photonic products, including lasers and components for cloud networks."
   },
   "AEIS": {
     "website": "https://www.advancedenergy.com/en-us/",
-    "description": ""
+    "description": "Advanced Energy makes precision power conversion products for semiconductor, data center and industrial use."
   },
   "KTOS": {
     "website": "https://kratosdefense.com",
-    "description": ""
+    "description": "Kratos makes defense technology, including drones, satellite systems and propulsion."
   },
   "AMAT": {
     "website": "https://appliedmaterials.com",
-    "description": ""
+    "description": "Applied Materials makes equipment used to manufacture semiconductors and displays."
   },
   "MRVL": {
     "website": "https://marvell.com",
-    "description": ""
+    "description": "Marvell designs chips for data centers, networking and custom AI computing."
   },
   "JBL": {
     "website": "https://jabil.com",
@@ -505,31 +505,31 @@
   },
   "LLY": {
     "website": "https://lilly.com",
-    "description": ""
+    "description": "Eli Lilly is a pharmaceutical company whose medicines include treatments for diabetes and obesity."
   },
   "QCOM": {
     "website": "https://www.qualcomm.com/",
-    "description": "Learn how Qualcomm transforms industries with leading edge AI, high-performance, low-power computing and unrivaled connectivity."
+    "description": "Qualcomm designs mobile processors and wireless chips, and licenses wireless technology."
   },
   "JNJ": {
     "website": "https://www.jnj.com/",
-    "description": ""
+    "description": "Johnson & Johnson develops medicines and medical devices."
   },
   "KSS": {
     "website": "https://corporate.kohls.com",
-    "description": ""
+    "description": "Kohl's runs department stores and an online store in the United States."
   },
   "ANET": {
     "website": "https://www.arista.com/",
-    "description": ""
+    "description": "Arista Networks makes networking switches and software for cloud and AI data centers."
   },
   "CTSH": {
     "website": "https://www.cognizant.com/",
-    "description": "The most impactful AI isn\u2019t bought\u2014it\u2019s built. We bridge the gap between the AI that\u2019s out there, and the AI your business needs."
+    "description": "Cognizant provides IT consulting and outsourcing services, including AI projects."
   },
   "PL": {
     "website": "https://www.planet.com:443/",
-    "description": "Discover how Planet's daily satellite imagery and insights empower global decisions and actions with a multidimensional view of our changing planet."
+    "description": "Planet Labs operates a fleet of satellites that image the Earth daily and sells that data."
   },
   "IONQ": {
     "website": "https://www.ionq.com/",
@@ -541,35 +541,35 @@
   },
   "SHOP": {
     "website": "https://www.shopify.com/",
-    "description": "Try Shopify free. Build or grow your business fast with AI. Get more than ecommerce software with tools to manage every part of your business."
+    "description": "Shopify makes software businesses use to run online stores and point-of-sale systems."
   },
   "NVTS": {
     "website": "https://navitassemi.com",
-    "description": ""
+    "description": "Navitas makes gallium nitride and silicon carbide power chips."
   },
   "PATH": {
     "website": "https://www.uipath.com/",
-    "description": "Transform enterprise operations with the UiPath Platform\u2122 for business orchestration and automation, enabling AI agents, robots, and people to deliver secure, compliant outcomes at scale."
+    "description": "UiPath makes software for automating business processes, including AI agents."
   },
   "UMC": {
     "website": "https://umc.com",
-    "description": ""
+    "description": "UMC is a Taiwanese contract chipmaker."
   },
   "ORCL": {
     "website": "https://oracle.com",
-    "description": ""
+    "description": "Oracle makes database software, business applications and cloud infrastructure."
   },
   "COHR": {
     "website": "https://www.coherent.com/",
-    "description": "Learn how Coherent empowers innovations and breakthrough technologies for the industrial, communications, electronics, and instrumentation markets."
+    "description": "Coherent makes lasers, optical networking components and engineered materials."
   },
   "GEV": {
     "website": "https://www.gevernova.com/",
-    "description": "GE Vernova is accelerating the path to more reliable, affordable, and sustainable energy through our innovative portfolio of electrification and decarbonization technologies."
+    "description": "GE Vernova makes equipment for power generation and electrical grids, including gas and wind turbines."
   },
   "AUR": {
     "website": "https://aurora.tech",
-    "description": "Step inside the world of self-driving freight, powered by the Aurora Driver. Delivering the benefits of self-driving technology safely, quickly, and broadly."
+    "description": "Aurora develops self-driving technology for trucks."
   },
   "IBM": {
     "website": "https://www.ibm.com/us-en",
@@ -577,31 +577,31 @@
   },
   "NAVN": {
     "website": "https://navan.com",
-    "description": "Streamline your corporate travel management and expense processes in one app. Save time, gain efficiency, and reduce costs with this powerful, all-in-one solution."
+    "description": "Navan makes software for managing corporate travel and expenses."
   },
   "INOD": {
     "website": "https://innodata.com",
-    "description": ""
+    "description": "Innodata provides data engineering and training data services for AI models."
   },
   "AAPL": {
     "website": "https://www.apple.com/",
-    "description": "Discover the innovative world of Apple and shop everything iPhone, iPad, Apple Watch, Mac, and Apple TV, plus explore accessories, entertainment, and expert device support."
+    "description": "Apple designs the iPhone, Mac, iPad, Apple Watch and services such as the App Store and Apple Music."
   },
   "AMC": {
     "website": "https://amctheatres.com",
-    "description": ""
+    "description": "AMC Entertainment operates movie theaters in the United States and Europe."
   },
   "RIVN": {
     "website": "https://rivian.com",
-    "description": "Discover Rivian's long-range electric vehicles, innovative EV trucks, SUVs and vans built for adventure. Join the movement towards a sustainable future."
+    "description": "Rivian designs and makes electric trucks, SUVs and delivery vans."
   },
   "GME": {
     "website": "https://gamestop.com",
-    "description": ""
+    "description": "GameStop sells video games, consoles and collectibles in stores and online."
   },
   "MPWR": {
     "website": "https://monolithicpower.com",
-    "description": ""
+    "description": "Monolithic Power Systems designs power management chips."
   },
   "PENG": {
     "website": "https://www.penguinsolutions.com/en-us",
@@ -609,7 +609,7 @@
   },
   "NET": {
     "website": "https://www.cloudflare.com/",
-    "description": "Welcome to Cloudflare - Powering the next generation of applications"
+    "description": "Cloudflare runs a global network that provides security, performance and developer services for websites and apps."
   },
   "SCHD": {
     "website": "https://schwabassetmanagement.com",
@@ -617,11 +617,11 @@
   },
   "LUNR": {
     "website": "https://intuitivemachines.com",
-    "description": ""
+    "description": "Intuitive Machines builds lunar landers and space infrastructure."
   },
   "MSTR": {
     "website": "https://strategy.com",
-    "description": ""
+    "description": "Strategy, formerly MicroStrategy, makes business analytics software and holds bitcoin as a treasury asset."
   },
   "ABCL": {
     "website": "https://www.abcellera.com/",
@@ -629,11 +629,11 @@
   },
   "AXON": {
     "website": "https://www.axon.com/",
-    "description": "The Axon Network connects people, devices, and apps to protect life in all regards From our TASER smart devices, to police body cameras, to our industry leading cloud based evidence management software, we are the world\u2019s premier public safety company and are committed to delivering safe, secure solutions for law enforcement, militaries, and citizens alike We are Axon"
+    "description": "The Axon Network connects people, devices, and apps to protect life in all regards From our TASER smart devices, to police body cameras, to our industry leading cloud based evidence management software, we are the world’s premier public safety company and are committed to delivering safe, secure solutions for law enforcement, militaries, and citizens alike We are Axon"
   },
   "TSLA": {
     "website": "https://tesla.com",
-    "description": ""
+    "description": "Tesla makes electric vehicles, energy storage and solar products."
   },
   "EWT": {
     "website": "https://www.blackrock.com/corporate/global-directory#ishares",
@@ -641,11 +641,11 @@
   },
   "FTNT": {
     "website": "https://www.fortinet.com/",
-    "description": "Fortinet delivers cybersecurity everywhere you need it. We secure the entire digital attack surface from devices, data, and apps and from data center to home office."
+    "description": "Fortinet makes network security products such as firewalls."
   },
   "HPE": {
     "website": "https://hpe.com",
-    "description": ""
+    "description": "Hewlett Packard Enterprise sells servers, storage, networking and hybrid cloud services."
   },
   "VSAT": {
     "website": "https://www.viasat.com/",
@@ -653,7 +653,7 @@
   },
   "ADBE": {
     "website": "https://adobe.com",
-    "description": ""
+    "description": "Adobe makes creative and document software, including Photoshop, Premiere Pro and Acrobat."
   },
   "XNDU": {
     "website": "https://xanadu.ai",
@@ -661,7 +661,7 @@
   },
   "DDOG": {
     "website": "https://www.datadoghq.com/",
-    "description": "See inside any stack, any app, at any scale, anywhere."
+    "description": "Datadog makes cloud monitoring and security software for applications and infrastructure."
   },
   "RDW": {
     "website": "https://rdw.com/",
@@ -669,23 +669,23 @@
   },
   "BE": {
     "website": "https://bloomenergy.com",
-    "description": ""
+    "description": "Bloom Energy makes solid oxide fuel cells that generate electricity on site."
   },
   "DJT": {
     "website": "https://tmtgcorp.com",
-    "description": "At Trump Media, our mission is to end Big Tech\u2019s assault on free speech by opening up the Internet and giving people their voices back. We\u2019re achieving our mission through our social media platform Truth Social, our streaming service Truth+, and our forthcoming financial services and FinTech brand Truth.Fi."
+    "description": "Trump Media & Technology Group operates the Truth Social platform."
   },
   "OKLO": {
     "website": "https://oklo.com",
-    "description": "Oklo Inc. is developing fast fission power plants to deliver clean, reliable, affordable energy at scale, establishing a domestic supply chain for\u2026"
+    "description": "Oklo Inc. is developing fast fission power plants to deliver clean, reliable, affordable energy at scale, establishing a domestic supply chain for…"
   },
   "ZM": {
     "website": "https://www.zoom.com/",
-    "description": "Modernize workflows with Zoom's trusted collaboration tools: including video meetings, Zoom Chat, VoIP phone, webinars, whiteboard, contact center, and events."
+    "description": "Zoom makes video meeting, chat and phone software."
   },
   "FLNC": {
     "website": "https://fluenceenergy.com",
-    "description": ""
+    "description": "Fluence Energy provides battery energy storage systems and software for power grids."
   },
   "SLV": {
     "website": "https://www.blackrock.com/corporate/global-directory#ishares",
@@ -693,23 +693,23 @@
   },
   "SOFI": {
     "website": "https://sofi.com",
-    "description": ""
+    "description": "SoFi offers online banking, lending and investing services."
   },
   "DOCN": {
     "website": "https://www.digitalocean.com/",
-    "description": "Run AI products in production with a unified stack for agents, inference, and cloud\u2014built for control, performance, and economics at scale."
+    "description": "DigitalOcean provides cloud computing services for developers and small businesses."
   },
   "WULF": {
     "website": "https://www.terawulf.com/",
-    "description": "Energy infrastructure for next-generation AI and high-performance computing. TeraWulf delivers scalable, power-secured infrastructure for AI and HPC growth."
+    "description": "TeraWulf operates data centers powered mainly by zero-carbon energy for bitcoin mining and AI computing."
   },
   "COST": {
     "website": "https://www.costco.com/",
-    "description": "Shop Costco.com for electronics, computers, furniture, outdoor living, appliances, jewelry and more. Enjoy low warehouse prices on name-brands products delivered to your door"
+    "description": "Costco operates membership warehouse stores."
   },
   "TTD": {
     "website": "https://www.thetradedesk.com/",
-    "description": "From brand building to performance marketing, our omnichannel platform was built with one goal: helping you reach yours."
+    "description": "The Trade Desk makes a platform advertisers use to buy digital ads."
   },
   "HWM": {
     "website": "https://www.howmet.com/",
@@ -717,11 +717,11 @@
   },
   "HIMS": {
     "website": "https://forhims.com",
-    "description": ""
+    "description": "Hims & Hers runs a telehealth platform for health and wellness treatments."
   },
   "CELH": {
     "website": "https://celsiusholdingsinc.com",
-    "description": ""
+    "description": "Celsius makes fitness-oriented energy drinks."
   },
   "RBLX": {
     "website": "https://about.roblox.com/",
@@ -749,7 +749,7 @@
   },
   "HII": {
     "website": "https://www.hii.com/",
-    "description": "America's largest shipbuilder with 140+ years advancing U.S. national security \u2014 delivering powerful naval vessels, unmanned systems, and all-domain defense technologies."
+    "description": "America's largest shipbuilder with 140+ years advancing U.S. national security — delivering powerful naval vessels, unmanned systems, and all-domain defense technologies."
   },
   "AVAV": {
     "website": "https://www.avinc.com/",
@@ -761,15 +761,15 @@
   },
   "MDB": {
     "website": "https://www.mongodb.com/",
-    "description": "Get your ideas to market faster with a flexible, AI-ready database. MongoDB makes working with data easy."
+    "description": "MongoDB makes a document database used by developers."
   },
   "QNT": {
     "website": "https://www.quantinuum.com/",
-    "description": "Our trapped ion quantum computers and software solutions are the highest performing in the industry, enabling our users to solve industry's most complex problems."
+    "description": "Quantinuum builds trapped-ion quantum computers and quantum software."
   },
   "PFE": {
     "website": "https://www.pfizer.com/",
-    "description": ""
+    "description": "Pfizer develops and sells medicines and vaccines."
   },
   "KLAC": {
     "website": "https://www.kla.com/",
@@ -777,6 +777,6 @@
   },
   "IBRX": {
     "website": "https://immunitybio.com",
-    "description": ""
+    "description": "ImmunityBio develops immunotherapies for cancer and infectious diseases."
   }
 }

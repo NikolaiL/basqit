@@ -3,6 +3,7 @@ import { GET as quoteStock } from "../route";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { atlasClient } from "~~/services/atlas/client";
+import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { combineBuys, quoteEachStock, splitAmount } from "~~/services/trading/batch";
 import { type TradeQuote, USDG } from "~~/services/trading/quote";
 
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
   const reply = (body: unknown, status = 200) =>
     NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
   if (process.env.BASQIT_ENABLE_TRADING !== "true") return reply({ error: "Trading is not enabled yet." }, 503);
+  const session = await getSession(request.cookies.get(SESSION_COOKIE)?.value).catch(() => undefined);
+  if (!session) return reply({ error: "Sign in with your wallet to get a quote." }, 401);
   const params = request.nextUrl.searchParams;
   const tokens = (params.get("tokens") ?? "").split(",");
   const taker = params.get("taker") ?? "";
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
         side: "buy",
         provider: "uniswap",
       }).toString();
-      const response = await quoteStock(new NextRequest(url));
+      const response = await quoteStock(new NextRequest(url, { headers: request.headers }));
       const quote = await response.json();
       if (!response.ok) throw new Error(quote.error ?? "No available route for this stock.");
       return quote as TradeQuote;

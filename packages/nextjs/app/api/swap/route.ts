@@ -3,6 +3,7 @@ import { isAddress, parseUnits } from "viem";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { atlasClient } from "~~/services/atlas/client";
 import type { RawAsset } from "~~/services/atlas/types";
+import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { readTokenData } from "~~/services/portfolio/token-data";
 import {
   ALLOWANCE_HOLDER,
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
   const reply = (body: unknown, status = 200) =>
     NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
   if (process.env.BASQIT_ENABLE_TRADING !== "true") return reply({ error: "Trading is not enabled yet." }, 503);
+  const session = await getSession(request.cookies.get(SESSION_COOKIE)?.value).catch(() => undefined);
+  if (!session) return reply({ error: "Sign in with your wallet to get a quote." }, 401);
   const p = request.nextUrl.searchParams;
   const provider = p.get("provider") ?? "uniswap";
   if (provider !== "uniswap" && provider !== "0x") return reply({ error: "Unknown swap provider." }, 400);
@@ -46,6 +49,8 @@ export async function GET(request: NextRequest) {
     !/^\d{1,40}(\.\d{1,36})?$/.test(amount)
   )
     return reply({ error: "Enter a valid wallet, token and positive amount." }, 400);
+  if (taker.toLowerCase() !== session.address)
+    return reply({ error: "Quotes are only for the signed-in wallet." }, 403);
   try {
     const payload = await readTokenData("assets");
     const asset = (payload.assets as RawAsset[]).find(
