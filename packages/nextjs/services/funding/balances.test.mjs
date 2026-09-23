@@ -32,9 +32,7 @@ try {
   process.env.BASQIT_ENABLE_WALLET_SCAN = "false";
   assert.throws(() => readFundingBalances(wallet(1)), /not enabled/);
   process.env.BASQIT_ENABLE_WALLET_SCAN = "true";
-  process.env.NODE_ENV = "production";
-  assert.throws(() => readFundingBalances(wallet(1)), /not enabled/);
-  process.env.NODE_ENV = "development";
+  process.env.NODE_ENV = "production"; // Only the flag gates the scan, in every environment.
   assert.throws(() => readFundingBalances("bad"), /Invalid wallet/);
   assert.equal(calls, 0);
   const data = await Promise.all(Array.from({ length: 20 }, () => readFundingBalances(wallet(1))));

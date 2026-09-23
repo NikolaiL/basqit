@@ -88,8 +88,7 @@ export async function readFundingTokenLogo(network: string, address: string): Pr
   const id = `${network}:${address}`;
   if (cache![id]) return cache![id].logo;
   if (requests.has(id)) return requests.get(id)!;
-  if (process.env.NODE_ENV !== "development" || process.env.BASQIT_ENABLE_WALLET_SCAN !== "true")
-    throw new Error("Token metadata is not enabled.");
+  if (process.env.BASQIT_ENABLE_WALLET_SCAN !== "true") throw new Error("Token metadata is not enabled.");
   const apiKey = process.env.ALCHEMY_MULTICHAIN_API_KEY?.trim();
   if (!apiKey) throw new Error("Token metadata is not configured.");
   const now = Date.now();

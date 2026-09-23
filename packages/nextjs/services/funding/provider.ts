@@ -2,7 +2,7 @@ import { ALLOWANCE_HOLDER, swapFeeConfig } from "../trading/quote";
 import { ScanError } from "./balances";
 import { type FundingQuote, fundingDestinations, parseFundingInput } from "./shared";
 
-// ponytail: development-only process budget; shared durable quotas are required before production.
+// ponytail: per-process budget; move to a shared limiter if paid 0x usage grows.
 const globals = globalThis as typeof globalThis & {
   basqitFundingProvider?: {
     start: number;
@@ -13,8 +13,7 @@ const globals = globalThis as typeof globalThis & {
 };
 const state = (globals.basqitFundingProvider ??= { start: 0, count: 0, active: 0, cache: new Map() });
 export async function fundingRequest(path: "quotes" | "status", params: URLSearchParams) {
-  if (process.env.NODE_ENV !== "development" || process.env.BASQIT_ENABLE_FUNDING !== "true")
-    throw new ScanError("Cross-chain funding is not enabled.", 503);
+  if (process.env.BASQIT_ENABLE_FUNDING !== "true") throw new ScanError("Cross-chain funding is not enabled.", 503);
   const key = process.env.ZEROX_API_KEY?.trim();
   if (!key) throw new ScanError("Funding is not configured.", 503);
   const id = `${path}:${params}`,

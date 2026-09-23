@@ -1,6 +1,6 @@
 import { cacheFundingLogos } from "./tokenLogos";
 
-// Preview-only process cache; authenticated access is enforced by the API route.
+// Process cache; authenticated, own-wallet-only access is enforced by the API route.
 type Entry = { expires: number; promise: Promise<unknown> };
 const globals = globalThis as typeof globalThis & {
   basqitScanCursors?: Map<string, { wallet: string; expires: number }>;
@@ -17,8 +17,7 @@ export class ScanError extends Error {
 }
 const cursors = (globals.basqitScanCursors ??= new Map<string, { wallet: string; expires: number }>());
 export function readFundingBalances(address: string, pageKey = ""): Promise<unknown> {
-  if (process.env.NODE_ENV !== "development" || process.env.BASQIT_ENABLE_WALLET_SCAN !== "true")
-    throw new ScanError("Wallet scanning is not enabled.", 503);
+  if (process.env.BASQIT_ENABLE_WALLET_SCAN !== "true") throw new ScanError("Wallet scanning is not enabled.", 503);
   const key = process.env.ALCHEMY_MULTICHAIN_API_KEY?.trim();
   if (!key) throw new ScanError("Wallet scanning is not configured.", 503);
   if (!/^0x[0-9a-fA-F]{40}$/.test(address) || /^0x0{40}$/i.test(address))

@@ -177,7 +177,7 @@ try {
   process.env.BASQIT_SWAP_FEE_RECIPIENT = "";
   await assert.rejects(getFundingQuote(params()), /RECIPIENT/);
   process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
-  process.env.NODE_ENV = "production";
+  process.env.BASQIT_ENABLE_FUNDING = "false";
   await assert.rejects(getFundingQuote(params()), /not enabled/);
   console.log(
     "Funding validation, native metadata, spam filters, recovery states, destination binding, spender and expiry checks passed",
