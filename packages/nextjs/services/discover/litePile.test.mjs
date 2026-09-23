@@ -22,7 +22,7 @@ vm.runInNewContext(
   }).outputText,
   { exports, require: () => layouts, ResizeObserver: Observer, MutationObserver: Observer },
 );
-const coins = Object.keys(layouts[0].coins).map(symbol => ({
+const coins = layouts[0].symbols.map(symbol => ({
   dataset: { symbol },
   matched: false,
   classList: {
@@ -58,6 +58,12 @@ assert.equal(coins[0].style.transform, undefined, "selected logo uses result lay
 coins[0].matched = false;
 observers[1].callback();
 assert.equal(coins[0].dataset.physics, "active", "cleared selection returns to static pile");
+// Every width offers several piles; one index is picked per page load.
+for (const layout of layouts) assert.ok(layout.variants.length >= 3, "several settled piles per width");
+const first = exports.settledPileLayout(900, 0).coins.AAPL;
+const second = exports.settledPileLayout(900, 1).coins.AAPL;
+assert.ok(first.x !== second.x || first.y !== second.y, "variants place logos differently");
+assert.equal(exports.settledPileLayout(900), exports.settledPileLayout(900), "same pile for the whole page load");
 cleanup();
 assert.ok(observers.every(o => o.disconnected));
 assert.ok(coins.every(c => !c.dataset.physics));

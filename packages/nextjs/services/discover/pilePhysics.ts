@@ -11,7 +11,8 @@ export function pileLogoSize(width: number, height: number, count: number) {
 }
 
 export function createPileEngine() {
-  return Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 8 });
+  // Substeps do the accuracy work; extra solver iterations per substep only add cost.
+  return Engine.create({ enableSleeping: true, positionIterations: 6, velocityIterations: 4 });
 }
 
 export function pileWalls(width: number, height: number, radius: number) {
@@ -53,8 +54,29 @@ export function stepPile(engine: Matter.Engine, lite = false) {
         : Math.max(max, body.speed + Math.abs(body.angularSpeed) * Math.sqrt(body.area)),
     0,
   );
-  const steps = lite ? 4 : Math.min(16, Math.max(4, Math.ceil(speed * 4)));
+  // Capped at 8: beyond that the pile test shows no accuracy gain, only cost.
+  const steps = lite ? 4 : Math.min(8, Math.max(4, Math.ceil(speed * 4)));
   for (let i = 0; i < steps; i++) Engine.update(engine, 1000 / (60 * steps));
+}
+
+/** Wakes sleeping logos beside or above an area; the rest of the pile stays asleep. */
+export function wakeAbove(bodies: Iterable<Matter.Body>, bounds: Matter.Bounds, margin: number) {
+  for (const body of bodies)
+    if (
+      body.isSleeping &&
+      body.bounds.max.x > bounds.min.x - margin &&
+      body.bounds.min.x < bounds.max.x + margin &&
+      body.bounds.max.y < bounds.max.y + margin
+    )
+      Sleeping.set(body, false);
+}
+
+/** Pointer velocity (px/ms) converted to a capped Matter velocity, so a flicked logo keeps flying. */
+export function throwVelocity(vx: number, vy: number) {
+  const x = vx * (1000 / 60),
+    y = vy * (1000 / 60);
+  const scale = Math.min(1, 16 / (Math.hypot(x, y) || 1));
+  return { x: x * scale, y: y * scale };
 }
 
 export function spawnLogo(
@@ -177,7 +199,7 @@ export function needsLitePile(samples: { frame: number; work: number }[]) {
 export function placeSettledLogo(symbol: string, width: number, height: number) {
   const layout = settledPileLayout(width);
   const scale = width / layout.width;
-  const placement = layout.coins[symbol as keyof typeof layout.coins];
+  const placement = layout.coins[symbol];
   const entry = logoBody(symbol, layout.size * scale);
   Body.setPosition(entry.body, { x: placement.x * scale, y: height + placement.y * scale });
   Body.setAngle(entry.body, placement.angle);
@@ -215,8 +237,19 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     visible = true,
     disposed = false;
   let drag:
-    | { coin: HTMLElement; entry: ReturnType<typeof logoBody>; id: number; x: number; y: number; moved: boolean }
+    | {
+        coin: HTMLElement;
+        entry: ReturnType<typeof logoBody>;
+        id: number;
+        x: number;
+        y: number;
+        moved: boolean;
+        time: number;
+        vx: number;
+        vy: number;
+      }
     | undefined;
+  const bodies = () => [...entries.values()].map(entry => entry.body);
   function captureMatches() {
     const sceneBounds = scene.getBoundingClientRect();
     for (const coin of coins) {
@@ -313,7 +346,7 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
         Composite.remove(engine.world, entry.body);
         entries.delete(coin);
         resetCoin(coin);
-        entries.forEach(({ body }) => Sleeping.set(body, false));
+        wakeAbove(bodies(), entry.body.bounds, size);
       }
     }
     sampleUntil = selected.size < coins.length ? performance.now() + 1000 : 0;
@@ -420,7 +453,17 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     const [coin, entry] = [...entries].find(([, entry]) => entry.body === hit)!;
     entrance.forEach(animation => animation.cancel());
     entrance.clear();
-    drag = { coin, entry, id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    drag = {
+      coin,
+      entry,
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      moved: false,
+      time: event.timeStamp,
+      vx: 0,
+      vy: 0,
+    };
     scene.setPointerCapture(event.pointerId);
     Body.setStatic(hit, true);
     event.preventDefault();
@@ -430,14 +473,22 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     const dx = event.clientX - drag.x,
       dy = event.clientY - drag.y;
     if (!drag.moved && Math.hypot(dx, dy) < (event.pointerType === "touch" ? 8 : 5)) return;
-    if (!drag.moved) entries.forEach(({ body }) => Sleeping.set(body, false));
     drag.moved = true;
     const body = drag.entry.body;
+    const before = { x: body.position.x, y: body.position.y };
+    // A static body never wakes what it touches, so wake the logos around both ends of the move.
+    wakeAbove(bodies(), body.bounds, size);
     Body.translate(body, { x: dx, y: dy });
     Body.translate(body, {
       x: Math.max(0, -body.bounds.min.x) - Math.max(0, body.bounds.max.x - width),
       y: Math.max(0, -headroom - body.bounds.min.y) - Math.max(0, body.bounds.max.y - height),
     });
+    wakeAbove(bodies(), body.bounds, size);
+    // Smoothed pointer velocity from the clamped movement, used for the throw on release.
+    const elapsed = Math.max(1, event.timeStamp - drag.time);
+    drag.vx = drag.vx * 0.4 + ((body.position.x - before.x) / elapsed) * 0.6;
+    drag.vy = drag.vy * 0.4 + ((body.position.y - before.y) / elapsed) * 0.6;
+    drag.time = event.timeStamp;
     drag.x = event.clientX;
     drag.y = event.clientY;
     draw();
@@ -450,6 +501,9 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     if (scene.hasPointerCapture(current.id)) scene.releasePointerCapture(current.id);
     Body.setStatic(current.entry.body, false);
     Sleeping.set(current.entry.body, false);
+    // A pointer that paused before release drops the logo instead of throwing it.
+    if (current.moved && event?.type === "pointerup" && event.timeStamp - current.time < 80)
+      Body.setVelocity(current.entry.body, throwVelocity(current.vx, current.vy));
     settleSteps = 0;
     if (current.moved) onDrop(current.coin);
     else if (event?.type === "pointerup") current.coin.click();

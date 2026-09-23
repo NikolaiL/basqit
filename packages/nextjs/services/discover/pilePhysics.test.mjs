@@ -8,6 +8,13 @@ import ts from "typescript";
 const require = createRequire(import.meta.url);
 const shapes = JSON.parse(readFileSync(new URL("./logo-bodies.json", import.meta.url)));
 const layouts = JSON.parse(readFileSync(new URL("./lite-pile-layouts.json", import.meta.url)));
+const litePile = {};
+vm.runInNewContext(
+  ts.transpileModule(readFileSync(new URL("./litePile.ts", import.meta.url), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText,
+  { exports: litePile, require: () => layouts },
+);
 const exports = {};
 vm.runInNewContext(
   ts.transpileModule(readFileSync(new URL("./pilePhysics.ts", import.meta.url), "utf8"), {
@@ -19,7 +26,7 @@ vm.runInNewContext(
       name === "./logo-bodies.json"
         ? shapes
         : name === "./litePile"
-          ? { settledPileLayout: width => layouts.find(l => l.width >= width) ?? layouts.at(-1) }
+          ? litePile
           : require(name),
   },
 );
@@ -35,6 +42,8 @@ const {
   pickLogo,
   simplifyLogo,
   needsLitePile,
+  wakeAbove,
+  throwVelocity,
 } = exports;
 const lite = process.env.PILE_TEST_LITE === "1";
 let activeLite = lite;
@@ -66,12 +75,12 @@ Matter.Engine.update = (...args) => {
 };
 try {
   stepPile(timingEngine);
-  assert.equal(updates, lite ? 4 : 4);
+  assert.equal(updates, 4);
   assert.ok(Math.abs(timingEngine.timing.timestamp - 1000 / 60) < 1e-6);
   Body.setVelocity(timingBody, { x: 10, y: 0 });
   updates = 0;
   stepPile(timingEngine);
-  assert.equal(updates, lite ? 4 : 16, "fast logos retain collision accuracy");
+  assert.equal(updates, lite ? 4 : 8, "fast logos retain collision accuracy");
 } finally {
   Matter.Engine.update = update;
 }
@@ -177,16 +186,38 @@ for (const [width, size, count] of [
   checkSettled();
   const dragged = bodies[0];
   Body.setStatic(dragged, true);
+  wakeAbove(bodies, dragged.bounds, size);
   Body.setPosition(dragged, { x: width / 2, y: 40 });
+  wakeAbove(bodies, dragged.bounds, size);
   Body.setStatic(dragged, false);
-  bodies.forEach(body => Matter.Sleeping.set(body, false));
+  // The hardest throw straight down into the pile must not tunnel through it.
+  Body.setVelocity(dragged, throwVelocity(0, 10));
   checkSettled();
   Composite.remove(engine.world, dragged);
   bodies.shift();
-  bodies.forEach(body => Matter.Sleeping.set(body, false));
+  // Only the logos around the hole wake; the pile must still refill it and settle.
+  const hole = bodies.reduce((low, body) => (body.position.y > low.position.y ? body : low));
+  Composite.remove(engine.world, hole);
+  bodies.splice(bodies.indexOf(hole), 1);
+  const asleepBefore = bodies.filter(body => body.isSleeping).length;
+  wakeAbove(bodies, hole.bounds, size);
+  assert.ok(bodies.filter(body => !body.isSleeping).length < asleepBefore, "some logos wake");
+  assert.ok(
+    bodies.some(body => body.isSleeping),
+    "distant logos stay asleep",
+  );
   checkSettled();
   console.log(`${count} bodies: no penetration or jitter after fall, drag/release and removal.`);
 }
+
+assert.deepEqual({ ...throwVelocity(0, 0) }, { x: 0, y: 0 });
+const flick = throwVelocity(0.3, 0);
+assert.ok(Math.abs(flick.x - 5) < 1e-9 && flick.y === 0, "0.3px/ms is 5px per 60Hz frame");
+const hard = throwVelocity(3, 4);
+assert.ok(
+  Math.abs(Math.hypot(hard.x, hard.y) - 16) < 1e-9 && Math.abs(hard.x / hard.y - 0.75) < 1e-9,
+  "capped, same direction",
+);
 
 const returning = logoBody("AAPL", 12);
 returning.returnScale = returning.scale = 4;
@@ -212,10 +243,20 @@ assert.ok(
 console.log("Random non-overlapping spawns and smooth return scaling passed.");
 
 // Startup restores settled geometry without advancing the physics clock.
-for (const width of [320, 390, 768, 1400]) {
+for (const [width, variant] of [320, 390, 768, 1400].flatMap(width =>
+  layouts[0].variants.map((_, variant) => [width, variant]),
+)) {
   const engine = createPileEngine();
   const started = performance.now();
-  const entries = Object.keys(shapes).map(symbol => exports.placeSettledLogo(symbol, width, 400));
+  const layout = litePile.settledPileLayout(width, variant);
+  const entries = Object.keys(shapes).map(symbol => {
+    const entry = logoBody(symbol, layout.size * (width / layout.width));
+    const placement = layout.coins[symbol];
+    Body.setPosition(entry.body, { x: (placement.x * width) / layout.width, y: 400 + (placement.y * width) / layout.width });
+    Body.setAngle(entry.body, placement.angle);
+    Matter.Sleeping.set(entry.body, true);
+    return entry;
+  });
   Composite.add(
     engine.world,
     entries.map(e => e.body),
@@ -226,8 +267,19 @@ for (const width of [320, 390, 768, 1400]) {
     assert.ok(body.bounds.min.x >= -1 && body.bounds.max.x <= width + 1);
     assert.ok(body.bounds.max.y <= 401);
   }
+  // Rounded stored positions must not make logos overlap when the pile wakes.
+  const bodies = entries.map(e => e.body);
+  for (let i = 0; i < bodies.length; i++)
+    for (let j = i + 1; j < bodies.length; j++) {
+      if (!Matter.Bounds.overlaps(bodies[i].bounds, bodies[j].bounds)) continue;
+      for (const a of bodies[i].parts.slice(1))
+        for (const b of bodies[j].parts.slice(1)) {
+          const collision = Matter.Collision.collides(a, b);
+          assert.ok(!collision || collision.depth < 0.5, `settled variant ${variant} overlaps by ${collision?.depth}px`);
+        }
+    }
   console.log(
-    `Settled startup ${width}px: ${entries.length} logos, ${(performance.now() - started).toFixed(1)}ms, zero simulation steps`,
+    `Settled startup ${width}px variant ${variant}: ${entries.length} logos, ${(performance.now() - started).toFixed(1)}ms, zero simulation steps`,
   );
 }
 
