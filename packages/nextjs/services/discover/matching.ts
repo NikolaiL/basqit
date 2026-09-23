@@ -36,6 +36,22 @@ export function selectMatches(payload: unknown, symbols: string[]): DiscoveryMat
   return matches.sort((a, b) => b.score - a.score || a.symbol.localeCompare(b.symbol)).slice(0, 8);
 }
 
+/**
+ * Shortlist from one Jev Choice answer: every symbol with probability at or above the threshold.
+ * Choice concentrates mass on a single winner, so this is a recall filter, never the final ranking.
+ */
+export function choiceCandidates(payload: unknown, symbols: string[], threshold = 0.01): string[] {
+  const answers = (payload as { answers?: Record<string, { probabilities?: Record<string, unknown> }> } | null)
+    ?.answers;
+  const probabilities = answers?.pick?.probabilities;
+  if (!probabilities || typeof probabilities !== "object") throw new Error("Invalid Jev choice");
+  return symbols.filter(symbol => {
+    const p = probabilities[symbol];
+    if (typeof p !== "number" || !Number.isFinite(p) || p < 0 || p > 1) throw new Error("Incomplete Jev choice");
+    return p >= threshold;
+  });
+}
+
 // Only plain random requests bypass thematic scoring; "random AI tokens" still goes to Jev.
 export function randomTokenCount(theme: string): number | null {
   const match = theme

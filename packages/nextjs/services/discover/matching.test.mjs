@@ -1,4 +1,4 @@
-import { exactSymbolMatches, normalizeTheme, selectMatches } from "./matching.ts";
+import { choiceCandidates, exactSymbolMatches, normalizeTheme, selectMatches } from "./matching.ts";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 
@@ -20,6 +20,17 @@ assert.throws(() => selectMatches({ answers: {} }, ["A"]));
 assert.throws(() => selectMatches({ answers: { A: score(3, 2) } }, ["A"]));
 const symbols = Array.from({ length: 12 }, (_, i) => `S${i}`);
 assert.equal(selectMatches({ answers: Object.fromEntries(symbols.map(s => [s, score(3)])) }, symbols).length, 8);
+const choice = probabilities => ({
+  answers: { pick: { type: "choice", choice: "A", probabilities, confidence: 0.5 } },
+});
+assert.deepEqual(
+  choiceCandidates(choice({ NONE: 0.6, A: 0.3, B: 0.009, C: 0.01, EVIL: 1 }), ["A", "B", "C"]),
+  ["A", "C"],
+  "threshold keeps the long tail, never NONE or unknown options",
+);
+assert.throws(() => choiceCandidates(choice({ A: 0.5 }), ["A", "B"]), /Incomplete/, "missing option");
+assert.throws(() => choiceCandidates(choice({ A: 2 }), ["A"]));
+assert.throws(() => choiceCandidates({ answers: {} }, ["A"]), /Invalid/);
 const logos = JSON.parse(readFileSync(new URL("./logos.json", import.meta.url)));
 const profiles = JSON.parse(readFileSync(new URL("./profiles.json", import.meta.url)));
 assert.equal(Object.keys(logos).length, 195);
