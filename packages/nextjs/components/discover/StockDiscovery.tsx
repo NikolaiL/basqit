@@ -150,13 +150,13 @@ export function StockDiscovery({
     const text = `My stock mood: “${query}”${matches.length ? ` — ${matches.map(match => match.symbol).join(", ")}` : ""}. What’s yours?`;
     if (target === "x") {
       const intent = new URL("https://x.com/intent/post");
-      intent.searchParams.set("text", text);
+      intent.searchParams.set("text", `${text}\n\nbasqit by @NikolaiLeb`);
       intent.searchParams.set("url", url.href);
       await openLink(intent.href);
       return;
     }
     try {
-      if (target === "farcaster") await composeCast({ text, embeds: [url.href] });
+      if (target === "farcaster") await composeCast({ text: `${text}\n\nbasqit by @nikolaii.eth`, embeds: [url.href] });
       else if (navigator.share) await navigator.share({ title: "My stock mood · Basqit", text, url: url.href });
       else {
         await navigator.clipboard.writeText(url.href);
