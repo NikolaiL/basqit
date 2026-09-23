@@ -497,6 +497,20 @@
 .bq-batch-legs {
   margin: 8px 0;
 }
+.bq-discover-buy-row.bq-buy-done {
+  opacity: 0.5;
+}
+.bq-buy-check {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+}
 .bq-batch-legs .text-right {
   overflow-wrap: anywhere;
 }

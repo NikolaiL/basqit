@@ -10,6 +10,7 @@ registerHooks({
 const { combineBuys, splitAmount, quoteEachStock, mergeQuoteErrors } = await import("./batch.ts");
 const { USDG } = await import("./quote.ts");
 const { V3_ROUTER, V3_QUOTER, v3Abi, directCalldata } = await import("./uniswap.ts");
+const { LIFI_DIAMOND } = await import("./lifi.ts");
 const account = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6";
 const recipient = "0x1111111111111111111111111111111111111111";
 const fee = { bps: 10, recipient };
@@ -36,7 +37,41 @@ const a = leg("0x0000000000000000000000000000000000000001");
 const b = leg("0x0000000000000000000000000000000000000002");
 const batch = combineBuys([a, b]);
 assert.equal(batch.sellAmount, "2000000");
-assert.equal(decodeFunctionData({ abi: v3Abi, data: batch.transaction.data }).args[1].length, 4);
+assert.equal(batch.steps.length, 1, "direct legs share one transaction");
+assert.equal(decodeFunctionData({ abi: v3Abi, data: batch.steps[0].transaction.data }).args[1].length, 4);
+assert.deepEqual(
+  batch.approvals.map(approval => [approval.spender, approval.sellAmount]),
+  [[V3_ROUTER, "2000000"]],
+);
+// LiFi legs cannot join the multicall: each is its own step, with one approval for their combined amount.
+const viaLifi = token => ({
+  ...leg(token),
+  provider: "lifi",
+  spender: LIFI_DIAMOND,
+  transaction: { to: LIFI_DIAMOND, value: "0", data: "0x5fd9ae2e" },
+});
+const mixed = combineBuys([
+  a,
+  viaLifi("0x0000000000000000000000000000000000000003"),
+  viaLifi("0x0000000000000000000000000000000000000004"),
+]);
+assert.equal(mixed.sellAmount, "3000000");
+assert.deepEqual(
+  mixed.steps.map(s => [s.provider, s.legs.length, s.sellAmount]),
+  [
+    ["uniswap", 1, "1000000"],
+    ["lifi", 1, "1000000"],
+    ["lifi", 1, "1000000"],
+  ],
+);
+assert.deepEqual(
+  mixed.approvals.map(approval => [approval.spender, approval.sellAmount, approval.transaction.to]),
+  [
+    [V3_ROUTER, "1000000", V3_ROUTER],
+    [LIFI_DIAMOND, "2000000", LIFI_DIAMOND],
+  ],
+);
+assert.throws(() => combineBuys([a, { ...viaLifi("0x0000000000000000000000000000000000000003"), spender: V3_ROUTER }]));
 assert.throws(() => combineBuys([a, a]));
 assert.throws(() => combineBuys([a, { ...b, taker: recipient }]));
 assert.throws(() => combineBuys([{ ...a, balance: "1" }, b]));
@@ -128,10 +163,10 @@ if (process.argv.includes("--fork")) {
   // Quote fixtures share an unchanged fork state; wall-clock RPC latency is not part of this execution test.
   for (const item of legs) item.expiresAt = Date.now() + 30000;
   const combined = combineBuys(legs);
-  const gas = await client.estimateGas({ account, to: V3_ROUTER, data: combined.transaction.data, value: 0n });
+  const gas = await client.estimateGas({ account, to: V3_ROUTER, data: combined.steps[0].transaction.data, value: 0n });
   const hash = await wallet.sendTransaction({
     to: V3_ROUTER,
-    data: combined.transaction.data,
+    data: combined.steps[0].transaction.data,
     value: 0n,
     gas: (gas * 120n) / 100n,
   });
@@ -170,7 +205,7 @@ if (process.argv.includes("--fork")) {
   );
   const failed = await wallet.sendTransaction({
     to: V3_ROUTER,
-    data: combineBuys(bad).transaction.data,
+    data: combineBuys(bad).steps[0].transaction.data,
     value: 0n,
     gas: 1500000n,
   });

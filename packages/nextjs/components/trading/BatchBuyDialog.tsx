@@ -10,12 +10,16 @@ import { formatUnits, isAddress } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
-import { useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
+import { useAtomicBatch, useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
-import { type BatchQuoteResponse, mergeQuoteErrors } from "~~/services/trading/batch";
-import { USDG, balancePercentage } from "~~/services/trading/quote";
+import { type BatchQuoteResponse, type BatchStep, mergeQuoteErrors } from "~~/services/trading/batch";
+import { type TradeQuote, USDG, balancePercentage } from "~~/services/trading/quote";
+
+// A refreshed quote may be at most 0.5% worse than the one shown: the slippage the buyer already accepted.
+const withinSlippage = (fresh: TradeQuote, shown: TradeQuote) =>
+  BigInt(fresh.minBuyAmount) * 1000n >= BigInt(shown.minBuyAmount) * 995n;
 
 export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; onClose: () => void }) {
   const { address, chainId } = useAccount();
@@ -32,7 +36,10 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const [retryVersion, setRetryVersion] = useState(0);
   const [showUnavailable, setShowUnavailable] = useState(false);
   const [excluded, setExcluded] = useState<string[]>([]);
-  const selected = assets.filter(asset => !excluded.includes(asset.address));
+  // Lower-case addresses bought in this dialog: shown faded with a check, never offered again.
+  const [purchased, setPurchased] = useState<string[]>([]);
+  const isBought = (asset: DiscoveryAsset) => purchased.includes(asset.address.toLowerCase());
+  const selected = assets.filter(asset => !excluded.includes(asset.address) && !isBought(asset));
   const [input, setInput] = useState<{ key: string; percentage: number; manual?: string }>();
   const inputKey = address ?? "";
   const currentInput = input?.key === inputKey || input?.key === "" ? input : undefined;
@@ -120,18 +127,60 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       ]);
   }, [response, quotes.isFetching, busy, hash, address, assets]);
   const failedAssets = assets.filter(asset => cachedErrors[asset.address.toLowerCase()]);
-  const gasEstimate = useTradeGas(quote ?? undefined);
-  const approval = quote?.legs.some(leg => BigInt(leg.allowance) < BigInt(quote.sellAmount));
+  const pendingApprovals = quote?.approvals.filter(item => BigInt(item.allowance) < BigInt(item.sellAmount)) ?? [];
+  const atomic = useAtomicBatch(address && isAddress(address) ? (address as `0x${string}`) : undefined);
+  const gasEstimate = useTradeGas(pendingApprovals[0] ?? quote?.steps[0]);
   const usable = ready && !!quote && !quotes.isFetching && !quotes.isError && now < quote.expiresAt;
+  /** Fresh single-stock LiFi quote for a step whose quote aged while earlier steps were confirmed. */
+  async function refreshStep(step: BatchStep): Promise<BatchStep> {
+    const [leg] = step.legs;
+    if (step.provider !== "lifi" || Date.now() < step.expiresAt - 5000) return step;
+    const params = new URLSearchParams({
+      token: leg.buyToken,
+      taker: leg.taker,
+      side: "buy",
+      amount: formatUnits(BigInt(leg.sellAmount), leg.sellDecimals),
+      provider: "lifi",
+    });
+    const response = await fetch(`/api/swap?${params}`, { cache: "no-store" });
+    const fresh = (await response.json()) as TradeQuote & { error?: string };
+    if (!response.ok) throw new Error(fresh.error ?? "Quote unavailable. Retry later.");
+    if (
+      fresh.provider !== "lifi" ||
+      fresh.buyToken.toLowerCase() !== leg.buyToken.toLowerCase() ||
+      fresh.sellAmount !== leg.sellAmount ||
+      !withinSlippage(fresh, leg)
+    )
+      throw new Error("The price moved by more than 0.5%.");
+    return { ...fresh, legs: [fresh] };
+  }
   async function execute() {
     if (lock.current || !usable || !quote) return;
     lock.current = true;
-    setBusy(approval ? "Approving USDG…" : "Buying all stocks…");
     setError("");
+    const bought: string[] = [];
     try {
+      setBusy("Confirm the purchase in your wallet…");
+      const atomicHash = atomic ? await trade.buyAtomic(quote) : null;
+      if (atomicHash) {
+        setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
+        setHash(atomicHash);
+        await Promise.all([
+          client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
+          client.invalidateQueries({ queryKey: ["trade-balance"] }),
+        ]);
+        return;
+      }
       let executable = quote;
-      if (approval) {
-        await trade.approve(quote);
+      if (pendingApprovals.length) {
+        for (const [i, item] of pendingApprovals.entries()) {
+          setBusy(
+            pendingApprovals.length > 1
+              ? `Approving USDG (${i + 1} of ${pendingApprovals.length})…`
+              : "Approving USDG…",
+          );
+          await trade.approve(item);
+        }
         setBusy("Refreshing all quotes…");
         const refreshed = await quotes.refetch();
         if (refreshed.error || !refreshed.data?.quote)
@@ -145,20 +194,50 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
               leg.buyToken.toLowerCase() !== quote.legs[i].buyToken.toLowerCase() ||
               leg.sellAmount !== quote.legs[i].sellAmount ||
               leg.basqitFee.bps !== quote.legs[i].basqitFee.bps ||
-              BigInt(leg.minBuyAmount) < BigInt(quote.legs[i].minBuyAmount),
+              !withinSlippage(leg, quote.legs[i]),
           )
         )
-          throw new Error("Approval confirmed. Prices changed; review the refreshed amounts and press Buy all again.");
+          throw new Error(
+            "Approval confirmed. Prices moved by more than 0.5%; review the new amounts and press Buy again.",
+          );
+        if (executable.approvals.some(item => BigInt(item.allowance) < BigInt(item.sellAmount)))
+          throw new Error("Approval confirmed. Routes changed; press Buy again.");
       }
-      setBusy("Confirm all purchases in your wallet…");
-      const confirmed = await trade.swap(executable);
+      // Direct pools settle all stocks in one transaction; stocks routed through LiFi each need their own.
+      let confirmed: string | undefined;
+      for (const [i, planned] of executable.steps.entries()) {
+        setBusy(
+          executable.steps.length > 1
+            ? `Confirm purchase ${i + 1} of ${executable.steps.length} in your wallet…`
+            : "Confirm all purchases in your wallet…",
+        );
+        const step = await refreshStep(planned);
+        confirmed = await trade.swap(step);
+        bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
+        setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
+      }
       setHash(confirmed);
       await Promise.all([
         client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
         client.invalidateQueries({ queryKey: ["trade-balance"] }),
       ]);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message.split("\n")[0] : "Purchase failed. Please try again.");
+      const reason = failure instanceof Error ? failure.message.split("\n")[0] : "Purchase failed. Please try again.";
+      if (bought.length) {
+        // Completed purchases stay done. The rest keeps its original share, not a new share of the balance.
+        const remaining = quote.legs.filter(leg => !bought.includes(leg.buyToken.toLowerCase()));
+        setInput({
+          key: inputKey,
+          percentage,
+          manual: formatUnits(
+            remaining.reduce((sum, leg) => sum + BigInt(leg.sellAmount), 0n),
+            6,
+          ),
+        });
+        void client.invalidateQueries({ queryKey: ["stock-portfolio"] });
+        void client.invalidateQueries({ queryKey: ["trade-balance"] });
+        setError(`${reason} Bought ${bought.length} of ${quote.legs.length}; press Buy for the rest.`);
+      } else setError(reason);
     } finally {
       lock.current = false;
       setBusy("");
@@ -214,6 +293,17 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                 const result = response?.results.find(item => item.token.toLowerCase() === asset.address.toLowerCase());
                 const leg = result?.quote;
                 const failure = result?.error ?? cachedErrors[asset.address.toLowerCase()];
+                if (isBought(asset))
+                  return (
+                    <div className="bq-discover-buy-row bq-buy-done" key={asset.address}>
+                      <span className="bq-buy-check" role="img" aria-label="Bought">
+                        ✓
+                      </span>
+                      <StockLogo symbol={asset.symbol} size={32} />
+                      <strong>{asset.symbol}</strong>
+                      <small className="text-right">Bought</small>
+                    </div>
+                  );
                 return (
                   <label className={`bq-discover-buy-row ${failure ? "bq-buy-unavailable" : ""}`} key={asset.address}>
                     {failure ? (
@@ -247,17 +337,13 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                         <>
                           <TokenAmount value={formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} /> USDG
                         </>
-                      ) : excluded.includes(asset.address) ? (
-                        "—"
-                      ) : (
-                        "Equal share"
-                      )}
+                      ) : null}
                     </span>
                     {!failure && (
                       <span className="text-right">
                         {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
                         <br />
-                        <small>{excluded.includes(asset.address) ? "Excluded" : "After fees"}</small>
+                        <small>{excluded.includes(asset.address) ? "Not included" : "After fees"}</small>
                       </span>
                     )}
                   </label>
@@ -293,25 +379,34 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           <details>
             <summary>Purchase details</summary>
             <p>
-              All swaps execute in one transaction. If one fails, every swap reverts; network fees may still apply. USDG
-              approval is separate when needed.
+              Slippage 0.5% per stock. ETH is needed for network fees.
+              {quote && quote.steps.length > 1 && !atomic
+                ? " Stocks routed through LiFi are bought one by one; a failed step does not undo the others."
+                : ""}
             </p>
-            <p>Slippage: 0.5% per stock. ETH required for network fees.</p>
             {quote?.legs.map(leg => (
               <p key={leg.buyToken}>
                 {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}: minimum{" "}
                 <TokenAmount value={formatUnits(BigInt(leg.minBuyAmount), leg.buyDecimals)} /> · Basqit fee{" "}
                 {leg.basqitFee.bps / 100}% (
-                <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)} />{" "}
-                {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol})
+                {leg.basqitFee.token.toLowerCase() === leg.buyToken.toLowerCase() ? (
+                  <>
+                    <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)} />{" "}
+                    {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}
+                  </>
+                ) : (
+                  <>
+                    <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.sellDecimals)} /> USDG
+                  </>
+                )}
+                ){leg.provider === "lifi" && ` · via LiFi (${leg.route ?? "RFQ"})`}
               </p>
             ))}
           </details>
         </div>
         {quote && (
           <p className="bq-batch-total">
-            Total: <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG · {selected.length} of{" "}
-            {assets.length} stocks
+            Total <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
           </p>
         )}
         {!hash && (
@@ -327,7 +422,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         </p>
         {hash ? (
           <>
-            <p role="status">All selected stocks purchased.</p>
+            <p role="status">Purchase complete.</p>
             <button className="btn btn-primary w-full" onClick={onClose}>
               Dismiss
             </button>
@@ -366,7 +461,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
               {busy ||
                 (quotes.isFetching
                   ? "Calculating all purchases…"
-                  : `Buy ${selected.length < assets.length ? `${selected.length} of ${assets.length}` : selected.length} ${selected.length === 1 ? "stock" : "stocks"}`)}
+                  : `Buy ${selected.length} ${selected.length === 1 ? "stock" : "stocks"}`)}
             </button>
             {quotes.isError && (
               <button
@@ -377,15 +472,13 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
                 Retry quote
               </button>
             )}
-            <small className="block mt-2">
-              {approval
-                ? "Approve USDG if prompted, then confirm one transaction for all stocks."
-                : "One wallet confirmation buys the entire selection."}
-            </small>
+            {!atomic && (quote?.steps.length ?? 1) + pendingApprovals.length > 1 && (
+              <small className="block mt-2">{quote!.steps.length + pendingApprovals.length} wallet confirmations</small>
+            )}
           </>
         )}
       </div>
-      {hash && <SwapConfetti key={hash} symbols={selected.map(asset => asset.symbol)} />}
+      {hash && <SwapConfetti key={hash} symbols={assets.filter(isBought).map(asset => asset.symbol)} />}
     </dialog>
   );
 }

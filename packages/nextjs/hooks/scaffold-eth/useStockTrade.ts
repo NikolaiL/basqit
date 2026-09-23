@@ -1,13 +1,14 @@
 import { useTransactor } from "./useTransactor";
 import { useQuery } from "@tanstack/react-query";
-import { encodeFunctionData } from "viem";
+import { BaseError, encodeFunctionData } from "viem";
 import { useWalletClient } from "wagmi";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { trackSwap } from "~~/services/analytics/events";
 import { atlasClient, robinhoodChain } from "~~/services/atlas/client";
 import { NATIVE } from "~~/services/funding/shared";
-import type { BatchQuote } from "~~/services/trading/batch";
-import { ALLOWANCE_HOLDER, type ExecutionQuote, type TradeQuote, ZEROX_ENABLED } from "~~/services/trading/quote";
+import type { BatchQuote, BatchStep } from "~~/services/trading/batch";
+import { LIFI_DIAMOND } from "~~/services/trading/lifi";
+import { ALLOWANCE_HOLDER, type ExecutionQuote, type TradeQuote, USDG, ZEROX_ENABLED } from "~~/services/trading/quote";
 import { V3_ROUTER } from "~~/services/trading/uniswap";
 
 export function useStockTrade() {
@@ -16,7 +17,7 @@ export function useStockTrade() {
 
   async function checkWallet(quote: ExecutionQuote) {
     if (quote.provider === "0x" && !ZEROX_ENABLED) throw new Error("0x swaps are currently disabled. Use Direct DEX.");
-    const expected = quote.provider === "uniswap" ? V3_ROUTER : ALLOWANCE_HOLDER;
+    const expected = { uniswap: V3_ROUTER, "0x": ALLOWANCE_HOLDER, lifi: LIFI_DIAMOND }[quote.provider];
     if (
       quote.spender?.toLowerCase() !== expected.toLowerCase() ||
       quote.transaction.to.toLowerCase() !== expected.toLowerCase()
@@ -65,7 +66,8 @@ export function useStockTrade() {
     });
     if (allowance >= BigInt(quote.sellAmount)) return;
     // Tokens that require a zero allowance before changing it get a separate confirmed reset.
-    if (allowance > 0n)
+    // USDG accepts a direct change (verified on a fork of chain 4663), so it skips the extra transaction.
+    if (allowance > 0n && quote.sellToken.toLowerCase() !== USDG.toLowerCase())
       await send(
         quote,
         quote.sellToken,
@@ -82,7 +84,69 @@ export function useStockTrade() {
     );
   }
 
-  async function swap(quote: TradeQuote | BatchQuote) {
+  const events = (legs: TradeQuote[], batch: boolean) =>
+    legs.map(leg => ({
+      swap_type: batch ? "batch" : "single",
+      provider: leg.provider,
+      source_chain: robinhoodChain.id,
+      destination_chain: robinhoodChain.id,
+      sell_token: leg.sellToken,
+      buy_token: leg.buyToken,
+      sell_amount_raw: leg.sellAmount,
+      sell_decimals: leg.sellDecimals,
+      buy_decimals: leg.buyDecimals,
+      quoted_buy_amount_raw: leg.buyAmount,
+      fee_bps: leg.basqitFee.bps,
+    }));
+
+  /**
+   * EIP-5792: approvals and every purchase go to the wallet as one atomic batch — one confirmation,
+   * all or nothing. Returns null when the wallet cannot batch atomically, so the caller falls back to steps.
+   */
+  async function buyAtomic(quote: BatchQuote) {
+    for (const step of quote.steps) await checkWallet(step);
+    const client = wallet!;
+    const capabilities = await client
+      .getCapabilities({ account: quote.taker, chainId: robinhoodChain.id })
+      .catch(() => undefined);
+    const status = (capabilities as { atomic?: { status?: string } } | undefined)?.atomic?.status;
+    if (status !== "supported" && status !== "ready") return null;
+    if (Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
+    const calls = [
+      ...quote.approvals
+        .filter(item => BigInt(item.allowance) < BigInt(item.sellAmount))
+        .map(item => ({
+          to: USDG as `0x${string}`,
+          data: encodeFunctionData({
+            abi: tradeTokenAbi,
+            functionName: "approve",
+            args: [item.spender, BigInt(item.sellAmount)],
+          }),
+        })),
+      ...quote.steps.map(step => ({ to: step.transaction.to, data: step.transaction.data })),
+    ];
+    return trackSwap(events(quote.legs, true), async submitted => {
+      let id: string;
+      try {
+        ({ id } = await client.sendCalls({ account: quote.taker, chain: robinhoodChain, calls, forceAtomic: true }));
+      } catch (error) {
+        // EIP-5792 errors 5700–5760 mean the wallet declined the batch shape, not the user: use separate steps.
+        const walletCode = (e: unknown) => {
+          const code = e && typeof e === "object" && "code" in e ? (e as { code: unknown }).code : undefined;
+          return typeof code === "number" && code >= 5700 && code <= 5760;
+        };
+        if (error instanceof BaseError ? error.walk(walletCode) : walletCode(error)) return null;
+        throw error;
+      }
+      submitted();
+      const result = await client.waitForCallsStatus({ id, timeout: 180000 });
+      if (result.status !== "success")
+        throw new Error("The purchase did not complete, so nothing was bought. Request a new quote and try again.");
+      return result.receipts?.at(-1)?.transactionHash ?? null;
+    });
+  }
+
+  async function swap(quote: TradeQuote | BatchStep) {
     const legs = "legs" in quote ? quote.legs : [quote];
     return trackSwap(
       legs.map(leg => ({
@@ -121,7 +185,27 @@ export function useStockTrade() {
       },
     );
   }
-  return { approve, swap };
+  return { approve, swap, buyAtomic };
+}
+
+/** True when the wallet can confirm a whole purchase as one atomic EIP-5792 batch on Robinhood Chain. */
+export function useAtomicBatch(owner?: `0x${string}`) {
+  const { data: wallet } = useWalletClient();
+  return (
+    useQuery({
+      queryKey: ["atomic-batch", robinhoodChain.id, owner, wallet?.uid],
+      enabled: !!wallet && !!owner,
+      staleTime: 300000,
+      retry: false,
+      queryFn: async () => {
+        const capabilities = await wallet!
+          .getCapabilities({ account: owner!, chainId: robinhoodChain.id })
+          .catch(() => undefined);
+        const status = (capabilities as { atomic?: { status?: string } } | undefined)?.atomic?.status;
+        return status === "supported" || status === "ready";
+      },
+    }).data ?? false
+  );
 }
 
 export function useTradeBalance(token: `0x${string}`, owner?: `0x${string}`) {

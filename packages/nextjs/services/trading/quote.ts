@@ -20,9 +20,11 @@ export function swapFeeConfig(bps = "10", recipient = ""): SwapFee {
 
 export type TradeAsset = { symbol: string; address: `0x${string}` };
 export type TradeQuote = {
-  provider: "uniswap" | "0x";
+  provider: "uniswap" | "0x" | "lifi";
   spender: `0x${string}`;
   pool?: `0x${string}`;
+  /** Venue LiFi routed through, e.g. an RFQ maker. */
+  route?: string;
   impactBps?: number;
   basqitFee: SwapFee & { amount: string; token: Address };
   providerFee?: { amount: string; token: Address };

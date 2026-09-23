@@ -5,6 +5,7 @@ import { atlasClient } from "~~/services/atlas/client";
 import type { RawAsset } from "~~/services/atlas/types";
 import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { readTokenData } from "~~/services/portfolio/token-data";
+import { LIFI_DIAMOND, lifiFee, quoteLifi } from "~~/services/trading/lifi";
 import {
   ALLOWANCE_HOLDER,
   SLIPPAGE_BPS,
@@ -17,6 +18,10 @@ import {
 } from "~~/services/trading/quote";
 import { V3_ROUTER, quoteDirect } from "~~/services/trading/uniswap";
 
+// best: the larger of direct Uniswap and LiFi. uniswap-first: LiFi only when no direct pool works (keeps batches in one tx).
+const PROVIDERS = ["best", "uniswap-first", "uniswap", "lifi", "0x"] as const;
+type Provider = (typeof PROVIDERS)[number];
+
 export async function GET(request: NextRequest) {
   const reply = (body: unknown, status = 200) =>
     NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -24,8 +29,8 @@ export async function GET(request: NextRequest) {
   const session = await getSession(request.cookies.get(SESSION_COOKIE)?.value).catch(() => undefined);
   if (!session) return reply({ error: "Sign in with your wallet to get a quote." }, 401);
   const p = request.nextUrl.searchParams;
-  const provider = p.get("provider") ?? "uniswap";
-  if (provider !== "uniswap" && provider !== "0x") return reply({ error: "Unknown swap provider." }, 400);
+  const provider = (p.get("provider") ?? "best") as Provider;
+  if (!PROVIDERS.includes(provider)) return reply({ error: "Unknown swap provider." }, 400);
   if (provider === "0x" && !ZEROX_ENABLED)
     return reply({ error: "0x swaps are currently disabled. Use Direct DEX." }, 503);
   let fee;
@@ -36,7 +41,6 @@ export async function GET(request: NextRequest) {
   }
   if (provider === "0x" && !process.env.ZEROX_API_KEY)
     return reply({ error: "0x is not configured. Select Direct DEX." }, 503);
-  const spender = provider === "uniswap" ? V3_ROUTER : ALLOWANCE_HOLDER;
   const token = p.get("token") ?? "";
   const taker = p.get("taker") ?? "";
   const side = p.get("side");
@@ -61,17 +65,18 @@ export async function GET(request: NextRequest) {
     if (!asset) return reply({ error: "This token is not available for trading." }, 400);
     const sellToken = side === "buy" ? USDG : token;
     const buyToken = side === "buy" ? token : USDG;
-    const [sellDecimals, buyDecimals, balance, allowance] = await Promise.all([
+    const [sellDecimals, buyDecimals, balance] = await Promise.all([
       atlasClient.readContract({ address: sellToken, abi: tradeTokenAbi, functionName: "decimals" }),
       atlasClient.readContract({ address: buyToken, abi: tradeTokenAbi, functionName: "decimals" }),
       atlasClient.readContract({ address: sellToken, abi: tradeTokenAbi, functionName: "balanceOf", args: [taker] }),
+    ]);
+    const allowanceFor = (spender: `0x${string}`) =>
       atlasClient.readContract({
         address: sellToken,
         abi: tradeTokenAbi,
         functionName: "allowance",
         args: [taker, spender],
-      }),
-    ]);
+      });
     if ((amount.split(".")[1]?.length ?? 0) > sellDecimals)
       return reply({ error: `Use at most ${sellDecimals} decimal places.` }, 400);
     const sellAmount = parseUnits(amount, sellDecimals);
@@ -82,30 +87,49 @@ export async function GET(request: NextRequest) {
         400,
       );
     const common = {
-      provider,
-      spender,
       sellToken,
       buyToken,
       sellAmount: String(sellAmount),
       sellDecimals,
       buyDecimals,
       balance: String(balance),
-      allowance: String(allowance),
       taker,
     };
-    if (provider === "uniswap") {
-      try {
-        const quote = await quoteDirect(atlasClient, sellToken, buyToken, sellAmount, taker, fee);
-        return reply({ ...common, ...quote, expiresAt: Date.now() + 30000 });
-      } catch {
+    if (provider !== "0x") {
+      const direct = async () => ({
+        provider: "uniswap" as const,
+        spender: V3_ROUTER,
+        ...(await quoteDirect(atlasClient, sellToken, buyToken, sellAmount, taker, fee)),
+      });
+      const lifi = async () => ({
+        provider: "lifi" as const,
+        spender: LIFI_DIAMOND,
+        ...(await quoteLifi(sellToken, buyToken, sellAmount, taker, lifiFee(fee))),
+      });
+      let chosen;
+      if (provider === "best") {
+        const quotes = (await Promise.allSettled([direct(), lifi()])).flatMap(q =>
+          q.status === "fulfilled" ? [q.value] : [],
+        );
+        chosen = quotes.sort((a, b) => (BigInt(b.buyAmount) > BigInt(a.buyAmount) ? 1 : -1))[0];
+      } else {
+        const first = provider === "lifi" ? lifi : direct;
+        chosen = await first().catch(() => (provider === "uniswap-first" ? lifi().catch(() => undefined) : undefined));
+      }
+      if (!chosen)
         return reply(
           {
             error:
-              "Direct DEX quote unavailable: no usable direct pool, excessive price impact or RPC failure. Try a smaller amount or retry later.",
+              "No route is available for this stock right now: no usable pool or market maker quote, or the price impact is too high. Try a smaller amount or retry later.",
           },
           503,
         );
-      }
+      return reply({
+        ...common,
+        ...chosen,
+        allowance: String(await allowanceFor(chosen.spender)),
+        expiresAt: Date.now() + 30000,
+      });
     }
     const params = new URLSearchParams({
       chainId: String(TRADE_CHAIN),
@@ -134,6 +158,9 @@ export async function GET(request: NextRequest) {
     return reply({
       ...quote,
       ...common,
+      provider,
+      spender: ALLOWANCE_HOLDER,
+      allowance: String(await allowanceFor(ALLOWANCE_HOLDER)),
       expiresAt: Date.now() + 30000,
     });
   } catch {

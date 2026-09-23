@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         taker,
         amount: formatUnits(allocations[index], decimals),
         side: "buy",
-        provider: "uniswap",
+        provider: "uniswap-first",
       }).toString();
       const response = await quoteStock(new NextRequest(url, { headers: request.headers }));
       const quote = await response.json();

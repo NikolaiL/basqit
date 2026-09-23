@@ -1,3 +1,4 @@
+import { LIFI_DIAMOND } from "./lifi";
 import type { ExecutionQuote, TradeQuote } from "./quote";
 import { USDG } from "./quote";
 import { V3_ROUTER, v3Abi } from "./uniswap";
@@ -39,7 +40,15 @@ export async function quoteEachStock(tokens: string[], quote: (token: string, in
   return results;
 }
 
-export type BatchQuote = ExecutionQuote & { legs: TradeQuote[] };
+/** One wallet transaction: all direct Uniswap legs in one multicall, or a single LiFi leg. */
+export type BatchStep = ExecutionQuote & { legs: TradeQuote[] };
+/** USDG approval for one spender, covering every leg that spender executes. */
+export type BatchApproval = ExecutionQuote & { allowance: string };
+export type BatchQuote = Pick<ExecutionQuote, "sellToken" | "sellAmount" | "taker" | "expiresAt"> & {
+  legs: TradeQuote[];
+  steps: BatchStep[];
+  approvals: BatchApproval[];
+};
 
 export function splitAmount(total: bigint, count: number) {
   if (!Number.isInteger(count) || count < 1 || count > 8 || total < BigInt(count))
@@ -54,11 +63,14 @@ export function combineBuys(legs: TradeQuote[]): BatchQuote {
   let total = 0n;
   let deadline: bigint | undefined;
   const calls: `0x${string}`[] = [];
+  const direct: TradeQuote[] = [];
+  const lifi: TradeQuote[] = [];
   for (const leg of legs) {
+    const spender = leg.provider === "uniswap" ? V3_ROUTER : leg.provider === "lifi" ? LIFI_DIAMOND : undefined;
     if (
-      leg.provider !== "uniswap" ||
-      leg.spender.toLowerCase() !== V3_ROUTER ||
-      leg.transaction.to.toLowerCase() !== V3_ROUTER ||
+      !spender ||
+      leg.spender.toLowerCase() !== spender.toLowerCase() ||
+      leg.transaction.to.toLowerCase() !== spender.toLowerCase() ||
       leg.transaction.value !== "0" ||
       leg.sellToken.toLowerCase() !== USDG.toLowerCase() ||
       leg.taker.toLowerCase() !== first.taker.toLowerCase() ||
@@ -69,26 +81,55 @@ export function combineBuys(legs: TradeQuote[]): BatchQuote {
     )
       throw new Error("Invalid batch quote.");
     tokens.add(leg.buyToken.toLowerCase());
+    total += BigInt(leg.sellAmount);
+    if (leg.provider === "lifi") {
+      lifi.push(leg);
+      continue;
+    }
+    direct.push(leg);
     const decoded = decodeFunctionData({ abi: v3Abi, data: leg.transaction.data });
     if (decoded.functionName !== "multicall") throw new Error("Invalid batch calldata.");
     const [expires, inner] = decoded.args;
     deadline = deadline === undefined || expires < deadline ? expires : deadline;
     calls.push(...inner);
-    total += BigInt(leg.sellAmount);
   }
   if (legs.some(leg => BigInt(leg.balance) < total)) throw new Error("Insufficient USDG for all stocks.");
+  const sum = (group: TradeQuote[]) => group.reduce((acc, leg) => acc + BigInt(leg.sellAmount), 0n);
+  const step = (group: TradeQuote[], transaction: TradeQuote["transaction"]): BatchStep => ({
+    provider: group[0].provider,
+    spender: group[0].spender,
+    sellToken: USDG,
+    sellAmount: String(sum(group)),
+    taker: first.taker,
+    expiresAt: Math.min(...group.map(leg => leg.expiresAt)),
+    transaction,
+    legs: group,
+  });
+  const steps = [
+    ...(direct.length
+      ? [
+          step(direct, {
+            to: V3_ROUTER,
+            value: "0",
+            data: encodeFunctionData({ abi: v3Abi, functionName: "multicall", args: [deadline!, calls] }),
+          }),
+        ]
+      : []),
+    ...lifi.map(leg => step([leg], leg.transaction)),
+  ];
+  const approvals = [direct, lifi]
+    .filter(group => group.length)
+    .map(group => ({
+      ...step(group, { to: group[0].spender, value: "0", data: "0x" as const }),
+      allowance: group[0].allowance,
+    }));
   return {
-    provider: "uniswap",
-    spender: V3_ROUTER,
     sellToken: USDG,
     sellAmount: String(total),
     taker: first.taker,
     expiresAt: Math.min(...legs.map(leg => leg.expiresAt)),
     legs,
-    transaction: {
-      to: V3_ROUTER,
-      value: "0",
-      data: encodeFunctionData({ abi: v3Abi, functionName: "multicall", args: [deadline!, calls] }),
-    },
+    steps,
+    approvals,
   };
 }

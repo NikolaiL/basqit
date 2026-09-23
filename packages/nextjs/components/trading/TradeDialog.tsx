@@ -35,7 +35,7 @@ export function TradeDialog({
   const lock = useRef(false);
   const [fundingOpen, setFundingOpen] = useState(false);
   const [side, setSide] = useState(selection.side);
-  const [provider, setProvider] = useState<"uniswap" | "0x">("uniswap");
+  const [provider, setProvider] = useState<"best" | "0x">("best");
   const [input, setInput] = useState<{ key: string; percentage: number; manual?: string }>();
   const [quoteState, setQuoteState] = useState<QuoteState & { key: string }>({ key: "", loading: false });
   const [refresh, setRefresh] = useState(0);
@@ -222,7 +222,13 @@ export function TradeDialog({
               {currentQuote ? `Fee ${currentQuote.basqitFee.bps / 100}% · Slippage 0.5%` : "Swap details"}
             </summary>
             <div className="bq-swap-caption bq-swap-status">
-              <span>{provider === "uniswap" ? "Uniswap v3" : "0x"}</span>
+              <span>
+                {currentQuote?.provider === "lifi"
+                  ? `LiFi · ${currentQuote.route ?? "RFQ"}`
+                  : currentQuote?.provider === "0x"
+                    ? "0x"
+                    : "Uniswap v3"}
+              </span>
               <span role="status">
                 {loading
                   ? "Updating quote…"
@@ -238,9 +244,9 @@ export function TradeDialog({
                   className="select select-bordered"
                   value={provider}
                   disabled={!!busy || !!hash}
-                  onChange={e => setProvider(e.target.value as "uniswap" | "0x")}
+                  onChange={e => setProvider(e.target.value as "best" | "0x")}
                 >
-                  <option value="uniswap">Uniswap v3</option>
+                  <option value="best">Best of Uniswap and LiFi</option>
                   <option value="0x">0x</option>
                 </select>
               </label>
@@ -257,13 +263,26 @@ export function TradeDialog({
                 <div>
                   <dt>Basqit fee · {currentQuote.basqitFee.bps / 100}%</dt>
                   <dd>
-                    <TokenAmount value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)} />{" "}
-                    {buySymbol}
+                    {currentQuote.basqitFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase() ? (
+                      <>
+                        <TokenAmount
+                          value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)}
+                        />{" "}
+                        {buySymbol}
+                      </>
+                    ) : (
+                      <>
+                        <TokenAmount
+                          value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.sellDecimals)}
+                        />{" "}
+                        {sellSymbol}
+                      </>
+                    )}
                   </dd>
                 </div>
                 {currentQuote.providerFee && (
                   <div>
-                    <dt>0x fee</dt>
+                    <dt>{currentQuote.provider === "lifi" ? "LiFi fee" : "0x fee"}</dt>
                     <dd>
                       <TokenAmount
                         value={formatUnits(
