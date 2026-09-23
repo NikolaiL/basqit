@@ -22,12 +22,7 @@ vm.runInNewContext(
   }).outputText,
   {
     exports,
-    require: name =>
-      name === "./logo-bodies.json"
-        ? shapes
-        : name === "./litePile"
-          ? litePile
-          : require(name),
+    require: name => (name === "./logo-bodies.json" ? shapes : name === "./litePile" ? litePile : require(name)),
   },
 );
 const { Body, Composite, Query } = Matter;
@@ -252,7 +247,10 @@ for (const [width, variant] of [320, 390, 768, 1400].flatMap(width =>
   const entries = Object.keys(shapes).map(symbol => {
     const entry = logoBody(symbol, layout.size * (width / layout.width));
     const placement = layout.coins[symbol];
-    Body.setPosition(entry.body, { x: (placement.x * width) / layout.width, y: 400 + (placement.y * width) / layout.width });
+    Body.setPosition(entry.body, {
+      x: (placement.x * width) / layout.width,
+      y: 400 + (placement.y * width) / layout.width,
+    });
     Body.setAngle(entry.body, placement.angle);
     Matter.Sleeping.set(entry.body, true);
     return entry;
@@ -275,7 +273,10 @@ for (const [width, variant] of [320, 390, 768, 1400].flatMap(width =>
       for (const a of bodies[i].parts.slice(1))
         for (const b of bodies[j].parts.slice(1)) {
           const collision = Matter.Collision.collides(a, b);
-          assert.ok(!collision || collision.depth < 0.5, `settled variant ${variant} overlaps by ${collision?.depth}px`);
+          assert.ok(
+            !collision || collision.depth < 0.3,
+            `settled variant ${variant} overlaps by ${collision?.depth}px`,
+          );
         }
     }
   console.log(
