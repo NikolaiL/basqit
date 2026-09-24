@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+/// @notice Local-only stand-in for USDG with 6 decimals; anyone can mint test balances.
+contract MockUSDG is ERC20 {
+    constructor() ERC20("Mock Global Dollar", "mUSDG") { }
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
