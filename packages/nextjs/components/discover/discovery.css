@@ -50,6 +50,7 @@
   box-shadow: 0 0 0 3px #5a4fe012;
 }
 .bq-discover-input > span {
+  display: flex;
   color: var(--bq-brand);
   font-size: 28px;
 }
@@ -75,15 +76,16 @@
   margin: 12px auto 6px;
 }
 .bq-discover-prompts button {
-  border: 1px solid var(--bq-line);
+  border: 1px solid color-mix(in srgb, var(--chip) 75%, var(--bq-paper));
   border-radius: 999px;
-  background: var(--bq-paper);
+  background: color-mix(in srgb, var(--chip) 26%, var(--bq-paper));
+  color: var(--bq-ink);
   padding: 7px 12px;
   font-size: 12px;
   cursor: pointer;
 }
 .bq-discover-prompts button:hover {
-  background: var(--bq-lilac);
+  background: color-mix(in srgb, var(--chip) 40%, var(--bq-paper));
 }
 .bq-discover-status {
   height: 44px;
@@ -366,6 +368,10 @@
   border-right-color: #c6baff;
   border-radius: 50%;
   animation: bq-jev-spin 1s linear infinite;
+}
+.bq-discover-loading-orbit > span {
+  display: flex;
+  color: var(--bq-brand);
 }
 .bq-discover-loading-orbit > span,
 .bq-discover-loading-dots {
@@ -710,15 +716,16 @@
   position: relative;
 }
 .bq-discover-shell .bq-discover-heading {
-  margin: 0 0 8px;
+  margin: 20px 0 24px;
   flex-shrink: 0;
 }
 .bq-discover-shell .bq-discover-heading .bq-eyebrow {
   display: none;
 }
 .bq-discover-shell .bq-discover-heading h1 {
-  font-size: 26px;
-  letter-spacing: -1px;
+  font-size: clamp(32px, 3.4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
   margin: 0;
 }
 .bq-discover-shell .bq-discover-playground {
@@ -781,11 +788,11 @@
     padding: 4px 6px 6px;
   }
   .bq-discover-shell .bq-discover-heading {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    margin: 4px 0 8px;
+  }
+  .bq-discover-shell .bq-discover-heading h1 {
+    font-size: 22px;
+    letter-spacing: -0.5px;
   }
   .bq-discover-shell .bq-discover-input input {
     font-size: 16px;

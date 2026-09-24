@@ -16,7 +16,29 @@ import { surpriseIdeas } from "~~/services/discover/prompts";
 import { discoveryPath } from "~~/services/discover/share";
 
 const noSharedSymbols: string[] = [];
-const ideas = ["AI Companies", "Tech Giants", "Biotech", "Semiconductors", "Clean Energy", "Space & Satellites"];
+const ideas = [
+  ["AI Companies", "#8b5cf6"],
+  ["Tech Giants", "#3b82f6"],
+  ["Biotech", "#ec4899"],
+  ["Semiconductors", "#f97316"],
+  ["Clean Energy", "#16a34a"],
+  ["Space & Satellites", "#0891b2"],
+];
+
+// SVG, not the ✳ character: iOS and Android render U+2733 as a green emoji.
+const Asterisk = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="1em"
+    height="1em"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+  >
+    <path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1" />
+  </svg>
+);
 
 export function StockDiscovery({
   assets,
@@ -182,7 +204,9 @@ export function StockDiscovery({
       </div>
       <section className="bq-discover-playground" aria-label="Explore Stock Tokens by theme">
         <div className="bq-discover-input">
-          <span aria-hidden="true">✳</span>
+          <span aria-hidden="true">
+            <Asterisk />
+          </span>
           <input
             aria-label="Your stock theme"
             placeholder="Drop an idea. Watch the stocks click."
@@ -207,9 +231,10 @@ export function StockDiscovery({
           )}
         </div>
         <div className="bq-discover-prompts">
-          {ideas.map(idea => (
+          {ideas.map(([idea, color]) => (
             <button
               key={idea}
+              style={{ "--chip": color } as CSSProperties}
               onClick={() => {
                 entryMethod.current = "preset";
                 trackDiscovery("preset", idea);
@@ -220,6 +245,7 @@ export function StockDiscovery({
             </button>
           ))}
           <button
+            style={{ "--chip": "#eab308" } as CSSProperties}
             onClick={() => {
               const options = surpriseIdeas.filter(idea => idea !== theme);
               const idea = options[Math.floor(Math.random() * options.length)];
@@ -251,7 +277,9 @@ export function StockDiscovery({
           {loading && (
             <div className="bq-discover-loading" aria-hidden="true">
               <span className="bq-discover-loading-orbit">
-                <span>✳</span>
+                <span>
+                  <Asterisk />
+                </span>
               </span>
             </div>
           )}
