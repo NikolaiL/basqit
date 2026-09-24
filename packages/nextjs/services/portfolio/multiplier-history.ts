@@ -21,7 +21,9 @@ export function matchMultiplier(
     const start = Date.parse(`${event.date}T00:00:00Z`);
     return transitions.filter(log => {
       const time = Date.parse(log.effectiveAt);
-      return time >= start && time < start + 3 * 86400000;
+      // Observed on 4663: updates land up to 9 days before the process date (ex-date) and up to
+      // ~4 days after it (weekends). Monthly payers stay unambiguous in a 15-day window.
+      return time >= start - 10 * 86400000 && time < start + 5 * 86400000;
     });
   };
   if (action.status !== "CORPORATE_ACTION_STATUS_COMPLETED") return;

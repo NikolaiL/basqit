@@ -12,6 +12,15 @@ assert.equal(
   matchMultiplier({ ...event, status: "CORPORATE_ACTION_STATUS_IN_PROGRESS" }, [event], [update]),
   undefined,
 );
-assert.equal(matchMultiplier(event, [event], [{ effectiveAt: "2026-09-13T23:59:59Z" }]), undefined);
-assert.equal(matchMultiplier(event, [event], [{ effectiveAt: "2026-09-17T00:00:00Z" }]), undefined);
+assert.equal(matchMultiplier(event, [event], [{ effectiveAt: "2026-09-03T23:59:59Z" }]), undefined);
+assert.equal(matchMultiplier(event, [event], [{ effectiveAt: "2026-09-19T00:00:00Z" }]), undefined);
+// Seen live: WDC 9 days early, LHX 3.6 days late over a weekend.
+assert.equal(
+  matchMultiplier(event, [event], [{ effectiveAt: "2026-09-05T02:34:29Z" }])?.effectiveAt,
+  "2026-09-05T02:34:29Z",
+);
+assert.equal(
+  matchMultiplier(event, [event], [{ effectiveAt: "2026-09-17T15:20:27Z" }])?.effectiveAt,
+  "2026-09-17T15:20:27Z",
+);
 console.log("Unique, ambiguous, missing, pending and date-boundary matches passed.");
