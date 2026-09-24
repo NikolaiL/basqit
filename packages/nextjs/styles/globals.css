@@ -161,7 +161,8 @@
 
 body {
   color: var(--bq-ink);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Two faces site-wide: Bricolage Grotesque for everything, IBM Plex Mono for receipts. */
+  font-family: var(--bq-display), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -2890,4 +2891,9 @@ a:hover > .bq-arrow-out {
   font-family: var(--bq-display), sans-serif;
   font-weight: 700;
   box-shadow: 0 3px 0 color-mix(in oklab, var(--color-secondary) 65%, #1b1650);
+}
+
+/* RainbowKit's wallet modals use the site face too. */
+html [data-rk] {
+  --rk-fonts-body: var(--bq-display), sans-serif;
 }
