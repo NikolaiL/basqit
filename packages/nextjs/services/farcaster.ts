@@ -6,7 +6,7 @@ export function farcasterOrigin() {
   ).origin;
 }
 
-export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster?v=3", launchPath?: string) {
+export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster?v=4", launchPath?: string) {
   const image = new URL(imagePath, origin);
   // Farcaster caps image URLs at 1024 characters, including encoded Unicode.
   const theme = [...(image.searchParams.get("theme") || "")];
@@ -26,7 +26,7 @@ export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster
         // Omitting the URL launches the shared page with its full query intact.
         ...(launchUrl && launchUrl.length <= 1024 ? { url: launchUrl } : {}),
         splashImageUrl: `${origin}/farcaster/splash.png`,
-        splashBackgroundColor: "#f4f5fa",
+        splashBackgroundColor: "#efebff",
       },
     },
   });
@@ -52,19 +52,19 @@ export function farcasterManifest() {
     miniapp: {
       version: "1",
       name: "Basqit",
-      subtitle: "Find your stock mood",
+      subtitle: "Type a mood. Get Stock Tokens.",
       description:
         "Discover stock tokens by idea or theme. Explore your selections and view your portfolio on Robinhood Chain.",
       iconUrl: `${origin}/farcaster/icon.png`,
       homeUrl: `${origin}/discover`,
       splashImageUrl: `${origin}/farcaster/splash.png`,
-      splashBackgroundColor: "#f4f5fa",
+      splashBackgroundColor: "#efebff",
       primaryCategory: "finance",
       tags: ["stocks", "discovery", "portfolio"],
       heroImageUrl: `${origin}/thumbnail.jpg`,
-      tagline: "Find your stock mood",
+      tagline: "Type a mood. Get Stock Tokens.",
       ogTitle: "Basqit",
-      ogDescription: "Turn an idea into a stock selection. Find your stock mood with Basqit.",
+      ogDescription: "Type a mood. Get Stock Tokens on Robinhood Chain.",
       ogImageUrl: `${origin}/thumbnail.jpg`,
     },
   };

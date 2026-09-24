@@ -15,7 +15,7 @@ const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "600"], variabl
 
 export const metadata = getMetadata({
   title: "Basqit",
-  description: "Your Stock Token balances and corporate events, in one place.",
+  description: "Type a mood. Get Stock Tokens on Robinhood Chain.",
 });
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {

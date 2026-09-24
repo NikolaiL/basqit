@@ -18,18 +18,18 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   const title = theme ? `${theme} · My stock mood` : "Find your stock mood";
   const description = symbols.length
     ? `${symbols.join(" · ")}. Explore this stock selection and find your own mood with Basqit.`
-    : "Turn an idea into a stock selection. What’s your stock mood?";
+    : "Type a mood. Get Stock Tokens on Robinhood Chain.";
   const query = new URLSearchParams({
     theme,
     stocks: symbols.join(","),
     layout: String(shareLayout(params.layout, theme)),
   });
-  const image = { url: `${origin}/discover/og?v=6&${query}`, width: 1200, height: 630, alt: title };
+  const image = { url: `${origin}/discover/og?v=7&${query}`, width: 1200, height: 630, alt: title };
   return {
     title,
     description,
     openGraph: { title, description, type: "website", images: [image] },
-    other: { "fc:miniapp": miniappEmbed(origin, `/discover/og/farcaster?v=3&${query}`) },
+    other: { "fc:miniapp": miniappEmbed(origin, `/discover/og/farcaster?v=4&${query}`) },
     twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }

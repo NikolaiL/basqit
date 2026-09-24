@@ -52,7 +52,7 @@ export async function renderShareImage(request: NextRequest, farcaster = false) 
       }),
     ),
   ]);
-  const label = theme ? "I’m in the mood for" : "Type an idea, get real Stock Tokens";
+  const label = theme ? "I’m in the mood for" : "Type a mood. Get Stock Tokens.";
   const headline = theme ? (theme.length > 80 ? `${theme.slice(0, 78)}…` : theme) : "What’s your stock mood?";
   // Roughly 0.44em per character at this weight: one line while it fits at 64px or more, else two lines.
   const chars = Math.max(headline.length, 10);
