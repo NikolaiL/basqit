@@ -1,9 +1,10 @@
 "use client";
 
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import "./discovery.css";
-import { ShareIcon } from "@heroicons/react/24/outline";
+import { ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Arrow } from "~~/components/Arrow";
 import { useMiniapp } from "~~/components/MiniappProvider";
 import { StockLogo } from "~~/components/StockLogo";
 import { AssetDetails } from "~~/components/atlas/AssetDetails";
@@ -16,6 +17,17 @@ import { surpriseIdeas } from "~~/services/discover/prompts";
 import { discoveryPath } from "~~/services/discover/share";
 
 const noSharedSymbols: string[] = [];
+// Matches sit in a hand-stuck row: a small lift and tilt per position, stable between renders.
+const stickerJitter = [
+  [-8, -7],
+  [6, 6],
+  [-4, -4],
+  [10, 8],
+  [-2, -5],
+  [7, 9],
+  [-10, -3],
+  [3, 5],
+];
 const ideas = [
   ["AI Companies", "#8b5cf6"],
   ["Tech Giants", "#3b82f6"],
@@ -24,21 +36,6 @@ const ideas = [
   ["Clean Energy", "#16a34a"],
   ["Space & Satellites", "#0891b2"],
 ];
-
-// SVG, not the ✳ character: iOS and Android render U+2733 as a green emoji.
-const Asterisk = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="1em"
-    height="1em"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.6"
-    strokeLinecap="round"
-  >
-    <path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9 4.9 19.1" />
-  </svg>
-);
 
 export function StockDiscovery({
   assets,
@@ -70,6 +67,43 @@ export function StockDiscovery({
   const sharedTracked = useRef(false);
   const shareVariant = useRef<number | null>(null);
   const scene = useRef<HTMLDivElement>(null);
+  const themeInput = useRef<HTMLInputElement>(null);
+  // Fit the typed idea on one line: measure a hidden twin and scale to the input's width. The font's optical
+  // size changes glyph widths with the size, so converge over a few passes instead of measuring once.
+  useLayoutEffect(() => {
+    const input = themeInput.current;
+    if (!input?.parentElement) return;
+    const twin = document.createElement("span");
+    twin.setAttribute("aria-hidden", "true");
+    input.parentElement.append(twin);
+    const fit = () => {
+      const style = getComputedStyle(input);
+      Object.assign(twin.style, {
+        position: "absolute",
+        visibility: "hidden",
+        whiteSpace: "pre",
+        fontFamily: style.fontFamily,
+        fontWeight: style.fontWeight,
+        fontVariationSettings: style.fontVariationSettings,
+        letterSpacing: "-0.03em",
+      });
+      twin.textContent = input.value || input.placeholder;
+      let size = 100;
+      for (let pass = 0; pass < 3; pass++) {
+        twin.style.fontSize = `${size}px`;
+        size = Math.floor((size * input.clientWidth * 0.97) / Math.max(twin.offsetWidth, 1));
+      }
+      input.style.setProperty("--fit-size", `${size}px`);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(input);
+    void document.fonts.ready.then(fit);
+    return () => {
+      observer.disconnect();
+      twin.remove();
+    };
+  }, [theme]);
   const query = normalizeTheme(theme);
   const matches = result?.theme === query ? result.matches : [];
   const matchSymbols = matches.map(match => match.symbol).join(",");
@@ -196,20 +230,18 @@ export function StockDiscovery({
 
   return (
     <main className="bq-discover">
-      <div className="bq-discover-heading">
-        <span className="bq-eyebrow">A LITTLE CURIOSITY. A WHOLE MARKET.</span>
-        <h1>
-          Find your <em>stock mood.</em>
-        </h1>
-      </div>
       <section className="bq-discover-playground" aria-label="Explore Stock Tokens by theme">
+        <h1 className="bq-discover-heading">
+          <label htmlFor="bq-discover-theme">I&apos;m in the mood for</label>
+        </h1>
         <div className="bq-discover-input">
-          <span aria-hidden="true">
-            <Asterisk />
-          </span>
           <input
-            aria-label="Your stock theme"
-            placeholder="Drop an idea. Watch the stocks click."
+            id="bq-discover-theme"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            ref={themeInput}
+            placeholder="any idea…"
             value={theme}
             maxLength={180}
             onChange={event => {
@@ -219,14 +251,14 @@ export function StockDiscovery({
           />
           {theme && (
             <button
-              className="btn btn-ghost btn-circle"
+              className="bq-discover-clear"
               aria-label="Clear theme"
               onClick={() => {
                 trackDiscovery("clear", theme);
                 setTheme("");
               }}
             >
-              ×
+              <XMarkIcon aria-hidden="true" />
             </button>
           )}
         </div>
@@ -245,7 +277,7 @@ export function StockDiscovery({
             </button>
           ))}
           <button
-            style={{ "--chip": "#eab308" } as CSSProperties}
+            className="is-surprise"
             onClick={() => {
               const options = surpriseIdeas.filter(idea => idea !== theme);
               const idea = options[Math.floor(Math.random() * options.length)];
@@ -263,7 +295,7 @@ export function StockDiscovery({
               ? "Finding stocks for your idea…"
               : query && result?.theme === query
                 ? matches.length
-                  ? `${matches.length} connections. Tap a logo to take a closer look.`
+                  ? `${matches.length} ${matches.length === 1 ? "connection" : "connections"}. Tap a logo to take a closer look.`
                   : "No strong connections yet. Try a founder, a vibe, a product or a logo color."
                 : `${assets.length} little possibilities. One big idea.`)}
           {error && (
@@ -276,22 +308,26 @@ export function StockDiscovery({
           <div className="bq-discover-touch-zone" aria-hidden="true" />
           {loading && (
             <div className="bq-discover-loading" aria-hidden="true">
-              <span className="bq-discover-loading-orbit">
-                <span>
-                  <Asterisk />
-                </span>
+              {/* The logo's three bars, bouncing while the idea is matched. */}
+              <span className="bq-discover-bars">
+                <i />
+                <i />
+                <i />
               </span>
             </div>
           )}
-          {!matches.length && !loading && <span className="bq-discover-shelf">LET CURIOSITY DO THE SORTING</span>}
           {assets.map(asset => {
             const rank = matches.findIndex(match => match.symbol === asset.symbol);
             const matched = rank >= 0;
             const rowSize = Math.min(4, matches.length - Math.floor(rank / 4) * 4);
+            const [lift, tilt] = stickerJitter[rank % stickerJitter.length] ?? [0, 0];
             const style = {
+              "--match-offset": rank - (matches.length - 1) / 2,
+              "--match-lift": `${lift}px`,
+              "--match-tilt": `${tilt}deg`,
               "--match-x": `${((rank + 0.5) * 100) / Math.max(matches.length, 1)}%`,
               "--mobile-x": `${((rank % 4) + 0.5 + (4 - rowSize) / 2) * 25}%`,
-              "--mobile-y": `${Math.floor(rank / 4) * 76 + 26}px`,
+              "--mobile-y": `${Math.floor(rank / 4) * 92 + 42}px`,
               zIndex: matched ? 3 : 1,
             } as CSSProperties;
             return (
@@ -316,7 +352,7 @@ export function StockDiscovery({
             <div className="bq-discover-actions">
               <div className="bq-discover-bottom">
                 <button
-                  className="btn btn-primary"
+                  className="btn bq-discover-buy"
                   disabled={loading || !!error || !matches.length}
                   onClick={() => {
                     const selected = matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol));
@@ -376,7 +412,9 @@ export function StockDiscovery({
             Matches are business associations generated using the JEV AI model, not predictions of returns or
             personalized investment advice.
           </p>
-          <Link href="/atlas">Browse all assets →</Link>
+          <Link href="/atlas">
+            Browse all assets <Arrow />
+          </Link>
         </div>
       </details>
       {buyList.length > 0 && <BatchBuyDialog assets={buyList} onClose={() => setBuyList([])} />}

@@ -19,7 +19,7 @@ export const getMetadata = ({
 
   return {
     metadataBase: new URL(baseUrl),
-    other: { "fc:miniapp": miniappEmbed(farcasterOrigin(), "/og/farcaster?v=1", "/") },
+    other: { "fc:miniapp": miniappEmbed(farcasterOrigin(), "/og/farcaster?v=3", "/") },
     title: {
       default: title,
       template: titleTemplate,

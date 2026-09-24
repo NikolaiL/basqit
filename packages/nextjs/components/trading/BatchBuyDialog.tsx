@@ -253,7 +253,9 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         if (!lock.current && !busy) onClose();
       }}
     >
+      {/* A paper receipt: white on the light theme, carbon paper on the dark one. */}
       <div className="modal-box bq-batch-buy">
+        <p className="bq-receipt-brand">basqit. discover</p>
         <div className="bq-discover-detail-heading">
           <h2 id="batch-buy-title">Buy these stocks</h2>
           <button className="btn btn-ghost btn-circle" disabled={!!busy} onClick={onClose} aria-label="Close purchase">
@@ -406,7 +408,10 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         </div>
         {quote && (
           <p className="bq-batch-total">
-            Total <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
+            <span>Total</span>
+            <span>
+              <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
+            </span>
           </p>
         )}
         {!hash && (

@@ -7,12 +7,30 @@ import path from "node:path";
 import logos from "~~/services/discover/logos.json";
 import { shareLayout, shareSelection } from "~~/services/discover/share";
 
-const fields: Promise<string>[] = [];
-function stockField(variant: number) {
-  return (fields[variant] ??= readFile(path.join(process.cwd(), `public/og/stock-field-${variant}.png`)).then(
-    data => `data:image/png;base64,${data.toString("base64")}`,
-  ));
-}
+const INK = "#141a2e";
+const MUTED = "#5d5a7a";
+// Same hand-stuck tilt and lift as the Discover page, so a shared card looks like the screen.
+const JITTER = [
+  [-8, -7],
+  [6, 6],
+  [-4, -4],
+  [10, 8],
+  [-2, -5],
+  [7, 9],
+  [-10, -3],
+  [3, 5],
+];
+
+// Shown on the main card, when there is no idea yet.
+const SHOWCASE = ["NVDA", "AAPL", "TSLA", "PLTR", "AMZN", "META", "COIN", "RKLB"];
+
+const files = new Map<string, Promise<Buffer>>();
+const publicFile = (file: string) => {
+  if (!files.has(file)) files.set(file, readFile(path.join(process.cwd(), "public", file)));
+  return files.get(file)!;
+};
+const dataUrl = async (file: string, mime: string) =>
+  `data:${mime};base64,${(await publicFile(file)).toString("base64")}`;
 
 export async function renderShareImage(request: NextRequest, farcaster = false) {
   const height = farcaster ? 800 : 630;
@@ -20,18 +38,27 @@ export async function renderShareImage(request: NextRequest, farcaster = false) 
     request.nextUrl.searchParams.get("theme"),
     request.nextUrl.searchParams.get("stocks"),
   );
-  const [background, selected] = await Promise.all([
-    stockField(shareLayout(request.nextUrl.searchParams.get("layout"), theme)),
+  const [background, mark, bold, semibold, selected] = await Promise.all([
+    dataUrl(`og/stock-field-${shareLayout(request.nextUrl.searchParams.get("layout"), theme)}.png`, "image/png"),
+    dataUrl("basqit-logo.svg", "image/svg+xml"),
+    // Static instances of the variable font at the page's settings (wdth 88, display optical size).
+    publicFile("og/fonts/bricolage-grotesque-800-display.ttf"),
+    publicFile("og/fonts/bricolage-grotesque-600.ttf"),
     Promise.all(
-      symbols.map(async symbol => {
+      (theme || symbols.length ? symbols : SHOWCASE).map(async symbol => {
         const file = (logos as Record<string, string>)[symbol];
-        const data = await readFile(path.join(process.cwd(), "public", file)).catch(() => null);
-        const mime = file.endsWith(".svg") ? "image/svg+xml" : "image/png";
-        return { symbol, src: data ? `data:${mime};base64,${data.toString("base64")}` : null };
+        const src = await dataUrl(file, file.endsWith(".svg") ? "image/svg+xml" : "image/png").catch(() => null);
+        return { symbol, src };
       }),
     ),
   ]);
-  const headline = theme || "What’s your stock mood?";
+  const label = theme ? "I’m in the mood for" : "Type an idea, get real Stock Tokens";
+  const headline = theme ? (theme.length > 80 ? `${theme.slice(0, 78)}…` : theme) : "What’s your stock mood?";
+  // Roughly 0.44em per character at this weight: one line while it fits at 64px or more, else two lines.
+  const chars = Math.max(headline.length, 10);
+  const oneLine = 1080 / (chars * 0.44);
+  const size = Math.round(oneLine >= 64 ? Math.min(104, oneLine) : Math.min(72, (1.8 * 1080) / (chars * 0.44)));
+  const logo = selected.length > 6 ? 92 : 108;
   return new ImageResponse(
     <div
       style={{
@@ -39,120 +66,80 @@ export async function renderShareImage(request: NextRequest, farcaster = false) 
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: "linear-gradient(160deg, #ffffff 10%, #f1eefe 100%)",
-        color: "#171b30",
-        fontFamily: "sans-serif",
+        alignItems: "center",
+        backgroundColor: "#efebff",
+        color: INK,
+        fontFamily: "Bricolage",
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          position: "absolute",
-          top: 32,
-          left: 48,
-          fontSize: 34,
-          fontWeight: 700,
-          letterSpacing: -2,
-        }}
-      >
-        basqit<span style={{ color: "#6151eb" }}>.</span>
-      </div>
+      <img src={mark} alt="" width={183} height={46} style={{ position: "absolute", top: 38, left: 44 }} />
       <div
         style={{
           display: "flex",
           position: "absolute",
           right: 48,
-          top: 30,
-          padding: "13px 24px",
-          background: "#6151eb",
+          top: 36,
+          padding: "12px 24px",
+          background: INK,
           color: "white",
-          borderRadius: 30,
-          fontSize: 23,
+          borderRadius: 999,
+          fontSize: 24,
+          fontWeight: 600,
         }}
       >
-        Find yours ↗
+        Find Your Stock Tokens
+      </div>
+      <div style={{ display: "flex", marginTop: farcaster ? 150 : 112, fontSize: 28, fontWeight: 600, color: MUTED }}>
+        {label}
       </div>
       <div
         style={{
           display: "flex",
+          marginTop: 2,
+          fontSize: size,
+          fontWeight: 800,
+          lineHeight: 1.05,
+          letterSpacing: -size * 0.03,
+          width: 1100,
           justifyContent: "center",
-          marginTop: farcaster ? 140 : 106,
-          fontSize: 16,
-          letterSpacing: 4,
-          color: "#80749f",
-        }}
-      >
-        MY STOCK MOOD
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
           textAlign: "center",
-          margin: "14px 80px 0",
-          height: farcaster ? 150 : 112,
-          fontSize: headline.length > 75 ? 36 : headline.length > 40 ? 44 : 60,
-          fontWeight: 700,
-          lineHeight: 1.1,
-          letterSpacing: -1.5,
         }}
       >
-        {headline.length > 115 ? `${headline.slice(0, 112)}…` : headline}
+        {headline}
       </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          position: "absolute",
-          top: farcaster ? 360 : 275,
-          left: 48,
-          right: 48,
-          gap: selected.length > 6 ? 35 : 50,
-        }}
-      >
-        {selected.map(({ symbol, src }) => (
-          <div key={symbol} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 102 }}>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: farcaster ? 56 : 30, gap: 22 }}>
+        {selected.map(({ symbol, src }, index) => (
+          <div
+            key={symbol}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              transform: `translateY(${JITTER[index][0]}px) rotate(${JITTER[index][1]}deg)`,
+            }}
+          >
+            {src ? (
+              <img src={src} alt="" width={logo} height={logo} style={{ objectFit: "contain", borderRadius: 24 }} />
+            ) : (
+              <div style={{ display: "flex", width: logo, height: logo }} />
+            )}
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 88,
-                height: 88,
-                borderRadius: 44,
-                background: "white",
-                border: "2px solid #c8baff",
-                boxShadow: "0 12px 30px rgba(98,76,184,0.10)",
-              }}
-            >
-              {src ? (
-                <img src={src} alt="" width={54} height={54} style={{ objectFit: "contain" }} />
-              ) : (
-                <div style={{ fontSize: 30 }}>●</div>
-              )}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                marginTop: 10,
-                padding: "5px 10px",
-                background: "#eee9ff",
-                borderRadius: 8,
-                fontSize: 19,
-                fontWeight: 700,
+                marginTop: -12,
+                padding: "3px 12px",
+                background: INK,
+                color: "white",
+                borderRadius: 999,
+                fontSize: 18,
+                fontWeight: 800,
               }}
             >
               {symbol}
             </div>
           </div>
         ))}
-        {!selected.length && (
-          <div style={{ display: "flex", fontSize: 26, color: "#79738e", marginTop: 32 }}>
-            One idea. A world of stocks.
-          </div>
-        )}
       </div>
       <img
         src={background}
@@ -165,6 +152,10 @@ export async function renderShareImage(request: NextRequest, farcaster = false) 
     {
       width: 1200,
       height,
+      fonts: [
+        { name: "Bricolage", data: bold, weight: 800, style: "normal" },
+        { name: "Bricolage", data: semibold, weight: 600, style: "normal" },
+      ],
       headers: {
         "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800",
         "Vercel-CDN-Cache-Control": "public, s-maxage=604800, stale-while-revalidate=604800",

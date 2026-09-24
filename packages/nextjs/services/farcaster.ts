@@ -6,7 +6,7 @@ export function farcasterOrigin() {
   ).origin;
 }
 
-export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster?v=1", launchPath?: string) {
+export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster?v=3", launchPath?: string) {
   const image = new URL(imagePath, origin);
   // Farcaster caps image URLs at 1024 characters, including encoded Unicode.
   const theme = [...(image.searchParams.get("theme") || "")];

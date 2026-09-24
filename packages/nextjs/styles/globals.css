@@ -25,8 +25,8 @@
   --color-neutral: #141a2e;
   --color-neutral-content: #ffffff;
   --color-base-100: #ffffff;
-  --color-base-200: #f4f5fa;
-  --color-base-300: #e9e7fc;
+  --color-base-200: #efebff;
+  --color-base-300: #e2dcfb;
   --color-base-content: #141a2e;
   --color-info: #5a4fe0;
   --color-success: #7a70f0;
@@ -45,14 +45,14 @@
 
   --color-primary: #7568f0;
   --color-primary-content: #ffffff;
-  --color-secondary: #302b50;
+  --color-secondary: #332b6e;
   --color-secondary-content: #eeecff;
   --color-accent: #a99dff;
   --color-accent-content: #141a2e;
   --color-neutral: #eeecff;
   --color-neutral-content: #191b29;
-  --color-base-100: #191b29;
-  --color-base-200: #11131e;
+  --color-base-100: #262058;
+  --color-base-200: #1d1848;
   --color-base-300: #2b2d40;
   --color-base-content: #eeecf7;
   --color-info: #a99dff;
@@ -125,9 +125,9 @@
   --bq-muted: #6b7083;
   --bq-brand: #5a4fe0;
   --bq-lilac: #eeeefb;
-  --bq-line: #e9eaf1;
+  --bq-line: #e2dcfb;
   --bq-paper: #ffffff;
-  --bq-mist: #f4f5fa;
+  --bq-mist: #efebff;
   --bq-amber: #ffb020;
   --bq-danger: #9f2438;
 }
@@ -135,10 +135,10 @@
   --bq-ink: #eeecf7;
   --bq-muted: #a7a7bd;
   --bq-brand: #a99dff;
-  --bq-lilac: #302b50;
-  --bq-line: #323448;
-  --bq-paper: #191b29;
-  --bq-mist: #11131e;
+  --bq-lilac: #332b6e;
+  --bq-line: #3a3375;
+  --bq-paper: #262058;
+  --bq-mist: #1d1848;
   --bq-danger: #ff9d99;
 }
 .bq-theme-switch {
@@ -150,11 +150,6 @@
   border: 0;
   background-color: var(--bq-mist);
   color: var(--bq-ink);
-}
-.bq-brand > img {
-  position: relative;
-  /* 1px past the baseline: round glyphs overshoot it, a flat edge exactly on it reads high. */
-  top: 5.5px;
 }
 .bq-brand-dark,
 [data-theme="dark"] .bq-brand-light {
@@ -195,10 +190,7 @@ summary {
 }
 .bq-brand {
   display: flex;
-  /* Basket bottom sits on the text baseline; the icon's viewBox pads 10.5/64 on each side and
-     7.5/64 below the stroke, so gap and offset are tuned to the drawn basket, not the image box. */
-  align-items: baseline;
-  gap: 2px;
+  align-items: center;
   text-decoration: none;
   font-size: 31px;
   font-weight: 800;
@@ -2668,9 +2660,8 @@ body:has(.bq-discover-shell) {
     gap: 1px;
   }
   .bq-brand img {
-    width: 28px;
+    width: auto;
     height: 28px;
-    top: 4px;
   }
   .bq-mobile-menu {
     display: block;
@@ -2693,11 +2684,6 @@ body:has(.bq-discover-shell) {
   }
   .bq-mobile-menu .bq-theme-switch {
     margin: 8px 0 0 12px;
-  }
-}
-@media (max-width: 360px) {
-  .bq-brand > span {
-    display: none;
   }
 }
 
@@ -2728,4 +2714,180 @@ body:has(.bq-discover-shell) {
 }
 .bq-events-intro strong {
   color: var(--bq-ink);
+}
+
+/* Sticker style across the app: dotted paper, display headings, buttons with a pressed-edge shadow. */
+:root {
+  background-image: radial-gradient(color-mix(in srgb, var(--bq-brand) 16%, transparent) 1.5px, transparent 1.6px);
+  background-size: 22px 22px;
+}
+.bq-page-heading h1 {
+  font-family: var(--bq-display), sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+.bq-section-heading h2 {
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.01em;
+}
+.bq-arrow {
+  display: inline-block;
+  margin-left: 0.2em;
+  vertical-align: -0.08em;
+  transition: transform 0.15s;
+}
+.bq-arrow-out {
+  transform: rotate(-45deg);
+}
+a:hover > .bq-arrow {
+  transform: translateX(2px);
+}
+a:hover > .bq-arrow-out {
+  transform: translate(1px, -1px) rotate(-45deg);
+}
+/* Swap direction: a sticker in the page colours between two dashed rules; it bounces while a quote loads. */
+.bq-swap-divider::before,
+.bq-swap-divider::after {
+  height: 0;
+  background: none;
+  border-top: 1.5px dashed color-mix(in srgb, var(--bq-ink) 25%, transparent);
+}
+.bq-swap-direction.btn {
+  border: 1.5px solid color-mix(in srgb, var(--bq-ink) 18%, transparent);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  box-shadow:
+    0 2px 0 #1b16501a,
+    0 6px 14px #2a1f8a33;
+}
+.bq-swap-direction[aria-busy="true"] svg {
+  animation: bq-arrow-bounce 0.7s ease-in-out infinite;
+}
+@keyframes bq-arrow-bounce {
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bq-swap-direction[aria-busy="true"] svg {
+    animation: none;
+  }
+}
+
+/* Every popup is a receipt: thermal-paper look with a jagged tear-off edge; carbon paper on the dark theme. */
+.modal-box {
+  --bq-receipt-rule: color-mix(in srgb, var(--bq-ink) 25%, transparent);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 30px;
+  font-family: var(--bq-mono), ui-monospace, monospace;
+  box-shadow: 0 24px 60px #141a2e40;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+}
+.bq-receipt-brand {
+  margin: 0 0 2px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--bq-muted);
+}
+.modal-box h2 {
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+.modal-box > p,
+.modal-box small {
+  font-family: var(--bq-mono), ui-monospace, monospace;
+}
+.modal-box .bq-batch-legs {
+  border-top: 1.5px dashed var(--bq-receipt-rule);
+  border-bottom: 1.5px dashed var(--bq-receipt-rule);
+  margin: 10px 0;
+}
+.modal-box .bq-discover-buy-row {
+  border-bottom: 1.5px dotted var(--bq-receipt-rule);
+  font-size: 13px;
+}
+.modal-box .bq-discover-buy-row:last-child {
+  border-bottom: 0;
+}
+.modal-box .bq-discover-buy-row strong {
+  font-weight: 600;
+}
+.modal-box > .bq-batch-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1.5px dashed var(--bq-receipt-rule);
+  font-size: 15px;
+  font-weight: 600;
+}
+.modal-box .btn.btn-primary:not(.btn-ghost):not(.btn-link) {
+  border: 0;
+  border-radius: 12px;
+  background: var(--bq-amber, #ffb020);
+  color: #141a2e;
+  font-family: var(--bq-display), sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #b37400;
+}
+.modal-box .btn.btn-primary:not(.btn-ghost):not(.btn-link):disabled {
+  background: color-mix(in srgb, var(--bq-amber, #ffb020) 30%, var(--bq-paper));
+  color: color-mix(in srgb, var(--bq-ink) 55%, transparent);
+  box-shadow: none;
+}
+/* Notifications are small receipts too. The tear-off mask clips shadows, so a hairline frames them instead. */
+.bq-toast {
+  border: 1.5px solid color-mix(in srgb, var(--bq-ink) 15%, transparent);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 22px;
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  font-family: var(--bq-mono), ui-monospace, monospace;
+  font-size: 14px;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+}
+/* Header controls: secondary-button sticker style, with air above the header's bottom rule.
+   Margins on the controls, not header padding, so the active nav underline still sits on the rule. */
+.bq-theme-switch {
+  border-radius: 12px;
+  background-color: var(--color-secondary);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--color-secondary) 70%, var(--color-primary));
+}
+.bq-header-wallet,
+.bq-theme-switch {
+  margin-block: 10px 12px;
+}
+
+/* Every filled button is a sticker: same radius, display type and a pressed edge in a deeper shade
+   of its own colour. Ghost, link and round icon buttons stay flat. */
+.btn:not(.btn-ghost):not(.btn-link):not(.btn-circle) {
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 700;
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--btn-color, var(--color-base-200)) 65%, #1b1650);
+}
+.btn:not(.btn-ghost):not(.btn-link):not(.btn-circle):disabled {
+  box-shadow: none;
+}
+/* Selected choices in segmented controls get the same sticker look. */
+.bq-swap-presets .btn[aria-pressed="true"],
+.tab.tab-active {
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 700;
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--color-secondary) 65%, #1b1650);
 }

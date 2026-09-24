@@ -9,6 +9,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { Arrow } from "~~/components/Arrow";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
@@ -386,7 +387,7 @@ function WalletFunding({
                         rel="noreferrer"
                         href={`${source?.blockExplorers.default.url}/tx/${pending.hash}`}
                       >
-                        View transaction ↗
+                        View transaction <Arrow out />
                       </a>
                     )}
                     {status.data?.failure && (
@@ -463,7 +464,7 @@ function WalletFunding({
                     {terminalStatus(status.data) && status.data?.status !== "bridge_filled" && (
                       <>
                         <a className="link" href="https://help.0x.org/" target="_blank" rel="noreferrer">
-                          Contact 0x support ↗
+                          Contact 0x support <Arrow out />
                         </a>
                         <button className="btn btn-ghost w-full" disabled={blocked} onClick={() => save(null)}>
                           Dismiss completed transfer

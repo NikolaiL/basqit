@@ -8,6 +8,7 @@ import { SwapPayPanel } from "./SwapPayPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { Arrow } from "~~/components/Arrow";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
@@ -134,6 +135,7 @@ export function TradeDialog({
       }}
     >
       <div className="modal-box bq-trade-dialog bq-stock-trade">
+        <p className="bq-receipt-brand">basqit. trade</p>
         <div className="bq-trade-heading">
           <div>
             <h2 id="trade-title">
@@ -314,7 +316,7 @@ export function TradeDialog({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Uniswap pool ↗
+                        Uniswap pool <Arrow out />
                       </a>
                     </dd>
                   </div>
@@ -353,7 +355,7 @@ export function TradeDialog({
                 rel="noreferrer"
                 href={`${robinhoodChain.blockExplorers.default.url}/tx/${hash}`}
               >
-                View transaction ↗
+                View transaction <Arrow out />
               </a>
             </p>
           )}
