@@ -380,9 +380,6 @@
 .is-thinking .bq-discover-shelf {
   opacity: 0;
 }
-.is-thinking .bq-discover-coin {
-  opacity: 0.4;
-}
 @keyframes bq-jev-spin {
   to {
     transform: rotate(360deg);

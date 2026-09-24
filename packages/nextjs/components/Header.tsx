@@ -19,7 +19,8 @@ export const Header = () => {
     <header className="bq-header">
       <div className="bq-header-inner">
         <Link href="/" className="bq-brand" aria-label="Basqit home">
-          <Image src="/basqit-icon.svg" width={38} height={38} alt="" />
+          <Image className="bq-brand-light" src="/basqit-icon.svg" width={38} height={38} alt="" />
+          <Image className="bq-brand-dark" src="/basqit-icon-dark.svg" width={38} height={38} alt="" />
           <span>
             basqit<span className="bq-brand-period">.</span>
           </span>

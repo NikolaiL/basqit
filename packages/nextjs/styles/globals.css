@@ -151,10 +151,17 @@
   background-color: var(--bq-mist);
   color: var(--bq-ink);
 }
-[data-theme="dark"] .bq-brand > img {
-  background: #fff;
-  border-radius: 10px;
-  padding: 3px;
+.bq-brand > img {
+  position: relative;
+  /* 1px past the baseline: round glyphs overshoot it, a flat edge exactly on it reads high. */
+  top: 5.5px;
+}
+.bq-brand-dark,
+[data-theme="dark"] .bq-brand-light {
+  display: none;
+}
+[data-theme="dark"] .bq-brand-dark {
+  display: block;
 }
 
 body {
@@ -188,8 +195,10 @@ summary {
 }
 .bq-brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  /* Basket bottom sits on the text baseline; the icon's viewBox pads 10.5/64 on each side and
+     7.5/64 below the stroke, so gap and offset are tuned to the drawn basket, not the image box. */
+  align-items: baseline;
+  gap: 2px;
   text-decoration: none;
   font-size: 31px;
   font-weight: 800;
@@ -2656,10 +2665,12 @@ body:has(.bq-discover-shell) {
   }
   .bq-brand {
     font-size: 22px;
+    gap: 1px;
   }
   .bq-brand img {
     width: 28px;
     height: 28px;
+    top: 4px;
   }
   .bq-mobile-menu {
     display: block;
