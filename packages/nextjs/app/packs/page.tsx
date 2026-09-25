@@ -17,7 +17,7 @@ export default function PacksPage() {
           <p className="bq-soon-lead">
             One small, fixed price. Real Stock Tokens inside, straight to your wallet. Two kinds of pack are in design.
           </p>
-          <WaitlistForm product="packs" cta="Hear first when Packs open" />
+          <WaitlistForm product="packs" cta="Hear first when Packs open" confetti={["MSFT", "GOOGL", "RKLB"]} />
         </div>
         <PackArt />
       </section>

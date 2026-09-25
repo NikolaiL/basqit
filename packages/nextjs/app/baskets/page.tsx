@@ -18,7 +18,11 @@ export default function BasketsPage() {
             Turn a stock idea into one token anyone can buy. Pick the companies, set how much of each, give it a name
             and the story behind it.
           </p>
-          <WaitlistForm product="baskets" cta="Get early access to Baskets" />
+          <WaitlistForm
+            product="baskets"
+            cta="Get early access to Baskets"
+            confetti={["NVDA", "AAPL", "TSLA", "AMZN", "META"]}
+          />
         </div>
         <BasketArt />
       </section>

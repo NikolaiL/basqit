@@ -1,18 +1,31 @@
 "use client";
 
 import { useId, useState } from "react";
+import { SwapConfetti } from "~~/components/trading/SwapConfetti";
 import type { WaitlistProduct } from "~~/services/waitlist/waitlist";
 
-export function WaitlistForm({ product, cta }: { product: WaitlistProduct; cta: string }) {
+/** `confetti`: the page's own logos, thrown when the sign-up is confirmed. */
+export function WaitlistForm({
+  product,
+  cta,
+  confetti,
+}: {
+  product: WaitlistProduct;
+  cta: string;
+  confetti: string[];
+}) {
   const id = useId();
   const [state, setState] = useState<{ status: "idle" | "sending" | "done" | "error"; message?: string }>({
     status: "idle",
   });
   if (state.status === "done")
     return (
-      <p className="bq-waitlist-done" role="status">
-        You’re on the list. We’ll email you when it opens.
-      </p>
+      <>
+        <p className="bq-waitlist-done" role="status">
+          You’re on the list. We’ll email you when it opens.
+        </p>
+        <SwapConfetti symbols={confetti} />
+      </>
     );
   return (
     <form

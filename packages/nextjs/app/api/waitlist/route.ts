@@ -30,18 +30,16 @@ export async function POST(request: Request) {
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(10_000),
     }).catch(() => null);
+  // Both calls are idempotent in Resend: creating an existing contact returns it, re-adding a segment is a no-op.
+  // Resend expects segments as objects on create, so membership goes through the segment endpoint instead.
   const segment = waitlistSegment(entry.product);
-  const created = await resend("/contacts", {
-    email: entry.email,
-    unsubscribed: false,
-    ...(segment ? { segments: [segment] } : {}),
-  });
-  // Already a contact (signed up for the other product): add them to this product's segment instead.
-  const saved =
-    created?.ok ||
-    (!!created &&
-      !!segment &&
-      (await resend(`/contacts/${encodeURIComponent(entry.email)}/segments/${encodeURIComponent(segment)}`))?.ok);
+  const created = await resend("/contacts", { email: entry.email, unsubscribed: false });
+  const joined =
+    created?.ok && segment
+      ? await resend(`/contacts/${encodeURIComponent(entry.email)}/segments/${encodeURIComponent(segment)}`)
+      : created;
+  const saved = !!joined?.ok;
+  if (!saved) console.error("waitlist: Resend rejected", joined?.status, await joined?.text().catch(() => ""));
   if (!saved) return NextResponse.json({ error: "Could not save your email. Try again." }, { status: 502 });
   return NextResponse.json({ ok: true });
 }
