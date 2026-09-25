@@ -1797,11 +1797,10 @@ summary {
   white-space: nowrap;
 }
 
-.bq-batch-amount:focus-within,
-.bq-swap-amount-row:focus-within {
-  outline: 3px solid #a9a3f6;
-  outline-offset: 2px;
-  border-radius: 16px;
+/* Focus stays inside the field: an outer ring was clipped by dialogs and covered neighbouring blocks. */
+.bq-batch-amount:focus-within {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: -2px;
 }
 .bq-batch-amount input:focus,
 .bq-batch-amount input:focus-visible,
@@ -2792,12 +2791,6 @@ a:hover > .bq-arrow-out {
   -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
   mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
 }
-.bq-receipt-brand {
-  margin: 0 0 2px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--bq-muted);
-}
 .modal-box h2 {
   font-family: var(--bq-display), sans-serif;
   font-weight: 800;
@@ -2896,4 +2889,172 @@ a:hover > .bq-arrow-out {
 /* RainbowKit's wallet modals use the site face too. */
 html [data-rk] {
   --rk-fonts-body: var(--bq-display), sans-serif;
+}
+
+/* Amount rows in exchange dialogs are fields with their own frame; focus only recolours it. */
+.bq-swap-amount-row {
+  padding: 0 14px;
+  border: 1.5px solid var(--bq-line);
+  border-radius: 14px;
+  background: var(--bq-paper);
+}
+.bq-swap-amount-row:focus-within {
+  border-color: var(--bq-brand);
+}
+/* Text fields draw their focus ring on their own edge, never outside it. */
+:is(input, textarea, select):focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: -2px;
+}
+
+/* Loading indicator: the logo bars (components/LoadingBars). */
+.bq-bars {
+  --bar: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--bar) / 2);
+  height: calc(var(--bar) * 3.7);
+}
+.bq-bars-small {
+  --bar: 4px;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.bq-bars i {
+  width: var(--bar);
+  height: 100%;
+  border-radius: calc(var(--bar) / 2);
+  /* Height, not scaleY: the rounded ends stay full circles. */
+  animation: bq-bars 0.9s ease-in-out infinite;
+}
+.bq-bars i:nth-child(1) {
+  background: #a9a3f6;
+  animation-delay: -0.3s;
+}
+.bq-bars i:nth-child(2) {
+  background: var(--bq-brand);
+  animation-delay: -0.15s;
+}
+.bq-bars i:nth-child(3) {
+  background: var(--bq-amber, #ffb020);
+}
+@keyframes bq-bars {
+  0%,
+  100% {
+    height: 35%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bq-bars i {
+    animation: none;
+  }
+  .bq-bars i:nth-child(1) {
+    height: 55%;
+  }
+  .bq-bars i:nth-child(2) {
+    height: 78%;
+  }
+}
+
+/* Sticker close button: Discover's clear button and every dialog (components/DialogClose). */
+.bq-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bq-ink);
+  color: var(--bq-paper);
+  box-shadow:
+    0 2px 0 #1b16501a,
+    0 8px 18px #2a1f8a24;
+  transform: rotate(-8deg);
+  transition: transform 0.15s;
+}
+.bq-close:hover,
+.bq-close:focus-visible {
+  transform: rotate(0) scale(1.06);
+}
+.bq-close svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.5;
+}
+@media (max-width: 650px) {
+  .bq-close {
+    width: 40px;
+    height: 40px;
+  }
+  .bq-close svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+.modal-box {
+  position: relative;
+}
+.modal-box > .bq-close {
+  /* Tucked into the corner: the dialog's scroll area and receipt mask clip anything outside its edge. */
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+}
+.modal-box > .bq-close svg {
+  width: 22px;
+  height: 22px;
+}
+.modal-box > .bq-close:disabled {
+  opacity: 0.4;
+}
+/* Headings keep clear of the pinned close button. */
+.modal-box .bq-trade-heading,
+.modal-box .bq-discover-detail-heading {
+  padding-right: 48px;
+}
+
+/* A dialog's refresh control sits level with the close button, same icon size, without the sticker fill. */
+.modal-box > .bq-dialog-refresh {
+  position: absolute;
+  top: 10px;
+  right: 58px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--bq-ink);
+  /* Same tilt and hover as the close button next to it. */
+  transform: rotate(-8deg);
+  transition: transform 0.15s;
+}
+.modal-box > .bq-dialog-refresh:hover,
+.modal-box > .bq-dialog-refresh:focus-visible {
+  background: color-mix(in srgb, var(--bq-ink) 8%, transparent);
+  transform: rotate(0) scale(1.06);
+}
+/* Nothing to refresh yet: hide the control entirely rather than show a dead icon. */
+.modal-box > .bq-dialog-refresh:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.modal-box > .bq-dialog-refresh svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.5;
+}
+.modal-box:has(> .bq-dialog-refresh) .bq-trade-heading {
+  padding-right: 96px;
+}
+/* Token picker and amount field are two separate framed fields, not one stack. */
+.bq-token-picker-anchor + .bq-swap-amount-row {
+  margin-top: 10px;
 }

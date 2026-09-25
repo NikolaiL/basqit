@@ -5,6 +5,7 @@ import Link from "next/link";
 import "./discovery.css";
 import { ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
+import { LoadingBars } from "~~/components/LoadingBars";
 import { useMiniapp } from "~~/components/MiniappProvider";
 import { StockLogo } from "~~/components/StockLogo";
 import { AssetDetails } from "~~/components/atlas/AssetDetails";
@@ -251,7 +252,7 @@ export function StockDiscovery({
           />
           {theme && (
             <button
-              className="bq-discover-clear"
+              className="bq-close"
               aria-label="Clear theme"
               onClick={() => {
                 trackDiscovery("clear", theme);
@@ -309,11 +310,7 @@ export function StockDiscovery({
           {loading && (
             <div className="bq-discover-loading" aria-hidden="true">
               {/* The logo's three bars, bouncing while the idea is matched. */}
-              <span className="bq-discover-bars">
-                <i />
-                <i />
-                <i />
-              </span>
+              <LoadingBars />
             </div>
           )}
           {assets.map(asset => {

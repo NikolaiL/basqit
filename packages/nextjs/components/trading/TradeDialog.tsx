@@ -8,7 +8,9 @@ import { SwapPayPanel } from "./SwapPayPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
+import { DialogClose } from "~~/components/DialogClose";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
@@ -135,31 +137,22 @@ export function TradeDialog({
       }}
     >
       <div className="modal-box bq-trade-dialog bq-stock-trade">
-        <p className="bq-receipt-brand">basqit. trade</p>
+        <DialogClose label="Close trade" disabled={!!busy && !hash} onClick={onClose} />
+        <button
+          type="button"
+          className="bq-dialog-refresh"
+          aria-label="Refresh quote"
+          disabled={!!busy || !canQuote || loading}
+          onClick={() => setRefresh(value => value + 1)}
+        >
+          <ArrowPathIcon aria-hidden="true" />
+        </button>
         <div className="bq-trade-heading">
           <div>
             <h2 id="trade-title">
               {side === "buy" ? "Buy" : "Sell"} {asset.symbol}
             </h2>
             <small>Robinhood Chain</small>
-          </div>
-          <div className="flex gap-1">
-            <button
-              className="btn btn-ghost btn-square"
-              aria-label="Refresh quote"
-              disabled={!!busy || !canQuote || loading}
-              onClick={() => setRefresh(value => value + 1)}
-            >
-              ↻
-            </button>
-            <button
-              className="btn btn-ghost btn-square"
-              aria-label="Close trade"
-              disabled={!!busy && !hash}
-              onClick={onClose}
-            >
-              ✕
-            </button>
           </div>
         </div>
         <div className="bq-trade-body">
