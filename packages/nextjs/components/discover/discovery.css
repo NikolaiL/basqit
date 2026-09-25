@@ -985,25 +985,26 @@
     padding: 6px 10px;
     font-size: 13px;
   }
+  /* Phones: two rows of four, bigger stickers; the actions sit under however many rows there are. */
   .bq-discover-shell .bq-discover-coin.is-match {
-    left: calc(50% + var(--match-offset) * 44px);
-    top: calc(38px + var(--match-lift) / 3);
+    left: var(--mobile-x);
+    top: calc(var(--mobile-y) + var(--match-lift) / 3);
   }
   .bq-discover-shell .bq-discover-coin.is-match .bq-stock-logo {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 8px;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 12px;
   }
   .bq-discover-shell .bq-discover-coin.is-match img {
-    border-radius: 8px;
+    border-radius: 12px;
   }
   .bq-discover-shell .bq-discover-actions {
-    top: 80px;
+    top: calc(var(--match-rows, 1) * 88px + 4px);
   }
   .bq-discover-shell .bq-discover-coin.is-match .bq-discover-ticker {
-    top: calc(100% - 2px);
-    padding: 0 5px;
-    font-size: 9px;
+    top: calc(100% - 4px);
+    padding: 0 6px;
+    font-size: 10px;
   }
 }
 

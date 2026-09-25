@@ -327,7 +327,7 @@ export function StockDiscovery({
               "--match-tilt": `${tilt}deg`,
               "--match-x": `${((rank + 0.5) * 100) / Math.max(matches.length, 1)}%`,
               "--mobile-x": `${((rank % 4) + 0.5 + (4 - rowSize) / 2) * 25}%`,
-              "--mobile-y": `${Math.floor(rank / 4) * 92 + 42}px`,
+              "--mobile-y": `${Math.floor(rank / 4) * 88 + 40}px`,
               zIndex: matched ? 3 : 1,
             } as CSSProperties;
             return (
@@ -349,7 +349,10 @@ export function StockDiscovery({
             );
           })}
           {matches.length > 0 && (
-            <div className="bq-discover-actions">
+            <div
+              className="bq-discover-actions"
+              style={{ "--match-rows": Math.ceil(matches.length / 4) } as CSSProperties}
+            >
               <div className="bq-discover-bottom">
                 <button
                   className="btn bq-discover-buy"
