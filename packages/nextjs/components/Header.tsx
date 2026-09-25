@@ -11,6 +11,8 @@ const pages = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/atlas", label: "Assets" },
   { href: "/corporate-events", label: "Corporate events" },
+  { href: "/baskets", label: "Baskets" },
+  { href: "/packs", label: "Packs" },
 ];
 
 export const Header = () => {

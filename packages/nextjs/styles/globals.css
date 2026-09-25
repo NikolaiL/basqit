@@ -3058,3 +3058,319 @@ html [data-rk] {
 .bq-token-picker-anchor + .bq-swap-amount-row {
   margin-top: 10px;
 }
+
+/* Coming-soon product pages (Baskets, Packs): short pitch, three stickers, a waitlist form. */
+.bq-soon {
+  max-width: 880px;
+}
+.bq-soon-status {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--bq-amber, #ffb020);
+  color: #141a2e;
+  font-weight: 700;
+  font-size: 14px;
+  transform: rotate(-2deg);
+}
+.bq-soon h1 {
+  margin: 0;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+.bq-soon-lead {
+  max-width: 60ch;
+  margin: 18px 0 28px;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--bq-muted);
+}
+.bq-soon-fine {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--bq-muted);
+}
+.bq-waitlist {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+.bq-waitlist label {
+  font-size: 22px;
+  font-weight: 800;
+}
+.bq-waitlist-row {
+  display: flex;
+  gap: 10px;
+}
+.bq-waitlist-row .input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 12px;
+}
+.bq-waitlist-row .btn {
+  height: 48px;
+}
+.bq-waitlist-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bq-muted);
+}
+.bq-waitlist-done {
+  max-width: 560px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--bq-paper);
+  font-weight: 700;
+}
+.bq-waitlist-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+@media (max-width: 520px) {
+  .bq-waitlist-row {
+    flex-direction: column;
+  }
+}
+/* Coming-soon art: text left, a sticker illustration right; stacked on phones. */
+.bq-soon {
+  max-width: 1120px;
+}
+.bq-soon-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 32px;
+  align-items: center;
+}
+.bq-soon-art {
+  position: relative;
+  height: 340px;
+}
+.bq-soon-sticker {
+  position: absolute;
+  translate: -50% 0;
+  filter: drop-shadow(0 6px 10px #2a1f8a33);
+}
+.bq-soon-sticker .bq-stock-logo {
+  border-radius: 16px;
+}
+.bq-soon-basket-mark {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 300px;
+  translate: -50% 0;
+  color: var(--bq-ink);
+}
+.bq-soon-packs-art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px;
+}
+.bq-soon-pack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 170px;
+  height: 250px;
+  padding: 18px;
+  border-radius: 6px 6px 18px 18px;
+  color: #fff;
+  box-shadow:
+    0 4px 0 color-mix(in oklab, var(--pack) 60%, #1b1650),
+    0 16px 30px #2a1f8a33;
+  background: var(--pack);
+  -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+  mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+}
+.bq-soon-pack.is-gift {
+  --pack: #5a4fe0;
+  rotate: -6deg;
+}
+.bq-soon-pack.is-surprise {
+  --pack: #ffb020;
+  color: #141a2e;
+  rotate: 5deg;
+  translate: 0 -24px;
+}
+.bq-soon-pack strong {
+  font-size: 30px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  line-height: 1;
+}
+.bq-soon-pack small {
+  margin-top: 4px;
+  font-family: var(--bq-mono), monospace;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.bq-soon-peek {
+  position: absolute;
+  top: 26px;
+  left: 18px;
+  display: flex;
+  gap: 8px;
+}
+.bq-soon-peek .bq-stock-logo {
+  border-radius: 14px;
+  box-shadow: 0 4px 10px #0003;
+}
+.bq-soon-peek b {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #141a2e;
+  color: #ffb020;
+  font-size: 30px;
+}
+@media (max-width: 800px) {
+  .bq-soon-hero {
+    grid-template-columns: 1fr;
+  }
+  .bq-soon-art {
+    order: -1;
+    height: 260px;
+  }
+  .bq-soon-basket-mark {
+    width: 230px;
+  }
+  .bq-soon-pack {
+    width: 140px;
+    height: 200px;
+  }
+}
+
+/* Baskets: Build, Publish, Earn — big verbs on a thick rule in the logo's bar colours; no boxes. */
+.bq-soon-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-soon-steps li {
+  padding-top: 14px;
+  border-top: 6px solid var(--step);
+  border-radius: 3px;
+  max-width: 34ch;
+  line-height: 1.55;
+  color: var(--bq-muted);
+}
+.bq-soon-steps li:nth-child(1) {
+  --step: #a9a3f6;
+}
+.bq-soon-steps li:nth-child(2) {
+  --step: var(--bq-brand);
+}
+.bq-soon-steps li:nth-child(3) {
+  --step: var(--bq-amber, #ffb020);
+}
+.bq-soon-steps strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--bq-ink);
+  font-size: 40px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+/* Packs: each note tinted with its pack's colour from the art. */
+.bq-soon-pack-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-soon-pack-notes li {
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pack) 14%, var(--bq-paper));
+  border: 2px solid color-mix(in srgb, var(--pack) 55%, transparent);
+  line-height: 1.55;
+}
+.bq-soon-pack-notes .is-gift {
+  --pack: #5a4fe0;
+}
+.bq-soon-pack-notes .is-surprise {
+  --pack: #ffb020;
+}
+.bq-soon-pack-notes strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+}
+.bq-soon-pack-notes em {
+  display: block;
+  margin: 2px 0 8px;
+  font-style: normal;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--pack) 70%, var(--bq-ink));
+}
+.bq-soon-hero .bq-waitlist {
+  margin-top: 4px;
+}
+@media (max-width: 800px) {
+  .bq-soon-steps,
+  .bq-soon-pack-notes {
+    grid-template-columns: 1fr;
+    margin-top: 36px;
+  }
+}
+
+/* Corporate events scope switch: two sticker buttons, no grey tray; the chosen one is filled. */
+.bq-event-controls {
+  padding-top: 20px;
+}
+.bq-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  background: none;
+}
+.bq-tabs .tab,
+.bq-tabs .tab.tab-active {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+.bq-tabs .tab {
+  background: var(--bq-mist);
+  color: var(--bq-ink);
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--bq-mist) 70%, #1b1650);
+}
+.bq-tabs .tab.tab-active {
+  background: var(--bq-brand);
+  color: var(--bq-paper);
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--bq-brand) 60%, #1b1650);
+}
+@media (max-width: 650px) {
+  .bq-tabs .tab,
+  .bq-tabs .tab.tab-active {
+    height: auto;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
