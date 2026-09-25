@@ -12,6 +12,7 @@ import {
   MagnifyingGlassIcon,
   WalletIcon,
 } from "@heroicons/react/24/outline";
+import { Arrow } from "~~/components/Arrow";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
@@ -157,7 +158,7 @@ function EventRow({ event }: { event: CorporateAction }) {
               target="_blank"
               rel="noreferrer"
             >
-              View onchain update ↗
+              View onchain update <Arrow out />
             </a>
           </p>
         )}
@@ -184,7 +185,7 @@ function EventRow({ event }: { event: CorporateAction }) {
           your wallet, and a current holding does not establish entitlement on a past record date.
         </p>
         <a className="link" href="https://docs.robinhood.com/chain/stock-token-apis/" target="_blank" rel="noreferrer">
-          How corporate events work ↗
+          How corporate events work <Arrow out />
         </a>
       </div>
     </details>
@@ -321,7 +322,7 @@ export function PortfolioDashboard({
               target="_blank"
               rel="noreferrer"
             >
-              Robinhood documentation ↗
+              Robinhood documentation <Arrow out />
             </a>
           </details>
         </section>
@@ -355,7 +356,7 @@ export function PortfolioDashboard({
                 {connectedAddress ? (openConnectModal ? "Sign in" : "Confirm in wallet…") : "Connect wallet"}
               </button>
               <Link className="link" href="/atlas">
-                Explore assets →
+                Explore assets <Arrow />
               </Link>
             </div>
           )}
@@ -433,7 +434,7 @@ export function PortfolioDashboard({
                   <div className="skeleton bq-holdings-link-loading" aria-label="Loading holdings" />
                 ) : (
                   <Link className="link" href="/atlas">
-                    Buy another asset →
+                    Buy another asset <Arrow />
                   </Link>
                 )}
               </div>

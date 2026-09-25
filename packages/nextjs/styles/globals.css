@@ -25,8 +25,8 @@
   --color-neutral: #141a2e;
   --color-neutral-content: #ffffff;
   --color-base-100: #ffffff;
-  --color-base-200: #f4f5fa;
-  --color-base-300: #e9e7fc;
+  --color-base-200: #efebff;
+  --color-base-300: #e2dcfb;
   --color-base-content: #141a2e;
   --color-info: #5a4fe0;
   --color-success: #7a70f0;
@@ -45,14 +45,14 @@
 
   --color-primary: #7568f0;
   --color-primary-content: #ffffff;
-  --color-secondary: #302b50;
+  --color-secondary: #332b6e;
   --color-secondary-content: #eeecff;
   --color-accent: #a99dff;
   --color-accent-content: #141a2e;
   --color-neutral: #eeecff;
   --color-neutral-content: #191b29;
-  --color-base-100: #191b29;
-  --color-base-200: #11131e;
+  --color-base-100: #262058;
+  --color-base-200: #1d1848;
   --color-base-300: #2b2d40;
   --color-base-content: #eeecf7;
   --color-info: #a99dff;
@@ -125,9 +125,9 @@
   --bq-muted: #6b7083;
   --bq-brand: #5a4fe0;
   --bq-lilac: #eeeefb;
-  --bq-line: #e9eaf1;
+  --bq-line: #e2dcfb;
   --bq-paper: #ffffff;
-  --bq-mist: #f4f5fa;
+  --bq-mist: #efebff;
   --bq-amber: #ffb020;
   --bq-danger: #9f2438;
 }
@@ -135,10 +135,10 @@
   --bq-ink: #eeecf7;
   --bq-muted: #a7a7bd;
   --bq-brand: #a99dff;
-  --bq-lilac: #302b50;
-  --bq-line: #323448;
-  --bq-paper: #191b29;
-  --bq-mist: #11131e;
+  --bq-lilac: #332b6e;
+  --bq-line: #3a3375;
+  --bq-paper: #262058;
+  --bq-mist: #1d1848;
   --bq-danger: #ff9d99;
 }
 .bq-theme-switch {
@@ -151,15 +151,18 @@
   background-color: var(--bq-mist);
   color: var(--bq-ink);
 }
-[data-theme="dark"] .bq-brand > img {
-  background: #fff;
-  border-radius: 10px;
-  padding: 3px;
+.bq-brand-dark,
+[data-theme="dark"] .bq-brand-light {
+  display: none;
+}
+[data-theme="dark"] .bq-brand-dark {
+  display: block;
 }
 
 body {
   color: var(--bq-ink);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Two faces site-wide: Bricolage Grotesque for everything, IBM Plex Mono for receipts. */
+  font-family: var(--bq-display), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -189,7 +192,6 @@ summary {
 .bq-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
   text-decoration: none;
   font-size: 31px;
   font-weight: 800;
@@ -1795,11 +1797,10 @@ summary {
   white-space: nowrap;
 }
 
-.bq-batch-amount:focus-within,
-.bq-swap-amount-row:focus-within {
-  outline: 3px solid #a9a3f6;
-  outline-offset: 2px;
-  border-radius: 16px;
+/* Focus stays inside the field: an outer ring was clipped by dialogs and covered neighbouring blocks. */
+.bq-batch-amount:focus-within {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: -2px;
 }
 .bq-batch-amount input:focus,
 .bq-batch-amount input:focus-visible,
@@ -2656,9 +2657,10 @@ body:has(.bq-discover-shell) {
   }
   .bq-brand {
     font-size: 22px;
+    gap: 1px;
   }
   .bq-brand img {
-    width: 28px;
+    width: auto;
     height: 28px;
   }
   .bq-mobile-menu {
@@ -2682,11 +2684,6 @@ body:has(.bq-discover-shell) {
   }
   .bq-mobile-menu .bq-theme-switch {
     margin: 8px 0 0 12px;
-  }
-}
-@media (max-width: 360px) {
-  .bq-brand > span {
-    display: none;
   }
 }
 
@@ -2717,4 +2714,663 @@ body:has(.bq-discover-shell) {
 }
 .bq-events-intro strong {
   color: var(--bq-ink);
+}
+
+/* Sticker style across the app: dotted paper, display headings, buttons with a pressed-edge shadow. */
+:root {
+  background-image: radial-gradient(color-mix(in srgb, var(--bq-brand) 16%, transparent) 1.5px, transparent 1.6px);
+  background-size: 22px 22px;
+}
+.bq-page-heading h1 {
+  font-family: var(--bq-display), sans-serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+.bq-section-heading h2 {
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.01em;
+}
+.bq-arrow {
+  display: inline-block;
+  margin-left: 0.2em;
+  vertical-align: -0.08em;
+  transition: transform 0.15s;
+}
+.bq-arrow-out {
+  transform: rotate(-45deg);
+}
+a:hover > .bq-arrow {
+  transform: translateX(2px);
+}
+a:hover > .bq-arrow-out {
+  transform: translate(1px, -1px) rotate(-45deg);
+}
+/* Swap direction: a sticker in the page colours between two dashed rules; it bounces while a quote loads. */
+.bq-swap-divider::before,
+.bq-swap-divider::after {
+  height: 0;
+  background: none;
+  border-top: 1.5px dashed color-mix(in srgb, var(--bq-ink) 25%, transparent);
+}
+.bq-swap-direction.btn {
+  border: 1.5px solid color-mix(in srgb, var(--bq-ink) 18%, transparent);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  box-shadow:
+    0 2px 0 #1b16501a,
+    0 6px 14px #2a1f8a33;
+}
+.bq-swap-direction[aria-busy="true"] svg {
+  animation: bq-arrow-bounce 0.7s ease-in-out infinite;
+}
+@keyframes bq-arrow-bounce {
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bq-swap-direction[aria-busy="true"] svg {
+    animation: none;
+  }
+}
+
+/* Every popup is a receipt: thermal-paper look with a jagged tear-off edge; carbon paper on the dark theme. */
+.modal-box {
+  --bq-receipt-rule: color-mix(in srgb, var(--bq-ink) 25%, transparent);
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 30px;
+  font-family: var(--bq-mono), ui-monospace, monospace;
+  box-shadow: 0 24px 60px #141a2e40;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 16px 100%;
+}
+.modal-box h2 {
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+.modal-box > p,
+.modal-box small {
+  font-family: var(--bq-mono), ui-monospace, monospace;
+}
+.modal-box .bq-batch-legs {
+  border-top: 1.5px dashed var(--bq-receipt-rule);
+  border-bottom: 1.5px dashed var(--bq-receipt-rule);
+  margin: 10px 0;
+}
+.modal-box .bq-discover-buy-row {
+  border-bottom: 1.5px dotted var(--bq-receipt-rule);
+  font-size: 13px;
+}
+.modal-box .bq-discover-buy-row:last-child {
+  border-bottom: 0;
+}
+.modal-box .bq-discover-buy-row strong {
+  font-weight: 600;
+}
+.modal-box > .bq-batch-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1.5px dashed var(--bq-receipt-rule);
+  font-size: 15px;
+  font-weight: 600;
+}
+.modal-box .btn.btn-primary:not(.btn-ghost):not(.btn-link) {
+  border: 0;
+  border-radius: 12px;
+  background: var(--bq-amber, #ffb020);
+  color: #141a2e;
+  font-family: var(--bq-display), sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #b37400;
+}
+.modal-box .btn.btn-primary:not(.btn-ghost):not(.btn-link):disabled {
+  background: color-mix(in srgb, var(--bq-amber, #ffb020) 30%, var(--bq-paper));
+  color: color-mix(in srgb, var(--bq-ink) 55%, transparent);
+  box-shadow: none;
+}
+/* Notifications are small receipts too. The tear-off mask clips shadows, so a hairline frames them instead. */
+.bq-toast {
+  border: 1.5px solid color-mix(in srgb, var(--bq-ink) 15%, transparent);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 22px;
+  background: var(--bq-paper);
+  color: var(--bq-ink);
+  font-family: var(--bq-mono), ui-monospace, monospace;
+  font-size: 14px;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+}
+/* Header controls: secondary-button sticker style, with air above the header's bottom rule.
+   Margins on the controls, not header padding, so the active nav underline still sits on the rule. */
+.bq-theme-switch {
+  border-radius: 12px;
+  background-color: var(--color-secondary);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--color-secondary) 70%, var(--color-primary));
+}
+.bq-header-wallet,
+.bq-theme-switch {
+  margin-block: 10px 12px;
+}
+
+/* Every filled button is a sticker: same radius, display type and a pressed edge in a deeper shade
+   of its own colour. Ghost, link and round icon buttons stay flat. */
+.btn:not(.btn-ghost):not(.btn-link):not(.btn-circle) {
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 700;
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--btn-color, var(--color-base-200)) 65%, #1b1650);
+}
+.btn:not(.btn-ghost):not(.btn-link):not(.btn-circle):disabled {
+  box-shadow: none;
+}
+/* Selected choices in segmented controls get the same sticker look. */
+.bq-swap-presets .btn[aria-pressed="true"],
+.tab.tab-active {
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-weight: 700;
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--color-secondary) 65%, #1b1650);
+}
+
+/* RainbowKit's wallet modals use the site face too. */
+html [data-rk] {
+  --rk-fonts-body: var(--bq-display), sans-serif;
+}
+
+/* Amount rows in exchange dialogs are fields with their own frame; focus only recolours it. */
+.bq-swap-amount-row {
+  padding: 0 14px;
+  border: 1.5px solid var(--bq-line);
+  border-radius: 14px;
+  background: var(--bq-paper);
+}
+.bq-swap-amount-row:focus-within {
+  border-color: var(--bq-brand);
+}
+/* Text fields draw their focus ring on their own edge, never outside it. */
+:is(input, textarea, select):focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: -2px;
+}
+
+/* Loading indicator: the logo bars (components/LoadingBars). */
+.bq-bars {
+  --bar: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--bar) / 2);
+  height: calc(var(--bar) * 3.7);
+}
+.bq-bars-small {
+  --bar: 4px;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.bq-bars i {
+  width: var(--bar);
+  height: 100%;
+  border-radius: calc(var(--bar) / 2);
+  /* Height, not scaleY: the rounded ends stay full circles. */
+  animation: bq-bars 0.9s ease-in-out infinite;
+}
+.bq-bars i:nth-child(1) {
+  background: #a9a3f6;
+  animation-delay: -0.3s;
+}
+.bq-bars i:nth-child(2) {
+  background: var(--bq-brand);
+  animation-delay: -0.15s;
+}
+.bq-bars i:nth-child(3) {
+  background: var(--bq-amber, #ffb020);
+}
+@keyframes bq-bars {
+  0%,
+  100% {
+    height: 35%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bq-bars i {
+    animation: none;
+  }
+  .bq-bars i:nth-child(1) {
+    height: 55%;
+  }
+  .bq-bars i:nth-child(2) {
+    height: 78%;
+  }
+}
+
+/* Sticker close button: Discover's clear button and every dialog (components/DialogClose). */
+.bq-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bq-ink);
+  color: var(--bq-paper);
+  box-shadow:
+    0 2px 0 #1b16501a,
+    0 8px 18px #2a1f8a24;
+  transform: rotate(-8deg);
+  transition: transform 0.15s;
+}
+.bq-close:hover,
+.bq-close:focus-visible {
+  transform: rotate(0) scale(1.06);
+}
+.bq-close svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.5;
+}
+@media (max-width: 650px) {
+  .bq-close {
+    width: 40px;
+    height: 40px;
+  }
+  .bq-close svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+.modal-box {
+  position: relative;
+}
+.modal-box > .bq-close {
+  /* Tucked into the corner: the dialog's scroll area and receipt mask clip anything outside its edge. */
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+}
+.modal-box > .bq-close svg {
+  width: 22px;
+  height: 22px;
+}
+.modal-box > .bq-close:disabled {
+  opacity: 0.4;
+}
+/* Headings keep clear of the pinned close button. */
+.modal-box .bq-trade-heading,
+.modal-box .bq-discover-detail-heading {
+  padding-right: 48px;
+}
+
+/* A dialog's refresh control sits level with the close button, same icon size, without the sticker fill. */
+.modal-box > .bq-dialog-refresh {
+  position: absolute;
+  top: 10px;
+  right: 58px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--bq-ink);
+  /* Same tilt and hover as the close button next to it. */
+  transform: rotate(-8deg);
+  transition: transform 0.15s;
+}
+.modal-box > .bq-dialog-refresh:hover,
+.modal-box > .bq-dialog-refresh:focus-visible {
+  background: color-mix(in srgb, var(--bq-ink) 8%, transparent);
+  transform: rotate(0) scale(1.06);
+}
+/* Nothing to refresh yet: hide the control entirely rather than show a dead icon. */
+.modal-box > .bq-dialog-refresh:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.modal-box > .bq-dialog-refresh svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.5;
+}
+.modal-box:has(> .bq-dialog-refresh) .bq-trade-heading {
+  padding-right: 96px;
+}
+/* Token picker and amount field are two separate framed fields, not one stack. */
+.bq-token-picker-anchor + .bq-swap-amount-row {
+  margin-top: 10px;
+}
+
+/* Coming-soon product pages (Baskets, Packs): short pitch, three stickers, a waitlist form. */
+.bq-soon {
+  max-width: 880px;
+}
+.bq-soon-status {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--bq-amber, #ffb020);
+  color: #141a2e;
+  font-weight: 700;
+  font-size: 14px;
+  transform: rotate(-2deg);
+}
+.bq-soon h1 {
+  margin: 0;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+.bq-soon-lead {
+  max-width: 60ch;
+  margin: 18px 0 28px;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--bq-muted);
+}
+.bq-soon-fine {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--bq-muted);
+}
+.bq-waitlist {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+.bq-waitlist label {
+  font-size: 22px;
+  font-weight: 800;
+}
+.bq-waitlist-row {
+  display: flex;
+  gap: 10px;
+}
+.bq-waitlist-row .input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 12px;
+}
+.bq-waitlist-row .btn {
+  height: 48px;
+}
+.bq-waitlist-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bq-muted);
+}
+.bq-waitlist-done {
+  max-width: 560px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--bq-paper);
+  font-weight: 700;
+}
+.bq-waitlist-trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+@media (max-width: 520px) {
+  .bq-waitlist-row {
+    flex-direction: column;
+  }
+}
+/* Coming-soon art: text left, a sticker illustration right; stacked on phones. */
+.bq-soon {
+  max-width: 1120px;
+}
+.bq-soon-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 32px;
+  align-items: center;
+}
+.bq-soon-art {
+  position: relative;
+  height: 340px;
+}
+.bq-soon-sticker {
+  position: absolute;
+  translate: -50% 0;
+  filter: drop-shadow(0 6px 10px #2a1f8a33);
+}
+.bq-soon-sticker .bq-stock-logo {
+  border-radius: 16px;
+}
+.bq-soon-basket-mark {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 300px;
+  translate: -50% 0;
+  color: var(--bq-ink);
+}
+.bq-soon-packs-art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px;
+}
+.bq-soon-pack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 170px;
+  height: 250px;
+  padding: 18px;
+  border-radius: 6px 6px 18px 18px;
+  color: #fff;
+  box-shadow:
+    0 4px 0 color-mix(in oklab, var(--pack) 60%, #1b1650),
+    0 16px 30px #2a1f8a33;
+  background: var(--pack);
+  -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+  mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+}
+.bq-soon-pack.is-gift {
+  --pack: #5a4fe0;
+  rotate: -6deg;
+}
+.bq-soon-pack.is-surprise {
+  --pack: #ffb020;
+  color: #141a2e;
+  rotate: 5deg;
+  translate: 0 -24px;
+}
+.bq-soon-pack strong {
+  font-size: 30px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  line-height: 1;
+}
+.bq-soon-pack small {
+  margin-top: 4px;
+  font-family: var(--bq-mono), monospace;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.bq-soon-peek {
+  position: absolute;
+  top: 26px;
+  left: 18px;
+  display: flex;
+  gap: 8px;
+}
+.bq-soon-peek .bq-stock-logo {
+  border-radius: 14px;
+  box-shadow: 0 4px 10px #0003;
+}
+.bq-soon-peek b {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #141a2e;
+  color: #ffb020;
+  font-size: 30px;
+}
+@media (max-width: 800px) {
+  .bq-soon-hero {
+    grid-template-columns: 1fr;
+  }
+  .bq-soon-art {
+    order: -1;
+    height: 260px;
+  }
+  .bq-soon-basket-mark {
+    width: 230px;
+  }
+  .bq-soon-pack {
+    width: 140px;
+    height: 200px;
+  }
+}
+
+/* Baskets: Build, Publish, Earn — big verbs on a thick rule in the logo's bar colours; no boxes. */
+.bq-soon-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-soon-steps li {
+  padding-top: 14px;
+  border-top: 6px solid var(--step);
+  border-radius: 3px;
+  max-width: 34ch;
+  line-height: 1.55;
+  color: var(--bq-muted);
+}
+.bq-soon-steps li:nth-child(1) {
+  --step: #a9a3f6;
+}
+.bq-soon-steps li:nth-child(2) {
+  --step: var(--bq-brand);
+}
+.bq-soon-steps li:nth-child(3) {
+  --step: var(--bq-amber, #ffb020);
+}
+.bq-soon-steps strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--bq-ink);
+  font-size: 40px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+/* Packs: each note tinted with its pack's colour from the art. */
+.bq-soon-pack-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-soon-pack-notes li {
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--pack) 14%, var(--bq-paper));
+  border: 2px solid color-mix(in srgb, var(--pack) 55%, transparent);
+  line-height: 1.55;
+}
+.bq-soon-pack-notes .is-gift {
+  --pack: #5a4fe0;
+}
+.bq-soon-pack-notes .is-surprise {
+  --pack: #ffb020;
+}
+.bq-soon-pack-notes strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+}
+.bq-soon-pack-notes em {
+  display: block;
+  margin: 2px 0 8px;
+  font-style: normal;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--pack) 70%, var(--bq-ink));
+}
+.bq-soon-hero .bq-waitlist {
+  margin-top: 4px;
+}
+@media (max-width: 800px) {
+  .bq-soon-steps,
+  .bq-soon-pack-notes {
+    grid-template-columns: 1fr;
+    margin-top: 36px;
+  }
+}
+
+/* Corporate events scope switch: two sticker buttons, no grey tray; the chosen one is filled. */
+.bq-event-controls {
+  padding-top: 20px;
+}
+.bq-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  background: none;
+}
+.bq-tabs .tab,
+.bq-tabs .tab.tab-active {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-family: var(--bq-display), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+.bq-tabs .tab {
+  background: var(--bq-mist);
+  color: var(--bq-ink);
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--bq-mist) 70%, #1b1650);
+}
+.bq-tabs .tab.tab-active {
+  background: var(--bq-brand);
+  color: var(--bq-paper);
+  box-shadow: 0 3px 0 color-mix(in oklab, var(--bq-brand) 60%, #1b1650);
+}
+@media (max-width: 650px) {
+  .bq-tabs .tab,
+  .bq-tabs .tab.tab-active {
+    height: auto;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
 }

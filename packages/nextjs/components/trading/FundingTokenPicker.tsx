@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FundingTokenLogo } from "./FundingTokenLogo";
 import { formatUnits } from "viem";
+import { LoadingBars } from "~~/components/LoadingBars";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { type FundingToken, fundingChains } from "~~/services/funding/shared";
 
@@ -66,7 +67,9 @@ export function FundingTokenPicker({
         <div className="bq-token-list-heading">
           <h3>My tokens</h3>
           <small className="bq-token-list-status">
-            <span className={`loading loading-spinner loading-xs ${loading ? "" : "invisible"}`} aria-hidden="true" />
+            <span className={loading ? "" : "invisible"}>
+              <LoadingBars small />
+            </span>
             {visible.length}
             <span className="sr-only">{loading ? " tokens loaded; loading more" : " tokens"}</span>
           </small>

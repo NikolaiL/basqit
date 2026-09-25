@@ -6,6 +6,8 @@ import type { CatalogAsset } from "./AssetCatalog";
 import { QuoteDetails } from "./QuoteDetails";
 import { useQuery } from "@tanstack/react-query";
 import { CheckIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
+import { Arrow } from "~~/components/Arrow";
+import { DialogClose } from "~~/components/DialogClose";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import type { TradeSelection } from "~~/components/trading/TradeDialog";
@@ -109,15 +111,13 @@ export function AssetDetails({
   return (
     <dialog ref={dialog} className="modal" aria-labelledby="asset-detail-title" onCancel={onClose}>
       <article className="modal-box bq-asset-detail">
+        <DialogClose label="Close stock details" onClick={onClose} />
         <div className="bq-trade-heading">
           <StockLogo symbol={asset.symbol} size={44} />
           <div>
             <h2 id="asset-detail-title">{asset.symbol}</h2>
             <small>{asset.name}</small>
           </div>
-          <button className="btn btn-ghost btn-square" aria-label="Close stock details" onClick={onClose}>
-            ×
-          </button>
         </div>
         {asset.price && (
           <div className="bq-asset-price">
@@ -215,7 +215,7 @@ export function AssetDetails({
         </details>
         <div className="bq-asset-links">
           <Link className="link" href={`/corporate-events?token=${encodeURIComponent(asset.symbol)}`}>
-            Dividend history →
+            Dividend history <Arrow />
           </Link>
           <a
             className="link"
@@ -223,15 +223,15 @@ export function AssetDetails({
             target="_blank"
             rel="noreferrer"
           >
-            View on explorer ↗
+            View on explorer <Arrow out />
           </a>
           {(asset.website || profile?.website) && (
             <a className="link" href={asset.website || profile?.website} target="_blank" rel="noreferrer">
-              Company / fund ↗
+              Company / fund <Arrow out />
             </a>
           )}
           <Link className="link" href={`/discover?similar=${encodeURIComponent(asset.symbol)}`}>
-            Find similar stocks →
+            Find similar stocks <Arrow />
           </Link>
         </div>
       </article>

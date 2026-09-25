@@ -11,6 +11,8 @@ const pages = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/atlas", label: "Assets" },
   { href: "/corporate-events", label: "Corporate events" },
+  { href: "/baskets", label: "Baskets" },
+  { href: "/packs", label: "Packs" },
 ];
 
 export const Header = () => {
@@ -19,10 +21,9 @@ export const Header = () => {
     <header className="bq-header">
       <div className="bq-header-inner">
         <Link href="/" className="bq-brand" aria-label="Basqit home">
-          <Image src="/basqit-icon.svg" width={38} height={38} alt="" />
-          <span>
-            basqit<span className="bq-brand-period">.</span>
-          </span>
+          {/* Wordmark and basket in one SVG, text in outlines, so it renders the same everywhere. */}
+          <Image className="bq-brand-light" src="/basqit-logo.svg" width={135} height={34} alt="" priority />
+          <Image className="bq-brand-dark" src="/basqit-logo-dark.svg" width={135} height={34} alt="" priority />
         </Link>
         <nav aria-label="Main navigation" className="bq-nav">
           {pages.map(page => (

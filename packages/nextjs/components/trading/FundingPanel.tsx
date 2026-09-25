@@ -9,6 +9,9 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { Arrow } from "~~/components/Arrow";
+import { DialogClose } from "~~/components/DialogClose";
+import { LoadingBars } from "~~/components/LoadingBars";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
@@ -333,6 +336,7 @@ function WalletFunding({
             }}
           >
             <div className="modal-box bq-trade-dialog bq-converter">
+              <DialogClose label="Close converter" disabled={!!busy} onClick={() => setOpen(false)} />
               {onOpenChange && (
                 <button
                   type="button"
@@ -354,15 +358,6 @@ function WalletFunding({
                         : "You need USDG to buy stock tokens on Robinhood Chain."}
                   </small>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-square"
-                  aria-label="Close converter"
-                  disabled={!!busy}
-                  onClick={() => setOpen(false)}
-                >
-                  ✕
-                </button>
               </div>
               <div className="bq-converter-balance">
                 <span>Available on Robinhood</span>
@@ -372,6 +367,7 @@ function WalletFunding({
                 {saved.isError && <p role="alert">{saved.error.message}</p>}
                 {pending ? (
                   <>
+                    {!terminalStatus(status.data) && !status.isError && <LoadingBars />}
                     <p role="status" className="bq-converter-progress">
                       {!pending.hash
                         ? "Check your wallet"
@@ -386,7 +382,7 @@ function WalletFunding({
                         rel="noreferrer"
                         href={`${source?.blockExplorers.default.url}/tx/${pending.hash}`}
                       >
-                        View transaction ↗
+                        View transaction <Arrow out />
                       </a>
                     )}
                     {status.data?.failure && (
@@ -463,7 +459,7 @@ function WalletFunding({
                     {terminalStatus(status.data) && status.data?.status !== "bridge_filled" && (
                       <>
                         <a className="link" href="https://help.0x.org/" target="_blank" rel="noreferrer">
-                          Contact 0x support ↗
+                          Contact 0x support <Arrow out />
                         </a>
                         <button className="btn btn-ghost w-full" disabled={blocked} onClick={() => save(null)}>
                           Dismiss completed transfer
@@ -516,7 +512,7 @@ function WalletFunding({
                           <span className="bq-token-trigger-status">
                             {loadingTokens ? (
                               <span role="status">
-                                <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+                                <LoadingBars small />
                                 <span className="sr-only">Loading wallet tokens…</span>
                               </span>
                             ) : (

@@ -8,6 +8,7 @@ import { SwapPayPanel } from "./SwapPayPanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
+import { DialogClose } from "~~/components/DialogClose";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useAtomicBatch, useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
@@ -253,12 +254,11 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         if (!lock.current && !busy) onClose();
       }}
     >
+      {/* A paper receipt: white on the light theme, carbon paper on the dark one. */}
       <div className="modal-box bq-batch-buy">
+        <DialogClose label="Close purchase" disabled={!!busy} onClick={onClose} />
         <div className="bq-discover-detail-heading">
           <h2 id="batch-buy-title">Buy these stocks</h2>
-          <button className="btn btn-ghost btn-circle" disabled={!!busy} onClick={onClose} aria-label="Close purchase">
-            ×
-          </button>
         </div>
         <p>
           {selected.length
@@ -406,7 +406,10 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         </div>
         {quote && (
           <p className="bq-batch-total">
-            Total <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
+            <span>Total</span>
+            <span>
+              <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
+            </span>
           </p>
         )}
         {!hash && (
