@@ -7,7 +7,7 @@ import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
 import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
 import { BasqitToken } from "../contracts/BasqitToken.sol";
 import { MockStockToken } from "../contracts/mocks/MockStockToken.sol";
-import { MockSwapAdapter } from "../contracts/mocks/MockSwapAdapter.sol";
+import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { MockUSDG } from "../contracts/mocks/MockUSDG.sol";
 
 /// @dev Random buys, sells, direct mints and redeems by several users, with fees on.
@@ -17,7 +17,7 @@ contract BasqitHandler is Test {
     BasqitToken internal basket;
     BasqitPurchaseRouter internal buyRouter;
     BasqitSellRouter internal sellRouter;
-    MockSwapAdapter internal adapter;
+    TestnetSwapAdapter internal adapter;
     address[3] internal actors = [address(0xA11CE), address(0xB0B), address(0xCA7)];
 
     uint256 public feesAccruedBuy;
@@ -29,7 +29,7 @@ contract BasqitHandler is Test {
         BasqitToken basket_,
         BasqitPurchaseRouter buyRouter_,
         BasqitSellRouter sellRouter_,
-        MockSwapAdapter adapter_
+        TestnetSwapAdapter adapter_
     ) {
         usdG = usdG_;
         stocks = stocks_;
@@ -117,7 +117,7 @@ contract BasqitInvariantTest is Test {
         factory.setFeesEnabled(true);
         vm.warp(block.timestamp + factory.FEE_CHANGE_DELAY());
 
-        MockSwapAdapter adapter = new MockSwapAdapter(address(usdG));
+        TestnetSwapAdapter adapter = new TestnetSwapAdapter(address(usdG), address(this));
         adapter.setPrice(address(stocks[0]), 123.456789e6);
         adapter.setPrice(address(stocks[1]), 7.77e6);
         stocks[0].mint(address(adapter), 1e30);

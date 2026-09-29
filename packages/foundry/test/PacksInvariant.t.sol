@@ -29,20 +29,9 @@ contract PacksHandler is Test {
         vm.deal(address(this), 100 ether);
     }
 
-    function create(uint8 rawSize) external {
-        if (packs.roundCount() >= 8) return;
-        uint256 size = bound(rawSize, 1, 20);
-        BasqitPacks.Prize[] memory prizes = new BasqitPacks.Prize[](size);
-        for (uint256 i = 0; i < size; i++) {
-            prizes[i] = BasqitPacks.Prize(address(nvda), (i + 1) * 1e15);
-        }
-        vm.prank(packs.owner());
-        packs.createRound(address(usdg), PRICE, prizes, 1 days, 1 hours);
-    }
-
     function startNext() external {
         if (packs.roundCount() >= 8) return;
-        uint256 last = packs.lastTemplateRound();
+        uint256 last = packs.roundCount();
         if (last != 0) {
             BasqitPacks.Status s = packs.getRound(last).status;
             if (s != BasqitPacks.Status.Finalized && s != BasqitPacks.Status.Cancelled) return;
@@ -143,28 +132,14 @@ contract PacksHandler is Test {
         else if (status == BasqitPacks.Status.Cancelled) packs.refund(roundId, packId);
     }
 
-    function creatorExits(uint256 rawRound) external {
+    function ownerTakesProceeds(uint256 rawRound) external {
         uint256 roundId = _round(rawRound);
         if (roundId == 0) return;
         BasqitPacks.Round memory r = packs.getRound(roundId);
-        vm.startPrank(r.creator);
-        if (r.status == BasqitPacks.Status.Finalized && !r.proceedsTaken) {
-            packs.withdrawProceeds(roundId, r.creator);
-        }
-        if (r.status == BasqitPacks.Status.Cancelled) {
-            uint256 size = packs.prizesOf(roundId).length;
-            uint256 open;
-            for (uint256 i = 0; i < size; i++) {
-                if (!packs.prizeReturned(roundId, i)) open++;
-            }
-            uint256[] memory slots = new uint256[](open);
-            uint256 n;
-            for (uint256 i = 0; i < size; i++) {
-                if (!packs.prizeReturned(roundId, i)) slots[n++] = i;
-            }
-            packs.returnPrizes(roundId, slots, r.creator);
-        }
-        vm.stopPrank();
+        if (r.status != BasqitPacks.Status.Finalized || r.proceedsTaken) return;
+        address owner = packs.owner();
+        vm.prank(owner);
+        packs.withdrawProceeds(roundId, owner);
     }
 
     function _round(uint256 raw) internal view returns (uint256) {
@@ -211,9 +186,7 @@ contract PacksInvariantTest is Test {
             uint256 sold = packs.ownersOf(roundId).length;
             bytes memory order = packs.assignmentOf(roundId);
             if (r.status == BasqitPacks.Status.Cancelled) {
-                for (uint256 i = 0; i < prizes.length; i++) {
-                    if (!packs.prizeReturned(roundId, i)) prizesOwed += prizes[i].amount;
-                }
+                // Its prizes are back in the reserve; only the buyers' payments are still owed.
                 for (uint256 p = 0; p < sold; p++) {
                     if (!packs.settled(roundId, p)) paymentsOwed += r.price;
                 }
@@ -233,18 +206,15 @@ contract PacksInvariantTest is Test {
         assertEq(usdg.balanceOf(address(packs)), paymentsOwed, "payment escrow");
     }
 
-    /// A finalized round's assignment is always a permutation of its prize slots.
-    /// Manual rounds in between never let a second template round open while one is still running.
-    function invariant_OneLiveTemplateRound() public view {
-        uint256 live;
-        for (uint256 roundId = 1; roundId <= packs.roundCount(); roundId++) {
-            if (!packs.fromTemplate(roundId)) continue;
+    /// One round at a time: every round before the latest is finalized or cancelled.
+    function invariant_OneLiveRound() public view {
+        for (uint256 roundId = 1; roundId < packs.roundCount(); roundId++) {
             BasqitPacks.Status s = packs.getRound(roundId).status;
-            if (s != BasqitPacks.Status.Finalized && s != BasqitPacks.Status.Cancelled) live++;
+            assertTrue(s == BasqitPacks.Status.Finalized || s == BasqitPacks.Status.Cancelled, "one live round");
         }
-        assertLe(live, 1, "one live template round");
     }
 
+    /// A finalized round's assignment is always a permutation of its prize slots.
     function invariant_FinalizedAssignmentIsPermutation() public view {
         for (uint256 roundId = 1; roundId <= packs.roundCount(); roundId++) {
             bytes memory order = packs.assignmentOf(roundId);

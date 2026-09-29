@@ -31,6 +31,11 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
+/// @notice The Stock Token list gifts accept: the basket factory, so gifts and baskets never disagree on it.
+interface IStockTokenList {
+    function isStockToken(address token) external view returns (bool);
+}
+
 /// @notice Gifts: a sealed gift of Stock Tokens as an ERC-721. Anyone seals listed tokens they hold into a gift
 /// for someone (`wrap`); buying the tokens first is a router's job (`BasqitGiftRouter`), so new ways to pay can
 /// be added without touching gifts already sealed. Opening burns the gift and sends its tokens to whoever holds it.
@@ -50,8 +55,8 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
     }
 
     uint256 public giftCount;
-    /// @notice Tokens that may go into a gift: listed Stock Tokens only, so a gift never holds an unknown token.
-    mapping(address token => bool) public isListed;
+    /// @notice Only tokens on this list go into a gift, so a gift never holds an unknown token.
+    IStockTokenList public immutable stockTokens;
     mapping(uint256 giftId => Item[]) private _contents;
     /// @notice Gift contents that could not be delivered on open (token paused or holder frozen), claimable later.
     mapping(address holder => mapping(address token => uint256)) public owed;
@@ -62,7 +67,6 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
     /// @notice Whether holders may pick a picture from the list for their own gift.
     bool public designChoiceOpen;
 
-    event TokenListed(address indexed token, bool listed);
     event GiftWrapped(uint256 indexed giftId, address indexed sender, address indexed recipient);
     event GiftOpened(uint256 indexed giftId, address indexed holder);
     event ItemOwed(address indexed holder, address indexed token, uint256 amount);
@@ -84,17 +88,14 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
     error InvalidRecipient(address recipient);
     error RenounceDisabled();
 
-    constructor(address initialOwner) ERC721("Basqit Gift", "BQGIFT") Ownable(initialOwner) { }
+    constructor(address initialOwner, address stockTokens_) ERC721("Basqit Gift", "BQGIFT") Ownable(initialOwner) {
+        if (stockTokens_ == address(0)) revert ZeroAddress();
+        stockTokens = IStockTokenList(stockTokens_);
+    }
 
-    // ---------------------------------------------------------------- listing
-
-    /// @notice Lists or delists tokens for new gifts. Gifts already sealed still open after a delist.
-    function setListed(address[] calldata tokens, bool listed) external onlyOwner {
-        for (uint256 i = 0; i < tokens.length; i++) {
-            if (tokens[i] == address(0)) revert ZeroAddress();
-            isListed[tokens[i]] = listed;
-            emit TokenListed(tokens[i], listed);
-        }
+    /// @notice Whether new gifts may hold `token`. Gifts already sealed still open after a token is delisted.
+    function isListed(address token) public view returns (bool) {
+        return stockTokens.isStockToken(token);
     }
 
     // ---------------------------------------------------------------- wrap and open
@@ -107,7 +108,7 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
         giftId = ++giftCount;
         for (uint256 i = 0; i < items.length; i++) {
             Item calldata item = items[i];
-            if (!isListed[item.token]) revert NotListed(item.token);
+            if (!isListed(item.token)) revert NotListed(item.token);
             if (item.amount == 0) revert ZeroAmount();
             for (uint256 j = 0; j < i; j++) {
                 if (items[j].token == item.token) revert DuplicateToken(item.token);
@@ -145,7 +146,8 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
         emit OwedClaimed(msg.sender, token, to, amount);
     }
 
-    /// @notice What a sealed gift holds. Opened gifts revert.
+    /// @notice What a sealed gift holds. Opened gifts revert. The page keeps it a surprise, but contents are public
+    /// on-chain (this view and the transfer events), so a gift is sealed, not secret.
     function contentsOf(uint256 giftId) external view returns (Item[] memory) {
         _requireOwned(giftId);
         return _contents[giftId];
@@ -153,7 +155,7 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
 
     // ---------------------------------------------------------------- pictures
 
-    /// @notice Adds a picture to the list, as an image URI (ipfs://, https:// or data:). Returns its id.
+    /// @notice Adds a picture to the list, as an image URI (ipfs:// or data:image/). Returns its id.
     function addDesign(string calldata imageUri) external onlyOwner returns (uint256 designId) {
         _checkImageUri(imageUri);
         _designs.push(imageUri);
@@ -220,11 +222,11 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
         revert RenounceDisabled();
     }
 
-    /// @dev Only ipfs://, https:// and data:image/ URIs. The URI goes into JSON as is, so quotes, backslashes and
+    /// @dev Only ipfs:// and data:image/ URIs: content that cannot change behind a URI after holders pick it. The URI goes into JSON as is, so quotes, backslashes and
     /// control characters are refused.
     function _checkImageUri(string calldata imageUri) private pure {
         bytes calldata raw = bytes(imageUri);
-        if (!_startsWith(raw, "ipfs://") && !_startsWith(raw, "https://") && !_startsWith(raw, "data:image/")) {
+        if (!_startsWith(raw, "ipfs://") && !_startsWith(raw, "data:image/")) {
             revert BadImageUri();
         }
         for (uint256 i = 0; i < raw.length; i++) {

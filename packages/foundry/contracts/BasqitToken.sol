@@ -28,7 +28,10 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @notice ERC-20 basket share backed in kind by Stock Tokens.
 /// One share (1e18) is redeemable for a fixed amount of each component while the basket is fully
-/// backed; if an issuer ever removes tokens from the basket, every holder shares the shortfall pro rata.
+/// backed; if an issuer ever removes tokens from the basket, every holder shares the shortfall pro rata, and
+/// minting stops until the basket is whole again so a new minter never fills an old shortfall.
+/// Amounts owed by `redeemAvailable` rank first: they were already redeemed, so a later shortfall falls on the
+/// shares still outstanding.
 /// No owner, no fees, no oracle, no rebalancing: pricing happens off chain.
 contract BasqitToken is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -65,6 +68,7 @@ contract BasqitToken is ERC20, ReentrancyGuard {
     error InvalidRecipient(address to);
     error ShortDelivery(address token, uint256 received, uint256 expected);
     error NothingOwed(address token);
+    error UnderBacked();
 
     constructor(string memory name_, string memory symbol_, Component[] memory components_) ERC20(name_, symbol_) {
         uint256 count = components_.length;
@@ -86,6 +90,8 @@ contract BasqitToken is ERC20, ReentrancyGuard {
     function mint(uint256 shares, address to) external nonReentrant {
         if (shares == 0) revert ZeroShares();
         _checkRecipient(to);
+        // An under-backed basket would pay a new minter less than they deposit and hand the rest to old holders.
+        if (!isFullyBacked()) revert UnderBacked();
         uint256 count = _components.length;
         for (uint256 i = 0; i < count; i++) {
             Component memory c = _components[i];
@@ -155,7 +161,7 @@ contract BasqitToken is ERC20, ReentrancyGuard {
     }
 
     /// @notice False once any component holds less than its full backing (e.g. after an issuer burn).
-    function isFullyBacked() external view returns (bool) {
+    function isFullyBacked() public view returns (bool) {
         uint256 supply = totalSupply();
         for (uint256 i = 0; i < _components.length; i++) {
             Component memory c = _components[i];

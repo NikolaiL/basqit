@@ -26,6 +26,13 @@ interface IDiceConsumer {
 
 /// @notice Test double for DiceEntropy: exact fee, sequence numbers, callback, withholding and fee refunds.
 contract MockDiceEntropy {
+    error LocalOnly();
+
+    /// @dev Anyone can reveal, so anyone could pick a seed: it must never exist outside the local chain.
+    constructor() {
+        if (block.chainid != 31337) revert LocalOnly();
+    }
+
     address public constant PROVIDER = address(0xD1CE);
     uint128 public fee = 25_000_000_000_000;
 

@@ -90,16 +90,17 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
         BasqitToken basket = BasqitToken(basketAddress);
         uint256[] memory amounts = basket.quoteMint(shares);
         if (swaps.length != amounts.length) revert InstructionCountMismatch(amounts.length, swaps.length);
+        BasqitToken.Component[] memory parts = basket.components(); // one call, not one per leg
         uint256[] memory startBalances = new uint256[](amounts.length);
         for (uint256 i = 0; i < amounts.length; i++) {
-            address token = basket.componentAt(i).token;
+            address token = parts[i].token;
             // Existing baskets stay redeemable and sellable, but a delisted token is not bought.
             if (!factory.isStockToken(token)) revert DelistedComponent(token);
             startBalances[i] = IERC20(token).balanceOf(address(this));
             // A leg can never reach past the buyer's remaining budget into other funds.
             spent += _buyComponent(token, amounts[i], swaps[i], budget - spent);
         }
-        _mint(basket, shares, recipient, amounts, startBalances);
+        _mint(basket, parts, shares, recipient, amounts, startBalances);
     }
 
     /// @dev Charges the creator fee within the budget, refunds the rest, and checks that the only
@@ -117,13 +118,6 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
         if (actual != usdGBefore + accrued) revert ResidualTokenBalance(address(usdG), usdGBefore + accrued, actual);
     }
 
-    function _pullUsdG(uint256 amount) private returns (uint256 balanceBefore) {
-        balanceBefore = usdG.balanceOf(address(this));
-        usdG.safeTransferFrom(msg.sender, address(this), amount);
-        uint256 received = usdG.balanceOf(address(this)) - balanceBefore;
-        if (received != amount) revert UnexpectedTokenTransfer(address(usdG), received, amount);
-    }
-
     function _buyComponent(address token, uint256 amountOut, SwapInstruction calldata swap, uint256 remaining)
         private
         returns (uint256)
@@ -133,17 +127,18 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
 
     function _mint(
         BasqitToken basket,
+        BasqitToken.Component[] memory parts,
         uint256 shares,
         address recipient,
         uint256[] memory amounts,
         uint256[] memory startBalances
     ) private {
         for (uint256 i = 0; i < amounts.length; i++) {
-            IERC20(basket.componentAt(i).token).forceApprove(address(basket), amounts[i]);
+            IERC20(parts[i].token).forceApprove(address(basket), amounts[i]);
         }
         basket.mint(shares, recipient);
         for (uint256 i = 0; i < amounts.length; i++) {
-            IERC20 token = IERC20(basket.componentAt(i).token);
+            IERC20 token = IERC20(parts[i].token);
             token.forceApprove(address(basket), 0);
             uint256 left = token.balanceOf(address(this));
             if (left != startBalances[i]) revert ResidualTokenBalance(address(token), startBalances[i], left);

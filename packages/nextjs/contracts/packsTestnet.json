@@ -1,20 +1,20 @@
 {
   "deployment": {
     "chainId": 46630,
-    "deployBlock": 126150879,
-    "usdg": "0x731a2d1aeba222706c54a77c90a87901471a1e76",
+    "deployBlock": 126285783,
+    "usdg": "0x0f83881b645b0273944a9249f00f8cda3ac69a99",
     "stocks": [
-      "0xcd467af1b77e19629f4a045f7afd86fdfcd7019d",
-      "0xcd2af778be2b5264af3f9be4e075934b5f94aaf5",
-      "0xc3a9c5896c5819795a9fdeb20526d7ca7e2c910e",
-      "0x569ad23c27d82cb160a522aa882432cfe1172c63",
-      "0x1de5dab836349c2f1351577c621de5223f690827"
+      "0x17ea46c664294567fa78eadc6d1b87695a9d365b",
+      "0xdd8994d42206df58101a491976be83811714668f",
+      "0x13528622d2a44cee12882dadd21abac97af99301",
+      "0x13053a212b48c52d68291a9cac408d3f33a86771",
+      "0x02e3ae47df7151d13f76370e8f3c30b9ff3a1dc5"
     ],
-    "faucet": "0x72d592354931b1fd751bf98c8905448537fcd7e1",
-    "gifts": "0x516d95bf043a6cfdf3efdddfd500028965ea3576",
-    "packs": "0xf01ede228b5e6427d4640f3bb8f31fc36d2aca45",
-    "giftRouter": "0x7e23b78809bb4d9ce05f13494bc5db2feff88e7d",
-    "swapAdapter": "0x665103502d7e1dda8b38fb39bcda28ba24411fa2",
+    "faucet": "0xa7100462d59eb5483f7fe843eeb4c6f4da93753b",
+    "gifts": "0xf68f09bb8ab05726d85e9cb719a1bd3aa8f471b8",
+    "packs": "0x9ff4280503231417069162f28780aee3d23e26ea",
+    "giftRouter": "0x462cbcd7fcc3a5ae6d3c8b671c58d12175a11ccf",
+    "swapAdapter": "0x2ecf4d5b8b6e49df3af3719b69cfe022dfaf0f4c",
     "dice": "0x43c8A7B1a85384cabf3D3Fd45a15C01F5b51A42D",
     "abis": {
       "gifts": [
@@ -23,6 +23,11 @@
           "inputs": [
             {
               "name": "initialOwner",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "stockTokens_",
               "type": "address",
               "internalType": "address"
             }
@@ -496,21 +501,16 @@
         },
         {
           "type": "function",
-          "name": "setListed",
-          "inputs": [
+          "name": "stockTokens",
+          "inputs": [],
+          "outputs": [
             {
-              "name": "tokens",
-              "type": "address[]",
-              "internalType": "address[]"
-            },
-            {
-              "name": "listed",
-              "type": "bool",
-              "internalType": "bool"
+              "name": "",
+              "type": "address",
+              "internalType": "contract IStockTokenList"
             }
           ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
+          "stateMutability": "view"
         },
         {
           "type": "function",
@@ -902,25 +902,6 @@
               "type": "address",
               "indexed": true,
               "internalType": "address"
-            }
-          ],
-          "anonymous": false
-        },
-        {
-          "type": "event",
-          "name": "TokenListed",
-          "inputs": [
-            {
-              "name": "token",
-              "type": "address",
-              "indexed": true,
-              "internalType": "address"
-            },
-            {
-              "name": "listed",
-              "type": "bool",
-              "indexed": false,
-              "internalType": "bool"
             }
           ],
           "anonymous": false
@@ -1425,57 +1406,6 @@
         },
         {
           "type": "function",
-          "name": "createRound",
-          "inputs": [
-            {
-              "name": "payToken",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "price",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "prizes",
-              "type": "tuple[]",
-              "internalType": "struct BasqitPacks.Prize[]",
-              "components": [
-                {
-                  "name": "token",
-                  "type": "address",
-                  "internalType": "address"
-                },
-                {
-                  "name": "amount",
-                  "type": "uint256",
-                  "internalType": "uint256"
-                }
-              ]
-            },
-            {
-              "name": "saleDuration",
-              "type": "uint64",
-              "internalType": "uint64"
-            },
-            {
-              "name": "drawTimeout",
-              "type": "uint64",
-              "internalType": "uint64"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "roundId",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "nonpayable"
-        },
-        {
-          "type": "function",
           "name": "drawFee",
           "inputs": [],
           "outputs": [
@@ -1515,25 +1445,6 @@
         },
         {
           "type": "function",
-          "name": "fromTemplate",
-          "inputs": [
-            {
-              "name": "roundId",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bool",
-              "internalType": "bool"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "fundReserve",
           "inputs": [
             {
@@ -1566,11 +1477,6 @@
               "type": "tuple",
               "internalType": "struct BasqitPacks.Round",
               "components": [
-                {
-                  "name": "creator",
-                  "type": "address",
-                  "internalType": "address"
-                },
                 {
                   "name": "payToken",
                   "type": "address",
@@ -1648,19 +1554,6 @@
         },
         {
           "type": "function",
-          "name": "lastTemplateRound",
-          "inputs": [],
-          "outputs": [
-            {
-              "name": "",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
           "name": "owner",
           "inputs": [],
           "outputs": [
@@ -1700,30 +1593,6 @@
               "name": "",
               "type": "address",
               "internalType": "address"
-            }
-          ],
-          "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "prizeReturned",
-          "inputs": [
-            {
-              "name": "roundId",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "slot",
-              "type": "uint256",
-              "internalType": "uint256"
-            }
-          ],
-          "outputs": [
-            {
-              "name": "",
-              "type": "bool",
-              "internalType": "bool"
             }
           ],
           "stateMutability": "view"
@@ -1851,29 +1720,6 @@
             }
           ],
           "stateMutability": "view"
-        },
-        {
-          "type": "function",
-          "name": "returnPrizes",
-          "inputs": [
-            {
-              "name": "roundId",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "slots",
-              "type": "uint256[]",
-              "internalType": "uint256[]"
-            },
-            {
-              "name": "to",
-              "type": "address",
-              "internalType": "address"
-            }
-          ],
-          "outputs": [],
-          "stateMutability": "nonpayable"
         },
         {
           "type": "function",
@@ -2335,25 +2181,13 @@
         },
         {
           "type": "event",
-          "name": "PrizeReturned",
+          "name": "PrizesReturned",
           "inputs": [
             {
               "name": "roundId",
               "type": "uint256",
               "indexed": true,
               "internalType": "uint256"
-            },
-            {
-              "name": "slot",
-              "type": "uint256",
-              "indexed": true,
-              "internalType": "uint256"
-            },
-            {
-              "name": "to",
-              "type": "address",
-              "indexed": false,
-              "internalType": "address"
             }
           ],
           "anonymous": false
@@ -2449,12 +2283,6 @@
               "type": "uint256",
               "indexed": true,
               "internalType": "uint256"
-            },
-            {
-              "name": "creator",
-              "type": "address",
-              "indexed": true,
-              "internalType": "address"
             },
             {
               "name": "payToken",
@@ -2600,11 +2428,6 @@
         {
           "type": "error",
           "name": "NotCancellable",
-          "inputs": []
-        },
-        {
-          "type": "error",
-          "name": "NotCreator",
           "inputs": []
         },
         {
@@ -3468,6 +3291,17 @@
         },
         {
           "type": "error",
+          "name": "DuplicateToken",
+          "inputs": [
+            {
+              "name": "token",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "FeeAboveMax",
           "inputs": [
             {
@@ -3534,17 +3368,6 @@
         {
           "type": "error",
           "name": "NotGiftListed",
-          "inputs": [
-            {
-              "name": "token",
-              "type": "address",
-              "internalType": "address"
-            }
-          ]
-        },
-        {
-          "type": "error",
-          "name": "NotStockToken",
           "inputs": [
             {
               "name": "token",
@@ -3705,7 +3528,27 @@
         },
         {
           "type": "function",
+          "name": "acceptOwnership",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
           "name": "owner",
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
+          ],
+          "stateMutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "pendingOwner",
           "inputs": [],
           "outputs": [
             {
@@ -3764,7 +3607,7 @@
           "name": "renounceOwnership",
           "inputs": [],
           "outputs": [],
-          "stateMutability": "nonpayable"
+          "stateMutability": "pure"
         },
         {
           "type": "function",
@@ -3782,6 +3625,50 @@
             }
           ],
           "outputs": [],
+          "stateMutability": "nonpayable"
+        },
+        {
+          "type": "function",
+          "name": "swapExactInput",
+          "inputs": [
+            {
+              "name": "tokenIn",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "tokenOut",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "amountIn",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minAmountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "recipient",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "",
+              "type": "bytes",
+              "internalType": "bytes"
+            }
+          ],
+          "outputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ],
           "stateMutability": "nonpayable"
         },
         {
@@ -3879,6 +3766,25 @@
         },
         {
           "type": "event",
+          "name": "OwnershipTransferStarted",
+          "inputs": [
+            {
+              "name": "previousOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            },
+            {
+              "name": "newOwner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
+            }
+          ],
+          "anonymous": false
+        },
+        {
+          "type": "event",
           "name": "OwnershipTransferred",
           "inputs": [
             {
@@ -3933,6 +3839,22 @@
         },
         {
           "type": "error",
+          "name": "InsufficientOutput",
+          "inputs": [
+            {
+              "name": "amountOut",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "minimum",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        },
+        {
+          "type": "error",
           "name": "NotTestnet",
           "inputs": []
         },
@@ -3957,6 +3879,11 @@
               "internalType": "address"
             }
           ]
+        },
+        {
+          "type": "error",
+          "name": "RenounceDisabled",
+          "inputs": []
         },
         {
           "type": "error",

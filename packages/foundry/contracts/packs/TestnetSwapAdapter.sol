@@ -23,13 +23,15 @@ pragma solidity 0.8.28;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IExactInputAdapter } from "../interfaces/IExactInputAdapter.sol";
 import { IExactOutputAdapter } from "../interfaces/IExactOutputAdapter.sol";
 
-/// @notice Testnet only: sells test Stock Tokens for test USDG from its own stock at owner-set prices, standing in
-/// for Uniswap, which has no pools for test tokens. Buys round up. Deploys only on Robinhood Chain testnet and the
-/// local chain.
-contract TestnetSwapAdapter is IExactOutputAdapter, Ownable {
+/// @notice Testnet and local only: trades test Stock Tokens against test USDG from its own stock at owner-set prices,
+/// standing in for Uniswap, which has no pools for test tokens. Buys round up, sells round down. Deploys only on
+/// Robinhood Chain testnet and the local chain; also the venue for local basket deploys and tests.
+contract TestnetSwapAdapter is IExactInputAdapter, IExactOutputAdapter, Ownable2Step {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable usdG;
@@ -41,6 +43,8 @@ contract TestnetSwapAdapter is IExactOutputAdapter, Ownable {
     error NotTestnet();
     error UnsupportedToken(address token);
     error ExcessiveInput(uint256 amountIn, uint256 maximum);
+    error InsufficientOutput(uint256 amountOut, uint256 minimum);
+    error RenounceDisabled();
 
     constructor(address usdG_, address initialOwner) Ownable(initialOwner) {
         if (block.chainid != 46630 && block.chainid != 31337) revert NotTestnet();
@@ -77,5 +81,25 @@ contract TestnetSwapAdapter is IExactOutputAdapter, Ownable {
         if (amountIn > maxAmountIn) revert ExcessiveInput(amountIn, maxAmountIn);
         usdG.safeTransferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenOut).safeTransfer(recipient, amountOut);
+    }
+
+    function swapExactInput(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut,
+        address recipient,
+        bytes calldata
+    ) external returns (uint256 amountOut) {
+        uint256 price = priceUsdG[tokenIn];
+        if (tokenOut != address(usdG) || price == 0) revert UnsupportedToken(tokenIn);
+        amountOut = Math.mulDiv(amountIn, price, 1e18);
+        if (amountOut < minAmountOut) revert InsufficientOutput(amountOut, minAmountOut);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        usdG.safeTransfer(recipient, amountOut);
+    }
+
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
     }
 }

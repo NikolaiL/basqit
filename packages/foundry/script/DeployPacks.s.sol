@@ -52,15 +52,15 @@ contract DeployPacks is ScaffoldETHDeploy {
             stocks[i].approve(address(packs), type(uint256).max);
         }
 
-        // Gifts: the gift contract lists the test stocks; the router buys them from the testnet adapter (standing in
+        // Gifts: the factory lists the test stocks; the router buys them from the testnet adapter (standing in
         // for Uniswap) at mainnet Stock Token prices of 29 Sept 2026, then seals them for the recipient.
         address[] memory listed = new address[](5);
         for (uint256 i = 0; i < 5; i++) {
             listed[i] = address(stocks[i]);
         }
-        BasqitGifts gifts = new BasqitGifts(deployer);
-        gifts.setListed(listed, true);
+        // One token list for baskets and gifts: the factory's.
         BasqitFactory factory = new BasqitFactory(deployer, listed);
+        BasqitGifts gifts = new BasqitGifts(deployer, address(factory));
         TestnetSwapAdapter shop = new TestnetSwapAdapter(address(usdg), deployer);
         uint256[5] memory usdPrices = [uint256(229.92e6), 337.54e6, 358.32e6, 246.33e6, 716.52e6];
         for (uint256 i = 0; i < 5; i++) {

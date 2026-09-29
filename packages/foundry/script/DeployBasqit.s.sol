@@ -8,7 +8,7 @@ import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
 import { BasqitToken } from "../contracts/BasqitToken.sol";
 import { UniswapV3Adapter } from "../contracts/adapters/UniswapV3Adapter.sol";
 import { MockStockToken } from "../contracts/mocks/MockStockToken.sol";
-import { MockSwapAdapter } from "../contracts/mocks/MockSwapAdapter.sol";
+import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { MockUSDG } from "../contracts/mocks/MockUSDG.sol";
 
 /**
@@ -51,7 +51,7 @@ contract DeployBasqit is ScaffoldETHDeploy {
 
     function _deployLocal() internal {
         MockUSDG usdG = new MockUSDG();
-        MockSwapAdapter venue = new MockSwapAdapter(address(usdG));
+        TestnetSwapAdapter venue = new TestnetSwapAdapter(address(usdG), deployer);
         string[3] memory symbols = ["TSLA", "NVDA", "AAPL"];
         uint256[3] memory prices = [uint256(400e6), 180e6, 340e6];
         address[] memory tokens = new address[](3);

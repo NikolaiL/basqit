@@ -24,7 +24,12 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Local-only stand-in for USDG with 6 decimals; anyone can mint test balances.
 contract MockUSDG is ERC20 {
-    constructor() ERC20("Mock Global Dollar", "mUSDG") { }
+    error LocalOnly();
+
+    /// @dev Anyone can mint, so it must never exist outside the local chain.
+    constructor() ERC20("Mock Global Dollar", "mUSDG") {
+        if (block.chainid != 31337) revert LocalOnly();
+    }
 
     function decimals() public pure override returns (uint8) {
         return 6;

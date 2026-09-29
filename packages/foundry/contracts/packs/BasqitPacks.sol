@@ -27,16 +27,18 @@ import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IDiceEntropy } from "./IDiceEntropy.sol";
 
-/// @notice Packs, testnet design. A round sells a fixed number of packs at one price; every prize is
-/// escrowed before the first sale. When the round sells out, one Dice Protocol request
+/// @notice Packs, testnet design. The owner sets a template and funds a prize reserve; once the latest round is
+/// done, anyone starts the next one, which moves its prizes from the reserve into escrow before the first sale.
+/// A round sells a fixed number of packs at one price; one round runs at a time. When the round sells out, one Dice Protocol request
 /// (https://diceprotocol.world) returns a random word, and a shuffle derived from it assigns exactly one
 /// prize slot to each pack. Anyone can recompute the assignment from the stored seed.
 ///
 /// Dice is a commit-reveal oracle with one provider, not a VRF. The provider's value is fixed by its hash chain,
 /// so the provider can know the outcome before revealing and choose to withhold it. It can also steer it without
 /// anything showing on-chain: by advancing its sequence with other requests before `requestDraw`, or together
-/// with the last buyer, by trying recipient addresses offline. A round that is not revealed in time is cancelled and every buyer is refunded; there is never a
-/// second draw of that round, and a withheld template round switches the template off. The provider is Dice's
+/// with the last buyer, by trying recipient addresses offline. A round that is not revealed in time is cancelled,
+/// every buyer is refunded and its prizes go back to the reserve; there is never a second draw of that round, and a
+/// withheld reveal switches the template off. The provider is Dice's
 /// default at request time. Testnet only: public packs need a VRF or several providers, and a legal review.
 contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -65,7 +67,6 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     }
 
     struct Round {
-        address creator;
         IERC20 payToken;
         uint256 price;
         uint64 saleDeadline;
@@ -83,7 +84,7 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         bytes32 salesHash;
     }
 
-    /// @notice Settings for rounds anyone can start with `startNextRound`, funded from `reserve`.
+    /// @notice Settings for the rounds anyone can start with `startNextRound`, funded from `reserve`.
     struct Template {
         address payToken;
         uint256 price;
@@ -95,12 +96,8 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     uint256 public roundCount;
     Template public template;
     Prize[] private _templatePrizes;
-    /// @notice Prize tokens the owner set aside for future template rounds, not yet in any round.
+    /// @notice Prize tokens the owner set aside for future rounds, not yet in any round.
     mapping(address token => uint256) public reserve;
-    /// @notice Latest round opened by `startNextRound`; only one template round runs at a time.
-    uint256 public lastTemplateRound;
-    /// @notice Rounds opened from the template. Their prizes go back to `reserve` if the round is cancelled.
-    mapping(uint256 roundId => bool) public fromTemplate;
 
     mapping(uint256 roundId => Round) private _rounds;
     mapping(uint256 roundId => Prize[]) private _prizes;
@@ -108,11 +105,10 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     /// @dev Pack `i` receives prize slot `uint8(_assignment[roundId][i])`.
     mapping(uint256 roundId => bytes) private _assignment;
     mapping(uint256 roundId => mapping(uint256 packId => bool)) public settled;
-    mapping(uint256 roundId => mapping(uint256 slot => bool)) public prizeReturned;
     /// @dev Keyed by provider and sequence: Dice sequence numbers are counted per provider.
     mapping(bytes32 providerSequence => uint256 roundId) public roundOfRequest;
 
-    event RoundCreated(uint256 indexed roundId, address indexed creator, address payToken, uint256 price, uint256 size);
+    event RoundCreated(uint256 indexed roundId, address payToken, uint256 price, uint256 size);
     event PacksBought(
         uint256 indexed roundId, address indexed buyer, address indexed recipient, uint256 firstPackId, uint256 count
     );
@@ -122,7 +118,7 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     event PrizeClaimed(uint256 indexed roundId, uint256 indexed packId, address indexed owner, uint256 slot);
     event RoundCancelled(uint256 indexed roundId);
     event PackRefunded(uint256 indexed roundId, uint256 indexed packId, address indexed owner, uint256 amount);
-    event PrizeReturned(uint256 indexed roundId, uint256 indexed slot, address to);
+    event PrizesReturned(uint256 indexed roundId);
     event ProceedsWithdrawn(uint256 indexed roundId, address to, uint256 amount);
     event DiceFeeRefunded(uint256 indexed roundId, address indexed to, uint256 amount);
     event TemplateSet(address payToken, uint256 price, uint256 size);
@@ -142,7 +138,6 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     error ShortDelivery(address token, uint256 received, uint256 expected);
     error WrongFee(uint256 sent, uint256 expected);
     error OnlyEntropy();
-    error NotCreator();
     error NotCancellable();
     error AlreadySettled(uint256 packId);
     error NoFeeToRefund();
@@ -161,22 +156,8 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
 
     // ---------------------------------------------------------------- create and sell
 
-    /// @notice Opens a round. One pack per prize slot; every slot is pulled into escrow now.
-    function createRound(
-        address payToken,
-        uint256 price,
-        Prize[] calldata prizes,
-        uint64 saleDuration,
-        uint64 drawTimeout
-    ) external onlyOwner nonReentrant returns (uint256 roundId) {
-        _validate(payToken, price, prizes, saleDuration, drawTimeout);
-        for (uint256 i = 0; i < prizes.length; i++) {
-            _pull(IERC20(prizes[i].token), msg.sender, prizes[i].amount);
-        }
-        roundId = _open(msg.sender, payToken, price, prizes, saleDuration, drawTimeout);
-    }
-
-    /// @notice Sets the round anyone can start once the previous one is done. Prizes come from `reserve`.
+    /// @notice Sets the round anyone can start once the previous one is done. Prizes come from `reserve`; rounds
+    /// already open keep their own terms.
     function setTemplate(
         address payToken,
         uint256 price,
@@ -227,12 +208,11 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     }
 
     /// @notice Anyone can open the next round from the template once the latest round is finalized or cancelled.
-    /// Its prizes move from the reserve into the round's escrow. The owner at this moment becomes the round's
-    /// creator and keeps its sales and prize-return rights even after an ownership transfer.
+    /// Its prizes move from the reserve into the round's escrow.
     function startNextRound() external nonReentrant returns (uint256 roundId) {
         Prize[] memory prizes = _templatePrizes;
         if (prizes.length == 0) revert NoTemplate();
-        uint256 last = lastTemplateRound;
+        uint256 last = roundCount;
         if (last != 0) {
             Status status = _rounds[last].status;
             if (status != Status.Finalized && status != Status.Cancelled) revert RoundInProgress(last);
@@ -243,9 +223,18 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
             reserve[prizes[i].token] = available - prizes[i].amount;
         }
         Template memory t = template;
-        roundId = _open(owner(), t.payToken, t.price, prizes, t.saleDuration, t.drawTimeout);
-        lastTemplateRound = roundId;
-        fromTemplate[roundId] = true;
+        roundId = ++roundCount;
+        Round storage round = _rounds[roundId];
+        round.payToken = IERC20(t.payToken);
+        round.price = t.price;
+        round.saleDeadline = uint64(block.timestamp) + t.saleDuration;
+        round.drawTimeout = t.drawTimeout;
+        round.size = uint16(prizes.length);
+        round.status = Status.Selling;
+        for (uint256 i = 0; i < prizes.length; i++) {
+            _prizes[roundId].push(prizes[i]);
+        }
+        emit RoundCreated(roundId, t.payToken, t.price, prizes.length);
     }
 
     function _validate(
@@ -265,29 +254,6 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
             if (prizes[i].token == address(0)) revert ZeroAddress();
             if (prizes[i].amount == 0) revert ZeroAmount();
         }
-    }
-
-    function _open(
-        address creator,
-        address payToken,
-        uint256 price,
-        Prize[] memory prizes,
-        uint64 saleDuration,
-        uint64 drawTimeout
-    ) private returns (uint256 roundId) {
-        roundId = ++roundCount;
-        Round storage round = _rounds[roundId];
-        round.creator = creator;
-        round.payToken = IERC20(payToken);
-        round.price = price;
-        round.saleDeadline = uint64(block.timestamp) + saleDuration;
-        round.drawTimeout = drawTimeout;
-        round.size = uint16(prizes.length);
-        round.status = Status.Selling;
-        for (uint256 i = 0; i < prizes.length; i++) {
-            _prizes[roundId].push(prizes[i]);
-        }
-        emit RoundCreated(roundId, creator, payToken, price, prizes.length);
     }
 
     function templatePrizes() external view returns (Prize[] memory) {
@@ -425,21 +391,18 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         bool withheld = round.status == Status.Drawing;
         round.status = Status.Cancelled;
         emit RoundCancelled(roundId);
-        // A template round's prizes go back to the reserve, so unsold rounds never drain it.
-        if (fromTemplate[roundId]) {
-            // A withheld reveal switches the template off, so the same prizes are not re-offered for another try.
-            if (withheld && roundId == lastTemplateRound) {
-                delete template;
-                delete _templatePrizes;
-                emit TemplateSet(address(0), 0, 0);
-            }
-            Prize[] storage prizes = _prizes[roundId];
-            for (uint256 slot = 0; slot < prizes.length; slot++) {
-                prizeReturned[roundId][slot] = true;
-                reserve[prizes[slot].token] += prizes[slot].amount;
-                emit PrizeReturned(roundId, slot, address(this));
-            }
+        // A withheld reveal switches the template off, so the same prizes are not re-offered for another try.
+        if (withheld) {
+            delete template;
+            delete _templatePrizes;
+            emit TemplateSet(address(0), 0, 0);
         }
+        // The prizes go back to the reserve, so unsold rounds never drain it; the owner withdraws unused reserve.
+        Prize[] storage prizes = _prizes[roundId];
+        for (uint256 slot = 0; slot < prizes.length; slot++) {
+            reserve[prizes[slot].token] += prizes[slot].amount;
+        }
+        emit PrizesReturned(roundId);
     }
 
     /// @notice Refunds one pack of a cancelled round to its owner. Anyone may call; the recipient is fixed.
@@ -463,27 +426,9 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         emit PackRefunded(roundId, packId, to, round.price);
     }
 
-    /// @notice The creator takes escrowed prizes back from a cancelled round, slot by slot, so one paused token
-    /// cannot hold the others.
-    function returnPrizes(uint256 roundId, uint256[] calldata slots, address to) external nonReentrant {
+    /// @notice The owner takes the sales once the draw is final, never before: refunds stay possible until then.
+    function withdrawProceeds(uint256 roundId, address to) external onlyOwner nonReentrant {
         Round storage round = _rounds[roundId];
-        if (msg.sender != round.creator) revert NotCreator();
-        if (round.status != Status.Cancelled) revert WrongStatus(round.status);
-        if (to == address(0) || to == address(this)) revert ZeroAddress();
-        Prize[] storage prizes = _prizes[roundId];
-        for (uint256 i = 0; i < slots.length; i++) {
-            uint256 slot = slots[i];
-            if (prizeReturned[roundId][slot]) revert AlreadySettled(slot);
-            prizeReturned[roundId][slot] = true;
-            IERC20(prizes[slot].token).safeTransfer(to, prizes[slot].amount);
-            emit PrizeReturned(roundId, slot, to);
-        }
-    }
-
-    /// @notice The creator takes the sales once the draw is final, never before: refunds stay possible until then.
-    function withdrawProceeds(uint256 roundId, address to) external nonReentrant {
-        Round storage round = _rounds[roundId];
-        if (msg.sender != round.creator) revert NotCreator();
         if (round.status != Status.Finalized) revert WrongStatus(round.status);
         if (round.proceedsTaken) revert AlreadySettled(type(uint256).max);
         if (to == address(0) || to == address(this)) revert ZeroAddress();
@@ -513,7 +458,8 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         if (msg.sender != address(entropy)) revert OnlyEntropy();
     }
 
-    /// @notice Disabled: rounds need an owner to be created, and ownership should never be lost by accident.
+    /// @notice Disabled: the template, the reserve and the sales need an owner, and ownership should never be lost
+    /// by accident.
     function renounceOwnership() public pure override {
         revert RenounceDisabled();
     }

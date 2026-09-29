@@ -21,7 +21,6 @@ import { getParsedError } from "~~/utils/scaffold-eth";
 const STATUS = ["None", "Selling", "Sold out", "Drawing", "Seeded", "Finalized", "Cancelled"] as const;
 
 type Round = {
-  creator: Address;
   payToken: Address;
   price: bigint;
   saleDeadline: bigint;
@@ -55,11 +54,10 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
     queryKey: ["packs-rounds", address, String(picked)],
     refetchInterval: query => (query.state.data?.round.status === 3 ? 2_000 : 10_000),
     queryFn: async () => {
-      const [latest, lastTemplate, templatePrizes] = (await Promise.all([
+      const [latest, templatePrizes] = (await Promise.all([
         packsClient.readContract({ ...packs, functionName: "roundCount" }),
-        packsClient.readContract({ ...packs, functionName: "lastTemplateRound" }),
         packsClient.readContract({ ...packs, functionName: "templatePrizes" }),
-      ])) as [bigint, bigint, Prize[]];
+      ])) as [bigint, Prize[]];
       const roundId = picked && picked <= latest ? picked : latest;
       const [round, prizes, owners, order, fee] = await Promise.all([
         packsClient.readContract({ ...packs, functionName: "getRound", args: [roundId] }),
@@ -81,7 +79,7 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
         latest,
         roundId,
         // Anyone may open the next round from the template once its latest round is done.
-        canStartNext: templatePrizes.length > 0 && roundId === lastTemplate,
+        canStartNext: templatePrizes.length > 0 && roundId === latest,
         round: round as Round,
         prizes: prizes as Prize[],
         sold: (owners as Address[]).length,

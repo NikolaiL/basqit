@@ -96,8 +96,9 @@ contract BasqitSellRouter is BasqitRouterBase {
         if (swaps.length != amounts.length) revert InstructionCountMismatch(amounts.length, swaps.length);
         IERC20(basketAddress).safeTransferFrom(msg.sender, address(this), shares);
         basket.redeem(shares, address(this));
+        BasqitToken.Component[] memory parts = basket.components();
         for (uint256 i = 0; i < amounts.length; i++) {
-            received += _sellComponent(basket.componentAt(i).token, amounts[i], swaps[i]);
+            received += _sellComponent(parts[i].token, amounts[i], swaps[i]);
         }
     }
 

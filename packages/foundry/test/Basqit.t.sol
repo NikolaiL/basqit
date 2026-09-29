@@ -8,7 +8,7 @@ import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
 import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
 import { BasqitToken } from "../contracts/BasqitToken.sol";
 import { MockStockToken } from "../contracts/mocks/MockStockToken.sol";
-import { MockSwapAdapter } from "../contracts/mocks/MockSwapAdapter.sol";
+import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { MockUSDG } from "../contracts/mocks/MockUSDG.sol";
 import { BasqitRouterBase } from "../contracts/BasqitRouterBase.sol";
 import { UniswapV3Adapter } from "../contracts/adapters/UniswapV3Adapter.sol";
@@ -84,7 +84,7 @@ contract BasqitTest is Test {
     BasqitFactory internal factory;
     BasqitPurchaseRouter internal buyRouter;
     BasqitSellRouter internal sellRouter;
-    MockSwapAdapter internal adapter;
+    TestnetSwapAdapter internal adapter;
     BasqitToken internal basket;
 
     address internal owner = makeAddr("owner");
@@ -107,7 +107,7 @@ contract BasqitTest is Test {
         listed[1] = address(nvda);
         factory = new BasqitFactory(owner, listed);
 
-        adapter = new MockSwapAdapter(address(usdG));
+        adapter = new TestnetSwapAdapter(address(usdG), address(this));
         adapter.setPrice(address(tsla), 400e6);
         adapter.setPrice(address(nvda), 250e6);
         tsla.mint(address(adapter), 1_000e18);
@@ -382,7 +382,7 @@ contract BasqitTest is Test {
     function test_buy_revertsOnPerLegLimit() public {
         vm.startPrank(alice);
         usdG.approve(address(buyRouter), 400e6);
-        vm.expectRevert(abi.encodeWithSelector(MockSwapAdapter.ExcessiveInput.selector, 160e6, 100e6));
+        vm.expectRevert(abi.encodeWithSelector(TestnetSwapAdapter.ExcessiveInput.selector, 160e6, 100e6));
         buyRouter.buyBasket(address(basket), 1e18, 400e6, _buySwaps(100e6), alice, block.timestamp);
         vm.stopPrank();
     }
@@ -461,7 +461,7 @@ contract BasqitTest is Test {
         swaps[1].minAmountOut = 151e6; // NVDA leg pays exactly 150
         vm.startPrank(alice);
         basket.approve(address(sellRouter), 1e18);
-        vm.expectRevert(abi.encodeWithSelector(MockSwapAdapter.InsufficientOutput.selector, 150e6, 151e6));
+        vm.expectRevert(abi.encodeWithSelector(TestnetSwapAdapter.InsufficientOutput.selector, 150e6, 151e6));
         sellRouter.sellBasket(address(basket), 1e18, 0, swaps, alice, block.timestamp);
         vm.stopPrank();
         assertEq(basket.balanceOf(alice), 1e18, "whole sale reverted");
@@ -547,6 +547,18 @@ contract BasqitTest is Test {
         assertEq(iss.balanceOf(alice), 10e18 + 2.5e18);
     }
 
+    function test_issuerBurn_blocksMintUntilWhole() public {
+        (BasqitToken b, IssuerToken iss) = _issuerBasket();
+        iss.adminBurn(address(b), 5e18);
+        vm.prank(alice);
+        vm.expectRevert(BasqitToken.UnderBacked.selector);
+        b.mint(1e18, alice);
+        iss.mint(address(b), 5e18); // the issuer makes the basket whole again
+        assertTrue(b.isFullyBacked());
+        vm.prank(alice);
+        b.mint(1e18, alice);
+    }
+
     function test_feeOnTransferComponent_mintReverts() public {
         (BasqitToken b, IssuerToken iss) = _issuerBasket();
         iss.setFeeBps(100);
@@ -557,7 +569,7 @@ contract BasqitTest is Test {
 
     function test_fee_accruesWhenCreatorCannotReceive() public {
         IssuerToken usdX = new IssuerToken(); // stands in for a freezable USDG
-        MockSwapAdapter venue = new MockSwapAdapter(address(usdX));
+        TestnetSwapAdapter venue = new TestnetSwapAdapter(address(usdX), address(this));
         venue.setPrice(address(tsla), 400e6);
         tsla.mint(address(venue), 100e18);
         address[] memory adapters = new address[](1);
@@ -606,9 +618,9 @@ contract BasqitTest is Test {
         vm.stopPrank();
     }
 
-    function test_mockAdapterRefusesRobinhoodChain() public {
+    function test_testnetAdapterRefusesRobinhoodChain() public {
         vm.chainId(4663);
-        vm.expectRevert(MockSwapAdapter.UnsupportedChain.selector);
-        new MockSwapAdapter(address(usdG));
+        vm.expectRevert(TestnetSwapAdapter.NotTestnet.selector);
+        new TestnetSwapAdapter(address(usdG), address(this));
     }
 }

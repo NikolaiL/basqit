@@ -66,7 +66,6 @@ contract BasqitGiftRouter is BasqitRouterBase {
 
     error DeadlineExpired(uint256 deadline);
     error BadPurchases(uint256 count);
-    error NotStockToken(address token);
     error FeeTooHigh(uint16 bps);
     error TotalSpendExceeded(uint256 spent, uint256 maximum);
     error ResidualTokenBalance(address token, uint256 expected, uint256 actual);
@@ -135,10 +134,7 @@ contract BasqitGiftRouter is BasqitRouterBase {
         _checkRecipient(recipient, address(target));
         if (block.timestamp > deadline) revert DeadlineExpired(deadline);
 
-        uint256 usdGBefore = usdG.balanceOf(address(this));
-        usdG.safeTransferFrom(msg.sender, address(this), maxUsdGIn);
-        uint256 received = usdG.balanceOf(address(this)) - usdGBefore;
-        if (received != maxUsdGIn) revert UnexpectedTokenTransfer(address(usdG), received, maxUsdGIn);
+        uint256 usdGBefore = _pullUsdG(maxUsdGIn);
 
         (giftId, spent) = _buyAndWrap(target, purchases, maxUsdGIn, recipient);
         (fee, refunded) = _settle(spent, maxUsdGIn, usdGBefore);
@@ -161,8 +157,12 @@ contract BasqitGiftRouter is BasqitRouterBase {
         uint256[] memory startBalances = new uint256[](purchases.length);
         for (uint256 i = 0; i < purchases.length; i++) {
             Purchase calldata p = purchases[i];
-            if (!factory.isStockToken(p.token)) revert NotStockToken(p.token);
+            // The gifts contract's list (the factory's), checked before any swap.
             if (!target.isListed(p.token)) revert NotGiftListed(p.token);
+            // A repeated token would only fail in `wrap`, after every swap had run.
+            for (uint256 j = 0; j < i; j++) {
+                if (purchases[j].token == p.token) revert BasqitGifts.DuplicateToken(p.token);
+            }
             startBalances[i] = IERC20(p.token).balanceOf(address(this));
             // A leg can never reach past the buyer's remaining budget into other funds.
             spent += _buyExactOutput(p.token, p.amount, p.adapter, Math.min(p.maxAmountIn, budget - spent), p.routeData);

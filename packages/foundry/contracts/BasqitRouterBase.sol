@@ -118,6 +118,14 @@ abstract contract BasqitRouterBase is Ownable2Step, ReentrancyGuard {
         if (!allowedAdapters(adapter)) revert AdapterNotAllowed(adapter);
     }
 
+    /// @dev Pulls exactly `amount` USDG from the caller, measured by balance, and returns the balance before.
+    function _pullUsdG(uint256 amount) internal returns (uint256 balanceBefore) {
+        balanceBefore = usdG.balanceOf(address(this));
+        usdG.safeTransferFrom(msg.sender, address(this), amount);
+        uint256 received = usdG.balanceOf(address(this)) - balanceBefore;
+        if (received != amount) revert UnexpectedTokenTransfer(address(usdG), received, amount);
+    }
+
     /// @dev Buys exactly `amountOut` of `token` with at most `maxIn` USDG through an allowed adapter. Trusts
     /// balances, not the adapter's report, and leaves no allowance behind.
     function _buyExactOutput(address token, uint256 amountOut, address adapter, uint256 maxIn, bytes calldata routeData)

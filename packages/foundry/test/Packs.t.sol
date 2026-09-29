@@ -71,8 +71,12 @@ contract PacksTest is Test {
         }
     }
 
+    /// Sets a template for `size` packs, funds exactly one round of prizes and starts it.
     function _open(uint256 size) internal returns (uint256 roundId) {
-        roundId = packs.createRound(address(usdg), PRICE, _prizes(size), SALE, DRAW);
+        packs.setTemplate(address(usdg), PRICE, _prizes(size), SALE, DRAW);
+        packs.fundReserve(address(aapl), 5e18);
+        packs.fundReserve(address(nvda), _nvdaTotal(size));
+        roundId = packs.startNextRound();
     }
 
     function _sellOut(uint256 roundId, uint256 size) internal {
@@ -147,14 +151,14 @@ contract PacksTest is Test {
         }
     }
 
-    function test_CreateEscrowsPrizesAndChecksSize() public {
+    function test_TemplateChecksSizeAndOwner() public {
         vm.expectRevert(abi.encodeWithSelector(BasqitPacks.BadRoundSize.selector, 0));
-        packs.createRound(address(usdg), PRICE, new BasqitPacks.Prize[](0), SALE, DRAW);
+        packs.setTemplate(address(usdg), PRICE, new BasqitPacks.Prize[](0), SALE, DRAW);
         vm.expectRevert(abi.encodeWithSelector(BasqitPacks.BadRoundSize.selector, 101));
-        packs.createRound(address(usdg), PRICE, new BasqitPacks.Prize[](101), SALE, DRAW);
+        packs.setTemplate(address(usdg), PRICE, new BasqitPacks.Prize[](101), SALE, DRAW);
         vm.prank(alice);
         vm.expectRevert();
-        packs.createRound(address(usdg), PRICE, _prizes(2), SALE, DRAW);
+        packs.setTemplate(address(usdg), PRICE, _prizes(2), SALE, DRAW);
     }
 
     function test_BuyLimitsAndDeadline() public {
@@ -206,11 +210,10 @@ contract PacksTest is Test {
             packs.refund(roundId, i);
         }
         assertEq(usdg.balanceOf(alice), 1000e6);
+        assertEq(packs.reserve(address(nvda)), _nvdaTotal(4), "prizes back in the reserve");
         uint256 nvdaBefore = nvda.balanceOf(owner);
-        packs.returnPrizes(roundId, _slots(4), owner);
+        packs.withdrawReserve(address(nvda), _nvdaTotal(4), owner);
         assertEq(nvda.balanceOf(owner) - nvdaBefore, _nvdaTotal(4));
-        vm.expectRevert(abi.encodeWithSelector(BasqitPacks.AlreadySettled.selector, 0));
-        packs.returnPrizes(roundId, _slots(1), owner);
         vm.expectRevert(abi.encodeWithSelector(BasqitPacks.WrongStatus.selector, BasqitPacks.Status.Cancelled));
         packs.withdrawProceeds(roundId, owner);
     }
@@ -267,13 +270,13 @@ contract PacksTest is Test {
         packs.cancel(roundId);
     }
 
-    function test_OnlyCreatorTakesProceedsOrPrizes() public {
+    function test_OnlyOwnerTakesProceeds() public {
         uint256 roundId = _open(2);
         _sellOut(roundId, 2);
         dice.reveal(_draw(roundId), bytes32(uint256(9)));
         packs.finalize(roundId);
         vm.prank(alice);
-        vm.expectRevert(BasqitPacks.NotCreator.selector);
+        vm.expectRevert();
         packs.withdrawProceeds(roundId, alice);
     }
 
@@ -292,7 +295,6 @@ contract PacksTest is Test {
         _template(4);
         vm.prank(bob);
         uint256 first = packs.startNextRound();
-        assertEq(packs.getRound(first).creator, owner, "sales go to the owner");
         vm.prank(bob);
         vm.expectRevert(abi.encodeWithSelector(BasqitPacks.RoundInProgress.selector, first));
         packs.startNextRound();
@@ -310,23 +312,9 @@ contract PacksTest is Test {
         vm.warp(block.timestamp + SALE + 1);
         packs.cancel(second);
         assertEq(packs.reserve(address(aapl)), reserveBefore + 5e18, "cancelled prizes back in reserve");
-        vm.expectRevert(abi.encodeWithSelector(BasqitPacks.AlreadySettled.selector, 0));
-        packs.returnPrizes(second, _slots(1), owner);
         vm.prank(alice);
         packs.startNextRound();
         assertEq(packs.reserve(address(aapl)), 5e18, "one round of reserve left");
-    }
-
-    function test_ManualRoundDoesNotOpenASecondTemplateRound() public {
-        _template(2);
-        uint256 templateRound = packs.startNextRound();
-        uint256 manual = _open(2);
-        _sellOut(manual, 2);
-        dice.reveal(_draw(manual), bytes32(uint256(5)));
-        packs.finalize(manual);
-        vm.prank(bob);
-        vm.expectRevert(abi.encodeWithSelector(BasqitPacks.RoundInProgress.selector, templateRound));
-        packs.startNextRound();
     }
 
     function test_WithheldTemplateRoundSwitchesTemplateOff() public {
@@ -395,13 +383,13 @@ contract PacksTest is Test {
         uint64 maxSale = packs.MAX_SALE_DURATION();
         BasqitPacks.Prize[] memory prizes = _prizes(2);
         vm.expectRevert(BasqitPacks.BadDuration.selector);
-        packs.createRound(address(usdg), PRICE, prizes, SALE, min - 1);
+        packs.setTemplate(address(usdg), PRICE, prizes, SALE, min - 1);
         vm.expectRevert(BasqitPacks.BadDuration.selector);
-        packs.createRound(address(usdg), PRICE, prizes, SALE, maxDraw + 1);
+        packs.setTemplate(address(usdg), PRICE, prizes, SALE, maxDraw + 1);
         vm.expectRevert(BasqitPacks.BadDuration.selector);
-        packs.createRound(address(usdg), PRICE, prizes, maxSale + 1, DRAW);
+        packs.setTemplate(address(usdg), PRICE, prizes, maxSale + 1, DRAW);
         vm.expectRevert(BasqitPacks.PriceTooHigh.selector);
-        packs.createRound(address(usdg), type(uint256).max / 50, prizes, SALE, DRAW);
+        packs.setTemplate(address(usdg), type(uint256).max / 50, prizes, SALE, DRAW);
     }
 
     function test_RevealAfterTimeoutIsIgnoredEvenBeforeCancel() public {
@@ -445,13 +433,6 @@ contract PacksTest is Test {
         packs.buy(roundId, 1, address(packs));
     }
 
-    function _slots(uint256 n) internal pure returns (uint256[] memory slots) {
-        slots = new uint256[](n);
-        for (uint256 i = 0; i < n; i++) {
-            slots[i] = i;
-        }
-    }
-
     function _nvdaTotal(uint256 size) internal pure returns (uint256 total) {
         for (uint256 i = 1; i < size; i++) {
             total += (i + 1) * 1e17;
@@ -479,9 +460,8 @@ contract GiftsTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = address(nvda);
         listed[1] = address(aapl);
-        gifts = new BasqitGifts(owner);
-        gifts.setListed(listed, true);
         factory = new BasqitFactory(owner, listed);
+        gifts = new BasqitGifts(owner, address(factory));
         shop = new TestnetSwapAdapter(address(usdg), owner);
         shop.setPrice(address(nvda), 200e6); // $200 per NVDA
         shop.setPrice(address(aapl), 300e6);
@@ -541,11 +521,7 @@ contract GiftsTest is Test {
         vm.expectRevert(abi.encodeWithSelector(BasqitGifts.InvalidRecipient.selector, address(gifts)));
         gifts.wrap(_one(address(nvda), 1), address(gifts));
         vm.stopPrank();
-        address[] memory list = new address[](1);
-        list[0] = address(nvda);
-        vm.prank(alice);
-        vm.expectRevert();
-        gifts.setListed(list, false);
+        assertEq(address(gifts.stockTokens()), address(factory), "one token list for baskets and gifts");
     }
 
     function test_RouterBuysAndSealsAGift() public {
@@ -595,7 +571,7 @@ contract GiftsTest is Test {
         router.buyGift(p, 100e6, 500, address(gifts), friend, block.timestamp);
         p = _purchases();
         p[0].token = address(usdg);
-        vm.expectRevert(abi.encodeWithSelector(BasqitGiftRouter.NotStockToken.selector, address(usdg)));
+        vm.expectRevert(abi.encodeWithSelector(BasqitGiftRouter.NotGiftListed.selector, address(usdg)));
         router.buyGift(p, 100e6, 500, address(gifts), friend, block.timestamp);
         p = _purchases();
         p[1].maxAmountIn = 59e6; // AAPL leg costs $60
@@ -620,20 +596,15 @@ contract GiftsTest is Test {
         router.setFee(address(router), 100);
         vm.expectRevert(abi.encodeWithSelector(BasqitGiftRouter.NotAGiftsContract.selector, address(0xBEEF)));
         router.scheduleGifts(address(0xBEEF));
-        address[] memory list = new address[](1);
-        list[0] = address(aapl);
-        gifts.setListed(list, false); // stock-listed but not gift-listed: stops before any swap
+        BasqitGiftRouter.Purchase[] memory dup = _purchases();
+        dup[1].token = address(nvda); // a repeated token stops before any swap
         vm.prank(alice);
-        vm.expectRevert(abi.encodeWithSelector(BasqitGiftRouter.NotGiftListed.selector, address(aapl)));
-        router.buyGift(_purchases(), 100e6, 500, address(gifts), friend, block.timestamp);
+        vm.expectRevert(abi.encodeWithSelector(BasqitGifts.DuplicateToken.selector, address(nvda)));
+        router.buyGift(dup, 100e6, 500, address(gifts), friend, block.timestamp);
     }
 
     function test_GiftsContractChangesOnlyAfterTheDelay() public {
-        BasqitGifts next = new BasqitGifts(owner);
-        address[] memory listed = new address[](2);
-        listed[0] = address(nvda);
-        listed[1] = address(aapl);
-        next.setListed(listed, true);
+        BasqitGifts next = new BasqitGifts(owner, address(factory));
         vm.prank(alice);
         vm.expectRevert();
         router.scheduleGifts(address(next));
@@ -663,7 +634,7 @@ contract GiftsTest is Test {
         paus.mint(alice, 1e18);
         address[] memory list = new address[](1);
         list[0] = address(paus);
-        gifts.setListed(list, true);
+        factory.listStockTokens(list);
         BasqitGifts.Item[] memory items = new BasqitGifts.Item[](2);
         items[0] = BasqitGifts.Item(address(nvda), 1e17);
         items[1] = BasqitGifts.Item(address(paus), 1e18);
@@ -688,7 +659,7 @@ contract GiftsTest is Test {
         uint256 giftId = gifts.wrap(_one(address(nvda), 1e17), alice);
         address[] memory list = new address[](1);
         list[0] = address(nvda);
-        gifts.setListed(list, false);
+        factory.delistStockTokens(list);
         vm.prank(alice);
         gifts.transferFrom(alice, friend, giftId);
         vm.prank(friend);

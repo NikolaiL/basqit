@@ -24,7 +24,12 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Local-only stand-in for a Stock Token: freely mintable, 18 decimals.
 contract MockStockToken is ERC20 {
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) { }
+    error LocalOnly();
+
+    /// @dev Anyone can mint, so it must never exist outside the local chain.
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
+        if (block.chainid != 31337) revert LocalOnly();
+    }
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
