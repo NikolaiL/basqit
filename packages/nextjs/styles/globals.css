@@ -3578,11 +3578,19 @@ html [data-rk] {
 .bq-demo-builder-rows small {
   color: var(--bq-muted);
 }
-.bq-demo-builder-rows .bq-demo-builder-amount {
-  grid-column: 2 / -1;
+.bq-demo-builder-rows small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.bq-demo-builder-rows .bq-demo-builder-amount:empty {
-  display: none;
+/* What the dollars buy: same line as the price, in ink and bold so it reads as the result. */
+.bq-demo-builder-rows em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--bq-ink);
+}
+.bq-demo-builder-rows em.is-over {
+  color: var(--bq-danger);
 }
 
 /* Sealed gifts waiting for this wallet: the first thing a recipient sees, in the gift's own purple. */

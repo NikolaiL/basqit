@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
-import { type Address, erc20Abi, isAddress, parseUnits } from "viem";
+import { type Address, erc20Abi, formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet } from "~~/services/packs/testnet";
@@ -185,10 +185,19 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                   <StockLogo symbol={info?.ticker ?? ""} size={28} />
                   <span>
                     <b>{info?.symbol ?? "…"}</b>
+                    {/* One line either way, so typing never makes the form taller. */}
                     <small>
                       {mode === "buy"
-                        ? `$${formatToken(price, 6)} each`
+                        ? `$${Number(formatUnits(price, 6)).toFixed(2)} each`
                         : `You hold ${info ? formatToken(balance, info.decimals) : "…"}`}
+                      {item &&
+                        (item.over ? (
+                          <em className="is-over">
+                            {mode === "buy" ? " · not enough available" : " · more than you hold"}
+                          </em>
+                        ) : (
+                          mode === "buy" && <em> · {itemLabel(item)}</em>
+                        ))}
                     </small>
                   </span>
                   <input
@@ -200,17 +209,6 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                     value={inputs[token] ?? ""}
                     onChange={event => setInputs(current => ({ ...current, [token]: event.target.value }))}
                   />
-                  <small className="bq-demo-builder-amount">
-                    {item
-                      ? item.over
-                        ? mode === "buy"
-                          ? "Not enough available"
-                          : "More than you hold"
-                        : mode === "buy"
-                          ? `= ${itemLabel(item)}`
-                          : ""
-                      : ""}
-                  </small>
                 </li>
               );
             })}
