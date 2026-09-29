@@ -2,7 +2,7 @@
 src = 'contracts'
 out = 'out'
 libs = ['lib', 'node_modules']
-# Pinned: prague opcodes (PUSH0, MCOPY) verified on Robinhood Chain 4663 / ArbOS 61. Re-verify before raising.
+# Pinned: prague opcodes (PUSH0, MCOPY) verified on Robinhood Chain 4663 and testnet 46630 (eth_call of PUSH0/TSTORE/TLOAD/MCOPY init code), ArbOS 61. Re-verify before raising.
 solc_version = "0.8.28"
 evm_version = "prague"
 fs_permissions = [{ access = "read-write", path = "./"}]
@@ -38,6 +38,7 @@ pgnTestnet = "https://sepolia.publicgoods.network"
 
 
 robinhood = "https://rpc.mainnet.chain.robinhood.com"
+robinhoodTestnet = "https://rpc.testnet.chain.robinhood.com"
 
 localhost = "http://127.0.0.1:8545"
 

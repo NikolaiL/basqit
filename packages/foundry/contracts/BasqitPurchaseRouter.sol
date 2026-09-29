@@ -1,12 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+/*
+ .------------------------------------------------------------------------------------------------------.
+ | ```````````````````````````````````````````````````````````````````````````````````````````````````` |
+ | `````````````````````````:####````````````````````````````````````````````````:####`:``````````````` |
+ | `####################````:####````````````````````````````````````````````````:####`:``+##:````````` |
+ | `###::::::::::::::+##````:####`:+#+:``````++###+:`````:++##++:`````++#+:`:+++``++++``:+###+++``````` |
+ | `+##`````````+#+``##+````:###########```+#########``:#########+```######+####`:####``########``````` |
+ | `:##:`````##:###``##:````:#####:+####+`:####:`+###+`+###+``####``+####::#####`:####``:####+::``````` |
+ | ``##+`:+::##:###`+##`````:####```#####``++++:+#####`:#######+:```####+``:####`:####```####:````````` |
+ | ``###`:++:##:###`###`````:####```+####``+##########```:+######+``####+``:####`:####```####:````````` |
+ | ``+##``:``:+`:+:`##+`````:####:``####+`+###+``+####`+###:`:####+`#####``#####`:####```####+````+++:` |
+ | ``:##+::::::::::+##:`````:###+#######``############`:####++####:`:###########`:####```+######`#####` |
+ | ```:##############+``````:###::####+````+####+`####``:+######+:```:####+:####``####````+#####`:###+` |
+ | ````````````````````````````````````````````````````````````````````````:####``````````````````````` |
+ | ````````````````````````````````````````````````````````````````````````:####``````````````````````` |
+ | ```Build a basket. Send a gift. Open a pack.```````````````````````````````````````````````````````` |
+ '------------------------------------------------------------------------------------------------------'
+*/
+
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BasqitRouterBase } from "./BasqitRouterBase.sol";
 import { BasqitToken } from "./BasqitToken.sol";
-import { IExactOutputAdapter } from "./interfaces/IExactOutputAdapter.sol";
 
 /// @notice Turns a bounded USDG budget into the exact components for basket shares, mints them,
 /// pays the creator fee and refunds unspent USDG, all in one transaction.
@@ -33,9 +51,7 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
     error BasketNotRegistered(address basket);
     error DelistedComponent(address token);
     error InstructionCountMismatch(uint256 expected, uint256 actual);
-    error SwapOverspent(address token, uint256 spent, uint256 maximum);
     error TotalSpendExceeded(uint256 spent, uint256 maximum);
-    error UnexpectedTokenTransfer(address token, uint256 received, uint256 expected);
     error ResidualTokenBalance(address token, uint256 expected, uint256 actual);
 
     constructor(address usdG_, address factory_, address initialOwner, address[] memory initialAdapters)
@@ -110,23 +126,9 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
 
     function _buyComponent(address token, uint256 amountOut, SwapInstruction calldata swap, uint256 remaining)
         private
-        returns (uint256 spent)
+        returns (uint256)
     {
-        _checkAdapter(swap.adapter);
-        uint256 maxIn = Math.min(swap.maxAmountIn, remaining);
-        uint256 tokenBefore = IERC20(token).balanceOf(address(this));
-        uint256 usdGBefore = usdG.balanceOf(address(this));
-
-        usdG.forceApprove(swap.adapter, maxIn);
-        IExactOutputAdapter(swap.adapter)
-            .swapExactOutput(address(usdG), token, amountOut, maxIn, address(this), swap.routeData);
-        usdG.forceApprove(swap.adapter, 0);
-
-        // Trust balances, not the adapter's report.
-        spent = usdGBefore - usdG.balanceOf(address(this));
-        if (spent > maxIn) revert SwapOverspent(token, spent, maxIn);
-        uint256 received = IERC20(token).balanceOf(address(this)) - tokenBefore;
-        if (received != amountOut) revert UnexpectedTokenTransfer(token, received, amountOut);
+        return _buyExactOutput(token, amountOut, swap.adapter, Math.min(swap.maxAmountIn, remaining), swap.routeData);
     }
 
     function _mint(

@@ -12,6 +12,7 @@ const pages = [
   { href: "/atlas", label: "Assets" },
   { href: "/corporate-events", label: "Corporate events" },
   { href: "/baskets", label: "Baskets" },
+  { href: "/gifts", label: "Gifts" },
   { href: "/packs", label: "Packs" },
 ];
 

@@ -1,4 +1,4 @@
-export const WAITLIST_PRODUCTS = ["baskets", "packs"] as const;
+export const WAITLIST_PRODUCTS = ["baskets", "gifts", "packs"] as const;
 export type WaitlistProduct = (typeof WAITLIST_PRODUCTS)[number];
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/;
@@ -13,7 +13,12 @@ export function parseWaitlist(body: unknown): { email: string; product: Waitlist
   return { email: clean, product: product as WaitlistProduct };
 }
 
-/** Resend segment for a product, from env: one segment per product, so one contact can sit in both. */
+/** Resend segment for a product, from env: one segment per product, so one contact can sit in several. */
 export function waitlistSegment(product: WaitlistProduct, env: Record<string, string | undefined> = process.env) {
-  return (product === "baskets" ? env.RESEND_SEGMENT_BASKETS : env.RESEND_SEGMENT_PACKS) || undefined;
+  const segments = {
+    baskets: env.RESEND_SEGMENT_BASKETS,
+    gifts: env.RESEND_SEGMENT_GIFTS,
+    packs: env.RESEND_SEGMENT_PACKS,
+  };
+  return segments[product] || undefined;
 }

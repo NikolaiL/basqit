@@ -1,6 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+/*
+ .------------------------------------------------------------------------------------------------------.
+ | ```````````````````````````````````````````````````````````````````````````````````````````````````` |
+ | `````````````````````````:####````````````````````````````````````````````````:####`:``````````````` |
+ | `####################````:####````````````````````````````````````````````````:####`:``+##:````````` |
+ | `###::::::::::::::+##````:####`:+#+:``````++###+:`````:++##++:`````++#+:`:+++``++++``:+###+++``````` |
+ | `+##`````````+#+``##+````:###########```+#########``:#########+```######+####`:####``########``````` |
+ | `:##:`````##:###``##:````:#####:+####+`:####:`+###+`+###+``####``+####::#####`:####``:####+::``````` |
+ | ``##+`:+::##:###`+##`````:####```#####``++++:+#####`:#######+:```####+``:####`:####```####:````````` |
+ | ``###`:++:##:###`###`````:####```+####``+##########```:+######+``####+``:####`:####```####:````````` |
+ | ``+##``:``:+`:+:`##+`````:####:``####+`+###+``+####`+###:`:####+`#####``#####`:####```####+````+++:` |
+ | ``:##+::::::::::+##:`````:###+#######``############`:####++####:`:###########`:####```+######`#####` |
+ | ```:##############+``````:###::####+````+####+`####``:+######+:```:####+:####``####````+#####`:###+` |
+ | ````````````````````````````````````````````````````````````````````````:####``````````````````````` |
+ | ````````````````````````````````````````````````````````````````````````:####``````````````````````` |
+ | ```Build a basket. Send a gift. Open a pack.```````````````````````````````````````````````````````` |
+ '------------------------------------------------------------------------------------------------------'
+*/
+
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -8,6 +27,7 @@ import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { BasqitFactory } from "./BasqitFactory.sol";
+import { IExactOutputAdapter } from "./interfaces/IExactOutputAdapter.sol";
 
 /// @notice Shared pieces of the Basqit routers: USDG, the factory, the adapter allowlist and creator fees.
 abstract contract BasqitRouterBase is Ownable2Step, ReentrancyGuard {
@@ -32,6 +52,8 @@ abstract contract BasqitRouterBase is Ownable2Step, ReentrancyGuard {
     error AdapterNotAllowed(address adapter);
     error InvalidRecipient(address recipient);
     error RenounceDisabled();
+    error SwapOverspent(address token, uint256 spent, uint256 maximum);
+    error UnexpectedTokenTransfer(address token, uint256 received, uint256 expected);
 
     /// @param initialAdapters usable immediately, so a fresh deployment works without waiting.
     constructor(address usdG_, address factory_, address initialOwner, address[] memory initialAdapters)
@@ -94,5 +116,25 @@ abstract contract BasqitRouterBase is Ownable2Step, ReentrancyGuard {
 
     function _checkAdapter(address adapter) internal view {
         if (!allowedAdapters(adapter)) revert AdapterNotAllowed(adapter);
+    }
+
+    /// @dev Buys exactly `amountOut` of `token` with at most `maxIn` USDG through an allowed adapter. Trusts
+    /// balances, not the adapter's report, and leaves no allowance behind.
+    function _buyExactOutput(address token, uint256 amountOut, address adapter, uint256 maxIn, bytes calldata routeData)
+        internal
+        returns (uint256 spent)
+    {
+        _checkAdapter(adapter);
+        uint256 tokenBefore = IERC20(token).balanceOf(address(this));
+        uint256 usdGBefore = usdG.balanceOf(address(this));
+
+        usdG.forceApprove(adapter, maxIn);
+        IExactOutputAdapter(adapter).swapExactOutput(address(usdG), token, amountOut, maxIn, address(this), routeData);
+        usdG.forceApprove(adapter, 0);
+
+        spent = usdGBefore - usdG.balanceOf(address(this));
+        if (spent > maxIn) revert SwapOverspent(token, spent, maxIn);
+        uint256 received = IERC20(token).balanceOf(address(this)) - tokenBefore;
+        if (received != amountOut) revert UnexpectedTokenTransfer(token, received, amountOut);
     }
 }

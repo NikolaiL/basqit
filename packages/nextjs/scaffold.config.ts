@@ -1,4 +1,5 @@
 import { robinhoodChain } from "./services/atlas/client";
+import { robinhoodTestnet } from "./services/packs/testnet";
 import * as chains from "viem/chains";
 
 export type BaseConfig = {
@@ -24,6 +25,8 @@ const scaffoldConfig = {
     chains.base,
     chains.arbitrum,
     chains.optimism,
+    // The Packs testnet demo only; the app's main network stays Robinhood Chain mainnet (first).
+    robinhoodTestnet,
   ],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))
   pollingInterval: 3000,

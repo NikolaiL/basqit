@@ -1,5 +1,7 @@
 # Basqit
 
+**Build a basket. Send a gift. Open a pack.**
+
 Basqit is a fun way to find Stock Tokens. Type an idea — *companies with orange logos*, *founders who started in a garage*, *space & satellites* — and Basqit finds the Stock Tokens on Robinhood Chain that match it. Like the picks? Buy them all in one go.
 
 ## Live now
@@ -11,7 +13,11 @@ Basqit is a fun way to find Stock Tokens. Type an idea — *companies with orang
 ## In progress
 
 - **Baskets** — *in progress:* Anyone can create a basket of Stock Tokens, publish it with a name and a thesis, and earn a fee whenever someone buys or sells it. Every basket is fully collateralized, and its holdings are verifiable onchain.
-- **Packs** — *in progress:* Buy or gift Stock Tokens in small amounts.
+- **Gifts** — *testnet demo:* a sealed gift of Stock Tokens with fixed contents, worth what you paid when you
+  bought it; keep it or send it to a friend. Try it on `/gifts`.
+- **Packs** — *testnet demo:* a random mix of Stock Tokens for a small fixed price. Prizes are distributed by one draw
+  from [Dice Protocol](https://diceprotocol.world) ([docs](https://diceprotocol.world/docs/)). Try it on `/packs`.
+  Both run on Robinhood Chain testnet with test tokens that have no value, and wait for a legal review.
 
 ## Disclaimer
 

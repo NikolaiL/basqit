@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { PackArt } from "~~/components/waitlist/SoonArt";
+import { TestnetDemo } from "~~/components/packs/TestnetDemo";
+import { PackArt } from "~~/components/waitlist/OpenedArt";
 import { WaitlistForm } from "~~/components/waitlist/WaitlistForm";
 
 export const metadata: Metadata = {
@@ -15,30 +16,29 @@ export default function PacksPage() {
           <p className="bq-soon-status">In design</p>
           <h1>Open a pack. Pull real shares.</h1>
           <p className="bq-soon-lead">
-            One small, fixed price. Real Stock Tokens inside, straight to your wallet. Two kinds of pack are in design.
+            One small, fixed price. A random mix of real Stock Tokens inside, straight to your wallet. Some packs are
+            worth less than you paid.
           </p>
-          <WaitlistForm product="packs" cta="Hear first when Packs open" confetti={["MSFT", "GOOGL", "RKLB"]} />
+          <WaitlistForm product="packs" cta="Hear first when Packs open" confetti={["RKLB", "NVDA", "TSLA"]} />
         </div>
         <PackArt />
       </section>
-      {/* Each description wears its pack's colour from the art above, so text and picture read as a pair. */}
-      <ul className="bq-soon-pack-notes">
-        <li className="is-gift">
-          <strong>Gift Pack</strong>
-          <em>Value matches the price</em>
-          Stock Tokens worth what you paid, picked for you. Open it to see which companies are inside, or send it to
-          someone.
+      <ol className="bq-soon-steps">
+        <li>
+          <strong>Buy</strong>
+          Buy a pack in a round. Every prize in the round is set aside before the first pack sells.
         </li>
-        <li className="is-surprise">
-          <strong>Surprise Pack</strong>
-          <em>Value varies, a few cents in</em>A random mix of Stock Tokens. Every token in a round is set aside before
-          the first pack sells, and one public seed sets the whole round. Some packs are worth less than you paid.
+        <li>
+          <strong>Draw</strong>
+          When the round sells out, one random seed from Dice Protocol shuffles the prizes, one per pack.
         </li>
-      </ul>
-      <p className="bq-soon-fine">
-        Nothing here is on sale. Packs need a legal review first, and Surprise Packs will not ship until that review is
-        done.
-      </p>
+        <li>
+          <strong>Open</strong>
+          See what you pulled and claim it to your wallet. Anyone can check the shuffle from the seed.
+        </li>
+      </ol>
+      <TestnetDemo kind="packs" />
+      <p className="bq-soon-fine">Nothing here is on sale. Packs will not ship until a legal review is done.</p>
     </main>
   );
 }

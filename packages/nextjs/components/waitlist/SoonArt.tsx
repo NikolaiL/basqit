@@ -33,27 +33,3 @@ export function BasketArt() {
     </div>
   );
 }
-
-/** Packs: two sealed packs with a torn top, a couple of tokens peeking out. */
-export function PackArt() {
-  return (
-    <div className="bq-soon-art bq-soon-packs-art" aria-hidden="true">
-      <div className="bq-soon-pack is-gift">
-        <span className="bq-soon-peek">
-          <StockLogo symbol="MSFT" size={56} />
-          <StockLogo symbol="GOOGL" size={56} />
-        </span>
-        <strong>Gift</strong>
-        <small>basqit. pack</small>
-      </div>
-      <div className="bq-soon-pack is-surprise">
-        <span className="bq-soon-peek">
-          <StockLogo symbol="RKLB" size={56} />
-          <b>?</b>
-        </span>
-        <strong>Surprise</strong>
-        <small>basqit. pack</small>
-      </div>
-    </div>
-  );
-}

@@ -20,15 +20,20 @@ pragma solidity 0.8.28;
  '------------------------------------------------------------------------------------------------------'
 */
 
-/// @notice Buys an exact output amount. Pulls at most `maxAmountIn` from the caller and
-/// returns the amount actually spent; anything unspent stays with (or returns to) the caller.
-interface IExactOutputAdapter {
-    function swapExactOutput(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountOut,
-        uint256 maxAmountIn,
-        address recipient,
-        bytes calldata routeData
-    ) external returns (uint256 amountIn);
+/// @notice The part of Dice Protocol's DiceEntropy v10 (Pyth Entropy v2 compatible) that Basqit calls.
+/// Signatures from https://github.com/diceprotocol/dice-protocol-sdk (solidity/IEntropyV2.sol, IEntropy.sol).
+/// Docs: https://diceprotocol.world/docs/
+interface IDiceEntropy {
+    function getDefaultProvider() external view returns (address provider);
+
+    /// @dev The fee must be paid exactly: under- and over-payment both revert.
+    function getFeeV2(address provider, uint32 gasLimit) external view returns (uint128 feeAmount);
+
+    function requestV2(address provider, bytes32 userRandomNumber, uint32 gasLimit)
+        external
+        payable
+        returns (uint64 assignedSequenceNumber);
+
+    /// @dev Only the original requester, after the refund delay (about 6 L1 blocks). Returns the fee paid.
+    function refundRequest(address provider, uint64 sequenceNumber) external;
 }
