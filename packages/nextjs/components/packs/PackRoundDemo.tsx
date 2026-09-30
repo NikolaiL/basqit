@@ -43,7 +43,7 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
   const write = usePacksWrite();
   const tokens = useTokens();
   const usd = useUsdPrices(Object.values(tokens.data ?? {}).map(token => token.ticker));
-  const [count, setCount] = useState(1);
+  const [count, setCount] = useState("1");
   // Latest round by default; earlier rounds stay reachable so their buyers can still claim or get refunds.
   const [picked, setPicked] = useState<bigint>();
   const [busy, setBusy] = useState("");
@@ -106,6 +106,7 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
   if (!data || data.roundId === 0n) return null;
   const { round, prizes, sold, mine, fee, now, roundId, latest, canStartNext } = data;
   const left = round.size - sold;
+  const qty = Number(count);
   const pending = mine.filter(pack => !pack.settled);
   const status = STATUS[round.status];
   const expired =
@@ -180,20 +181,27 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
             max={left}
             value={count}
             aria-label="Packs to buy"
-            onChange={event => setCount(Math.max(1, Math.min(left, Number(event.target.value) || 1)))}
+            onChange={event => {
+              const value = event.target.value;
+              setCount(value === "" ? "" : String(Math.max(1, Math.min(left, Math.floor(Number(value)) || 1))));
+            }}
           />
           <button
             className="btn btn-primary btn-sm"
-            disabled={!ready || !!busy || left === 0}
+            disabled={!ready || !!busy || left === 0 || !qty}
             onClick={() =>
               act("buy", async () => {
-                const cost = round.price * BigInt(count);
+                const cost = round.price * BigInt(qty);
                 await ensureAllowance(write, address!, round.payToken, deployment.packs, cost);
-                await write({ ...packs, functionName: "buy", args: [roundId, BigInt(count), address] });
+                await write({ ...packs, functionName: "buy", args: [roundId, BigInt(qty), address] });
               })
             }
           >
-            {busy === "buy" ? "Buying…" : `Buy ${count} for ${formatToken(round.price * BigInt(count), 6)} tUSDG`}
+            {busy === "buy"
+              ? "Buying…"
+              : qty
+                ? `Buy ${qty} for ${formatToken(round.price * BigInt(qty), 6)} tUSDG`
+                : "Buy"}
           </button>
         </div>
       )}
