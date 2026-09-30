@@ -7,7 +7,15 @@ registerHooks({
     return next(specifier.startsWith("./") && !/\.[a-z]+$/.test(specifier) ? `${specifier}.ts` : specifier, context);
   },
 });
-const { combineBuys, splitAmount, quoteEachStock, mergeQuoteErrors, keepsApprovedMinimum } = await import("./batch.ts");
+const {
+  combineBuys,
+  splitAmount,
+  quoteEachStock,
+  mergeQuoteErrors,
+  keepsApprovedMinimum,
+  resumeAmount,
+  matchesSavedAllocations,
+} = await import("./batch.ts");
 const { USDG } = await import("./quote.ts");
 const { V3_ROUTER, V3_QUOTER, v3Abi, directCalldata } = await import("./uniswap.ts");
 const { LIFI_DIAMOND } = await import("./lifi.ts");
@@ -18,6 +26,25 @@ const fee = { bps: 10, recipient };
 assert.equal(keepsApprovedMinimum({ minBuyAmount: "990025" }, { minBuyAmount: "995000" }), false);
 assert.equal(keepsApprovedMinimum({ minBuyAmount: "995000" }, { minBuyAmount: "995000" }), true);
 assert.equal(keepsApprovedMinimum({ minBuyAmount: "999000" }, { minBuyAmount: "995000" }), true);
+// A typed 300 USDG across A/B/C; A broadcast, timed out, and later confirmed. Resuming spends B and C's original
+// 200 in total, never the typed 300, and a subset spends only its own allocation.
+const saved = {
+  legs: ["0xa", "0xb", "0xc"].map(token => ({ token, sellAmount: "100000000" })),
+  bought: ["0xa"],
+};
+assert.equal(resumeAmount(saved, ["0xB", "0xC"]), 200000000n);
+assert.equal(resumeAmount(saved, ["0xc"]), 100000000n, "a subset uses only its own legs");
+assert.equal(resumeAmount(saved, ["0xa", "0xc"]), 100000000n, "a bought leg adds nothing");
+const savedLeg = (buyToken, sellAmount) => ({ buyToken, sellAmount });
+assert.equal(matchesSavedAllocations([savedLeg("0xB", "100000000"), savedLeg("0xC", "100000000")], saved), true);
+assert.equal(
+  matchesSavedAllocations([savedLeg("0xb", "100000001"), savedLeg("0xc", "99999999")], saved),
+  true,
+  "split rounding",
+);
+assert.equal(matchesSavedAllocations([savedLeg("0xb", "150000000"), savedLeg("0xc", "150000000")], saved), false);
+assert.equal(matchesSavedAllocations([savedLeg("0xa", "100000000")], saved), false, "never rebuy a bought leg");
+assert.equal(matchesSavedAllocations([savedLeg("0xd", "100000000")], saved), false, "nothing outside the batch");
 assert.deepEqual(splitAmount(10000001n, 3), [3333334n, 3333334n, 3333333n]);
 assert.throws(() => splitAmount(1n, 2));
 assert.throws(() => splitAmount(100n, 9));

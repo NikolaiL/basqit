@@ -14,12 +14,19 @@ export type PendingTrade = {
   tokens: string[];
   /** The batch this submission belongs to, so a late success can mark its legs bought. */
   batch?: string;
+  /** The purchase call itself, so a hash the buyer pastes can be checked to be this purchase. */
+  to?: string;
+  data?: string;
+  /** `ref` came from the buyer (wallet history), not from our own submission. */
+  tracked?: boolean;
   createdAt: number;
 };
 
 // "replaced": the hash has no receipt but its nonce is used. A speed-up may still have bought, so this is never
 // cleared automatically; the buyer checks wallet history.
-export type TradeOutcome = "success" | "failure" | "unknown" | "replaced";
+// "unverified": a hash the buyer pasted is confirmed but is not this purchase (for example a cancellation), so it
+// says nothing about whether anything was bought; the buyer decides.
+export type TradeOutcome = "success" | "failure" | "unknown" | "replaced" | "unverified";
 
 /** A multi-stock purchase: its original allocations and the legs confirmed so far, kept across remounts. */
 export type BatchPurchase = {
@@ -123,7 +130,9 @@ export async function reconcilePendingTrade(
   trade: PendingTrade,
   lookup: {
     receipt: (hash: `0x${string}`) => Promise<{ status: "success" | "reverted" } | null>;
-    transaction?: (hash: `0x${string}`) => Promise<{ nonce: number } | null>;
+    transaction?: (
+      hash: `0x${string}`,
+    ) => Promise<{ nonce: number; from?: string; to?: string | null; input?: string } | null>;
     /** Count of the taker's confirmed transactions: every nonce below it is used. */
     confirmedNonce?: () => Promise<number>;
     calls?: (id: string) => Promise<{ status?: string } | null>;
@@ -138,7 +147,21 @@ export async function reconcilePendingTrade(
   }
   const hash = trade.ref as `0x${string}`;
   const receipt = await lookup.receipt(hash).catch(() => null);
-  if (receipt) return { outcome: receipt.status === "success" ? "success" : "failure" };
+  if (receipt && !trade.tracked) return { outcome: receipt.status === "success" ? "success" : "failure" };
+  if (receipt) {
+    // A pasted hash settles this purchase only if it is the same call from the same wallet (a sped-up copy).
+    // A confirmed cancellation or any other transaction proves nothing about the purchase.
+    const sent = lookup.transaction ? await lookup.transaction(hash).catch(() => null) : null;
+    if (!sent) return { outcome: "unknown" };
+    const same =
+      !!trade.to &&
+      !!trade.data &&
+      sent.from?.toLowerCase() === trade.taker.toLowerCase() &&
+      sent.to?.toLowerCase() === trade.to.toLowerCase() &&
+      sent.input?.toLowerCase() === trade.data.toLowerCase();
+    if (!same) return { outcome: "unverified", nonce: sent.nonce };
+    return { outcome: receipt.status === "success" ? "success" : "failure" };
+  }
   const seen = lookup.transaction ? await lookup.transaction(hash).catch(() => null) : null;
   const nonce = seen?.nonce ?? trade.nonce;
   if (nonce === undefined || !lookup.confirmedNonce) return { outcome: "unknown", nonce };

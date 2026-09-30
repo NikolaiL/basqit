@@ -74,6 +74,8 @@ export function useStockTrade() {
       kind: "tx",
       tokens: "legs" in quote ? (quote as BatchStep).legs.map(leg => leg.buyToken) : [(quote as TradeQuote).buyToken],
       batch: swap.batch,
+      to,
+      data,
       createdAt: Date.now(),
     };
     // Check, reserve and send under one per-wallet lock, so a second tab cannot pass the check in between.
@@ -280,7 +282,7 @@ export function usePendingTrade(owner?: `0x${string}`) {
         confirmedNonce: () => atlasClient.getTransactionCount({ address: trade.taker as `0x${string}` }),
         calls: wallet ? id => wallet.getCallsStatus({ id }) : undefined,
       });
-      if (outcome === "unknown" || outcome === "replaced") {
+      if (outcome === "unknown" || outcome === "replaced" || outcome === "unverified") {
         if (nonce !== undefined && nonce !== trade.nonce) savePendingTrade({ ...trade, nonce });
         return { ...trade, nonce, outcome };
       }
@@ -328,14 +330,22 @@ export function usePendingTrade(owner?: `0x${string}`) {
           ref: hash,
           tokens: trade.tokens,
           batch: trade.batch,
+          to: trade.to,
+          data: trade.data,
+          tracked: true,
           createdAt: trade.createdAt,
         });
       void refetch();
     },
-    dismiss: () => {
+    /** The buyer's own answer from wallet history: whether the purchase went through (its batch legs are then bought). */
+    resolve: (bought: boolean) => {
+      const trade = query.data;
+      if (owner && trade && bought && trade.batch)
+        markBatchBought(trade.chainId, trade.taker, trade.batch, trade.tokens);
       if (owner) clearPendingTrade(robinhoodChain.id, owner);
       client.setQueryData(outcomeKey, null);
       void refetch();
+      void client.invalidateQueries({ queryKey: ["trade-batch"] });
     },
   };
 }

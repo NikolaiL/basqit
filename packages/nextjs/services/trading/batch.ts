@@ -23,6 +23,29 @@ export const keepsApprovedMinimum = (
   approved: Pick<TradeQuote, "minBuyAmount">,
 ) => BigInt(fresh.minBuyAmount) >= BigInt(approved.minBuyAmount);
 
+type SavedLegs = { legs: { token: string; sellAmount: string }[]; bought: string[] };
+
+/**
+ * USDG to spend while a saved batch is incomplete: the original allocations of its remaining legs that are selected.
+ * A typed amount never applies here; choosing a new amount means starting a new batch.
+ */
+export function resumeAmount(saved: SavedLegs, selectedTokens: string[]) {
+  const chosen = new Set(selectedTokens.map(token => token.toLowerCase()));
+  return saved.legs
+    .filter(leg => !saved.bought.includes(leg.token) && chosen.has(leg.token))
+    .reduce((sum, leg) => sum + BigInt(leg.sellAmount), 0n);
+}
+
+/** Every quoted leg spends its saved allocation (1 base unit of split rounding allowed), and nothing unsaved. */
+export function matchesSavedAllocations(legs: Pick<TradeQuote, "buyToken" | "sellAmount">[], saved: SavedLegs) {
+  return legs.every(leg => {
+    const original = saved.legs.find(item => item.token === leg.buyToken.toLowerCase());
+    if (!original || saved.bought.includes(original.token)) return false;
+    const difference = BigInt(leg.sellAmount) - BigInt(original.sellAmount);
+    return difference <= 1n && difference >= -1n;
+  });
+}
+
 export async function quoteEachStock(tokens: string[], quote: (token: string, index: number) => Promise<TradeQuote>) {
   const results: BatchResult[] = [];
   // Bound RPC fan-out; one failed route must not discard the other results.

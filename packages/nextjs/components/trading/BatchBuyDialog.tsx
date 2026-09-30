@@ -26,7 +26,9 @@ import {
   type BatchQuoteResponse,
   type BatchStep,
   keepsApprovedMinimum,
+  matchesSavedAllocations,
   mergeQuoteErrors,
+  resumeAmount,
 } from "~~/services/trading/batch";
 import { clearBatch, newOperationId, readBatch, readPendingTrade, saveBatch } from "~~/services/trading/pending";
 import { type TradeQuote, USDG, balancePercentage } from "~~/services/trading/quote";
@@ -73,9 +75,13 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       !isBought(asset) &&
       (!savedBatch || remainingLegs.some(leg => leg.token === asset.address.toLowerCase())),
   );
+  // Resuming spends only the saved allocations of the selected remaining legs; a typed amount never applies.
   const remainingAmount = savedBatch
     ? formatUnits(
-        remainingLegs.reduce((sum, leg) => sum + BigInt(leg.sellAmount), 0n),
+        resumeAmount(
+          savedBatch,
+          selected.map(asset => asset.address),
+        ),
         6,
       )
     : undefined;
@@ -84,8 +90,8 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const currentInput = input?.key === inputKey || input?.key === "" ? input : undefined;
   const percentage = currentInput?.percentage ?? 50;
   const amount =
-    currentInput?.manual ??
     remainingAmount ??
+    currentInput?.manual ??
     (balance.data ? balancePercentage(balance.data.balance, balance.data.decimals, percentage) : "");
   const sliderPercentage =
     currentInput?.manual !== undefined && balance.data
@@ -207,6 +213,10 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   }
   async function execute() {
     if (lock.current || !usable || !quote) return;
+    if (savedBatch && !matchesSavedAllocations(quote.legs, savedBatch)) {
+      setError("The quote does not match the remaining purchases' original amounts. Refresh, or start over.");
+      return;
+    }
     lock.current = true;
     setError("");
     const bought: string[] = [];
@@ -341,8 +351,8 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           balanceError={balance.isError}
           amount={amount}
           percentage={sliderPercentage}
-          disabled={!!busy || !!hash}
-          percentageDisabled={!balance.data || !!busy || !!hash}
+          disabled={!!busy || !!hash || !!savedBatch}
+          percentageDisabled={!balance.data || !!busy || !!hash || !!savedBatch}
           loading={quotes.isFetching}
           directionLabel="USDG to selected stocks"
           onAmountChange={value => {
@@ -486,7 +496,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           <div className="bq-fine-print" role="status">
             <p>
               An earlier purchase from this wallet is incomplete: {savedBatch.bought.length} of {savedBatch.legs.length}{" "}
-              bought. Buy only the rest, at its original amount, or start over.
+              bought. Buy only the rest, at their original amounts, or start over to choose a new amount.
               {!selected.length && " The remaining stocks are not in this list."}
             </p>
             <button

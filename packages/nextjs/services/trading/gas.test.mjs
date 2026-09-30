@@ -14,6 +14,7 @@ let nativeBalance = 240n,
   receiptFails = false,
   receipt = null,
   seenNonce = null,
+  seenTx = null,
   confirmedNonce = 0;
 const queries = {};
 // Web Locks with `ifAvailable`, shared by every hook instance: the browser's per-origin lock manager.
@@ -51,6 +52,7 @@ const exports = {};
 const deps = {
   "@tanstack/react-query": {
     useQuery: options => {
+      options.refetch = async () => {};
       queries[options.queryKey[0]] = options;
       if (options.queryKey[0] === "trade-gas") query = options;
       return options;
@@ -95,7 +97,7 @@ const deps = {
       getBalance: async () => nativeBalance,
       readContract: async ({ functionName }) => (functionName === "allowance" ? allowance : 1000n),
       getTransactionReceipt: async () => receipt,
-      getTransaction: async () => (seenNonce === null ? null : { nonce: seenNonce }),
+      getTransaction: async () => seenTx ?? (seenNonce === null ? null : { nonce: seenNonce }),
       getTransactionCount: async () => confirmedNonce,
     },
   },
@@ -192,6 +194,62 @@ assert.deepEqual(
 );
 pending.clearBatch(4663, address);
 
+// A pasted cancellation hash confirms, but it is not the purchase: B stays unbought until the buyer answers, and
+// the two answers are recorded differently. A pasted sped-up copy of the same call does count.
+// The hook with its query's current data loaded, as the dialog would render it.
+const loadedHook = async () => {
+  const hookResult = exports.usePendingTrade(address);
+  const own = queries["pending-trade"];
+  own.data = await own.queryFn();
+  return hookResult;
+};
+const pendingFor = token => {
+  pending.saveBatch({
+    id: "batch-2",
+    taker: address,
+    chainId: 4663,
+    legs: [token].map(t => ({ token: t, sellAmount: "1" })),
+    bought: [],
+    createdAt: 1,
+  });
+  pending.savePendingTrade({
+    id: "op-b",
+    taker: address,
+    chainId: 4663,
+    kind: "tx",
+    ref: `0x${"b".repeat(64)}`,
+    tokens: [token],
+    batch: "batch-2",
+    to: router,
+    data: "0x1234",
+    createdAt: 1,
+  });
+};
+const replacement = `0x${"c".repeat(64)}`;
+const track = async () => {
+  (await loadedHook()).track(replacement);
+  receipt = { status: "success" };
+  const result = await reconcile();
+  receipt = null;
+  return result;
+};
+pendingFor(B);
+seenTx = { nonce: 9, from: address, to: address, input: "0x" };
+assert.equal((await track()).outcome, "unverified", "a cancellation is not the purchase");
+assert.equal(pending.readBatch(4663, address).bought.length, 0, "nothing marked bought");
+(await loadedHook()).resolve(false);
+assert.equal(pending.readPendingTrade(4663, address), null);
+assert.equal(pending.readBatch(4663, address).bought.length, 0, "'nothing was bought' marks nothing");
+pendingFor(B);
+seenTx = { nonce: 9, from: address, to: router, input: "0x1234" };
+assert.equal(await track(), null, "a sped-up copy of the same call settles the purchase");
+assert.deepEqual([...pending.readBatch(4663, address).bought], [B]);
+pendingFor(C);
+seenTx = null;
+(await loadedHook()).resolve(true);
+assert.deepEqual([...pending.readBatch(4663, address).bought], [C], "'went through' marks the legs bought");
+pending.clearBatch(4663, address);
+
 // F2: two callers (dialogs or tabs) for one wallet: only one may reach the wallet.
 const before = sent;
 const both = await Promise.allSettled([exports.useStockTrade().swap(quote), exports.useStockTrade().swap(quote)]);
@@ -199,5 +257,5 @@ assert.equal(sent - before, 1, "one wallet send");
 assert.equal(both.filter(result => result.status === "rejected").length, 1);
 assert.match(String(both.find(result => result.status === "rejected").reason), /another tab|still unresolved/);
 console.log(
-  "Gas and recovery: swap, approval/reset, ETH checks, no retry after receipt failure, replaced hash, late batch leg and single submitter passed.",
+  "Gas and recovery: swap, approval/reset, ETH checks, no retry after receipt failure, replaced hash, late batch leg, cancellation hash, manual answers and single submitter passed.",
 );

@@ -13,19 +13,36 @@ import { robinhoodChain } from "~~/services/atlas/client";
 export function PendingTradeNotice({ pending }: { pending: ReturnType<typeof usePendingTrade> }) {
   const [hash, setHash] = useState("");
   const trade = pending.data;
-  const checked = () => {
-    if (
-      window.confirm("I checked my wallet history: this trade was not sent, or its result already shows in my balance.")
-    )
-      pending.dismiss();
-  };
+  // Two different answers from wallet history, recorded differently: nothing bought, or the purchase went through.
+  const answers = (
+    <>
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm"
+        onClick={() => {
+          if (window.confirm("I checked my wallet history: this purchase was not sent, or it was cancelled."))
+            pending.resolve(false);
+        }}
+      >
+        Nothing was bought
+      </button>
+      <button
+        type="button"
+        className="btn btn-ghost btn-sm"
+        onClick={() => {
+          if (window.confirm("I checked my wallet history: this purchase went through and shows in my balance."))
+            pending.resolve(true);
+        }}
+      >
+        The purchase went through
+      </button>
+    </>
+  );
   if (!trade && pending.isError)
     return (
       <div className="bq-fine-print" role="alert">
         <p>The saved record of an earlier trade could not be read. Check your wallet history before trading again.</p>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={checked}>
-          I checked my wallet history
-        </button>
+        {answers}
       </div>
     );
   if (!trade)
@@ -36,13 +53,14 @@ export function PendingTradeNotice({ pending }: { pending: ReturnType<typeof use
           : "Your earlier trade failed on chain, so nothing was bought."}
       </p>
     ) : null;
-  const replaced = trade.outcome === "replaced";
   return (
     <div className="bq-fine-print" role="status">
       <p>
-        {replaced
-          ? "Your wallet replaced or dropped the earlier trade: its transaction will not confirm, but a sped-up copy may have. Check your wallet history, then track the replacement or confirm what happened."
-          : "An earlier trade from this wallet is still unresolved, so new trades are paused until it confirms or fails. This checks automatically."}
+        {trade.outcome === "replaced"
+          ? "Your wallet replaced or dropped the earlier trade: its transaction will not confirm, but a sped-up copy may have. Check your wallet history, then track the replacement or say what happened."
+          : trade.outcome === "unverified"
+            ? "The transaction you entered confirmed, but it is not this purchase (a different wallet, contract or call), for example a cancellation. Check your wallet history and say what happened."
+            : "An earlier trade from this wallet is still unresolved, so new trades are paused until it confirms or fails. This checks automatically."}
       </p>
       {trade.ref && trade.kind === "tx" && (
         <a
@@ -82,9 +100,7 @@ export function PendingTradeNotice({ pending }: { pending: ReturnType<typeof use
       >
         Track transaction
       </button>
-      <button type="button" className="btn btn-ghost btn-sm" onClick={checked}>
-        I checked my wallet history
-      </button>
+      {answers}
     </div>
   );
 }

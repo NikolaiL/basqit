@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
       throw new ScanError("Invalid transfer reference.", 400);
     // No sign-in required: recovery must work after a session expires. Status has its own provider capacity.
     const who = clientKey(request.headers);
-    if (who && !takeAllowance(`funding-status:${who}`, 20))
+    // Half the provider's status budget per client, enough to poll one transfer every 10 s; no one caller can take all.
+    if (who && !takeAllowance(`funding-status:${who}`, 10))
       throw new ScanError("Too many status checks. Try again in a minute.", 429);
     const result = await fundingRequest("status", p);
     // No recovery calldata is executed by the client. Only display progress and provider recovery information.
