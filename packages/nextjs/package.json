@@ -68,6 +68,7 @@
   },
   "packageManager": "yarn@4.13.0",
   "resolutions": {
-    "@coinbase/cdp-sdk": "1.52.0"
+    "@coinbase/cdp-sdk": "1.52.0",
+    "burner-connector/viem": "2.56.8"
   }
 }
