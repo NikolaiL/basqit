@@ -169,14 +169,17 @@ export async function reconcilePendingTrade(
       sent.from?.toLowerCase() === trade.taker.toLowerCase() &&
       sent.to?.toLowerCase() === trade.to.toLowerCase() &&
       sent.input?.toLowerCase() === trade.data.toLowerCase() &&
-      // A replacement reuses the original nonce; an identical call from another time is a different purchase.
-      (trade.nonce === undefined || sent.nonce === trade.nonce);
-    if (!same) return { outcome: "unverified", nonce: sent.nonce };
+      // A replacement reuses the original nonce; an identical call from another time is a different purchase. Without
+      // the original nonce there is no proof, so the buyer answers from wallet history instead.
+      trade.nonce !== undefined &&
+      sent.nonce === trade.nonce;
+    // Never report a pasted transaction's nonce: it is not evidence about the original.
+    if (!same) return { outcome: "unverified" };
     return { outcome: receipt.status === "success" ? "success" : "failure" };
   }
   const seen = lookup.transaction ? await lookup.transaction(hash).catch(() => null) : null;
-  // The first nonce learned is kept: a pasted hash must never move the binding to another transaction.
-  const nonce = trade.nonce ?? seen?.nonce;
+  // The first nonce learned is kept, and only from our own submission: a pasted hash must never become the original.
+  const nonce = trade.nonce ?? (trade.tracked ? undefined : seen?.nonce);
   if (nonce === undefined || !lookup.confirmedNonce) return { outcome: "unknown", nonce };
   const confirmed = await lookup.confirmedNonce().catch(() => undefined);
   // The nonce is used, yet this hash has no receipt: it was replaced (sped up or cancelled) or dropped.

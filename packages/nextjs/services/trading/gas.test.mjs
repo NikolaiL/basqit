@@ -251,6 +251,22 @@ seenTx = { nonce: 4, from: address, to: router, input: "0x1234" };
 assert.equal((await track()).outcome, "unverified", "identical call, other nonce");
 assert.equal(pending.readBatch(4663, address).bought.length, 0);
 pending.clearPendingTrade(4663, address);
+// Original nonce never learned: an identical call proves nothing, on every poll, and its nonce is never adopted.
+pendingFor(B);
+seenTx = { nonce: 9, from: address, to: router, input: "0x1234" };
+assert.equal((await track()).outcome, "unverified", "unknown original nonce");
+for (let poll = 0; poll < 2; poll++) {
+  receipt = { status: "success" };
+  assert.equal((await reconcile()).outcome, "unverified", "still unverified on later polls");
+  receipt = null;
+}
+assert.equal(
+  pending.readPendingTrade(4663, address).nonce,
+  undefined,
+  "a pasted hash never supplies the original nonce",
+);
+assert.equal(pending.readBatch(4663, address).bought.length, 0);
+pending.clearPendingTrade(4663, address);
 pendingFor(B);
 pending.savePendingTrade({ ...pending.readPendingTrade(4663, address), nonce: 9 });
 seenTx = { nonce: 9, from: address, to: router, input: "0x1234" };
