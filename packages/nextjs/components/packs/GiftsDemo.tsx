@@ -95,7 +95,10 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
       if (!raw) return [];
       const decimals = tokens.data?.[token.toLowerCase()]?.decimals ?? 18;
       const invalid = { token, amount: 0n, over: false, invalid: true };
-      if (!/^(\d+\.?\d*|\.\d+)$/.test(raw) || (as === "buy" && price === 0n)) return [invalid];
+      // Precision beyond the token's decimals would be rounded silently, so it is rejected like any other typo.
+      const places = raw.split(".")[1]?.length ?? 0;
+      if (!/^(\d+\.?\d*|\.\d+)$/.test(raw) || places > (as === "buy" ? 6 : decimals) || (as === "buy" && price === 0n))
+        return [invalid];
       const amount = as === "buy" ? (parseUnits(raw, 6) * 10n ** 18n) / price : parseUnits(raw, decimals);
       if (amount === 0n) return /[1-9]/.test(raw) ? [invalid] : [];
       return [{ token, amount, over: as === "buy" ? amount > stock : amount > balance, invalid: false }];
