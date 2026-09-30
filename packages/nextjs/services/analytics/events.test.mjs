@@ -1,32 +1,34 @@
-import {
-  discoveryText,
-  initializeAnalytics,
-  trackDiscovery,
-  trackEvent,
-  trackFundingResult,
-  trackSwap,
-} from "./events.ts";
 import assert from "node:assert/strict";
 import { BaseError, UserRejectedRequestError } from "viem";
+
+// Without a configured ID nothing is queued or sent.
+delete process.env.NEXT_PUBLIC_GA_ID;
+globalThis.window = {};
+const off = await import("./events.ts?unconfigured");
+off.trackEvent("anything", { a: 1 });
+assert.equal(window.dataLayer, undefined, "analytics stays off without NEXT_PUBLIC_GA_ID");
+delete globalThis.window;
+
+process.env.NEXT_PUBLIC_GA_ID = "G-TEST";
+const { discoveryShape, initializeAnalytics, trackDiscovery, trackEvent, trackFundingResult, trackSwap } =
+  await import("./events.ts");
 
 // SSR does not need a browser, and early events queue before gtag.js loads.
 trackEvent("server_noop");
 globalThis.window = {};
-trackDiscovery("search", "a".repeat(100) + "б".repeat(80));
+const secret = "my savings are at 0x1111111111111111111111111111111111111111";
+trackDiscovery("search", secret);
 initializeAnalytics();
 initializeAnalytics();
 const commands = () => window.dataLayer.map(args => [...args]);
 assert.equal(commands().filter(c => c[0] === "config").length, 1);
-assert.equal(commands().find(c => c[0] === "config")[1], "G-0XNNWFK1TV");
-const text = "AI companies ".repeat(13).slice(0, 180);
-const parts = discoveryText(text);
-assert.equal(parts.discovery_text + parts.discovery_text_more, text);
-assert.ok(Object.values(parts).every(value => value.length <= 100));
-assert.equal(commands().at(-1)[2].discovery_text_more, "б".repeat(80));
-const emojiText = "a".repeat(99) + "🚀" + " stocks";
-const emojiParts = discoveryText(emojiText);
-assert.equal(emojiParts.discovery_text + emojiParts.discovery_text_more, emojiText);
-assert.ok(emojiParts.discovery_text.endsWith("🚀"));
+assert.equal(commands().find(c => c[0] === "config")[1], "G-TEST");
+// Typed discovery text never leaves the browser; only a coarse length bucket does.
+assert.deepEqual(commands().at(-1)[2], { discovery_length: "21-60" });
+assert.ok(!JSON.stringify(window.dataLayer).includes("savings"));
+assert.deepEqual(discoveryShape(""), { discovery_length: "0" });
+assert.deepEqual(discoveryShape("AI"), { discovery_length: "1-20" });
+assert.deepEqual(discoveryShape("🚀".repeat(21)), { discovery_length: "21-60" });
 
 const legs = [
   { swap_type: "batch", sell_token: "USDG", buy_token: "AAPL" },
@@ -124,5 +126,5 @@ await assert.rejects(
   error => error === original,
 );
 console.log(
-  "Analytics: queued GA init, full Discover text, batch legs, confirmed/rejected/uncertain swaps and nonblocking delivery passed.",
+  "Analytics: opt-in GA init, no Discover text, batch legs, confirmed/rejected/uncertain swaps and nonblocking delivery passed.",
 );

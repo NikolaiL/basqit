@@ -1,6 +1,7 @@
 import { BaseError } from "viem";
 
-export const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-0XNNWFK1TV";
+// Off unless the environment sets an ID: local and preview builds send nothing by default.
+export const GA_ID = process.env.NEXT_PUBLIC_GA_ID?.trim() ?? "";
 type Parameters = Record<string, string | number | boolean | undefined>;
 declare global {
   interface Window {
@@ -10,7 +11,7 @@ declare global {
 }
 let initialized = false;
 export function initializeAnalytics() {
-  if (typeof window === "undefined" || initialized) return;
+  if (typeof window === "undefined" || initialized || !GA_ID) return;
   window.dataLayer = window.dataLayer || [];
   window.gtag =
     window.gtag ||
@@ -30,15 +31,13 @@ export function trackEvent(name: string, parameters: Parameters = {}) {
     // Analytics must never interrupt wallet actions or navigation.
   }
 }
-export function discoveryText(text: string) {
-  const characters = Array.from(text);
-  return {
-    discovery_text: characters.slice(0, 100).join(""),
-    discovery_text_more: characters.slice(100, 180).join(""),
-  };
+/** Typed themes can hold anything a person writes, so only their rough length leaves the browser. */
+export function discoveryShape(text: string) {
+  const length = Array.from(text.trim()).length;
+  return { discovery_length: length === 0 ? "0" : length <= 20 ? "1-20" : length <= 60 ? "21-60" : "61+" };
 }
 export function trackDiscovery(action: string, text: string, parameters: Parameters = {}) {
-  trackEvent(`discovery_${action}`, { ...parameters, ...discoveryText(text) });
+  trackEvent(`discovery_${action}`, { ...parameters, ...discoveryShape(text) });
 }
 
 // One event per swap leg; a shared attempt ID groups an atomic stock purchase.
