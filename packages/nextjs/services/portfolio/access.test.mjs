@@ -36,7 +36,7 @@ assert.equal((await GET(request())).status, 401);
 assert.equal((await GET(request("forged"))).status, 401);
 assert.equal(globalThis.portfolioCalls, 0);
 const account = privateKeyToAccount(generatePrivateKey());
-const challenge = issueChallenge();
+const challenge = await issueChallenge();
 const message = createSiweMessage({
   address: account.address,
   chainId: 1,

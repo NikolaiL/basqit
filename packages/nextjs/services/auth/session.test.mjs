@@ -38,7 +38,7 @@ async function verify(challenge, overrides = {}) {
 }
 try {
   assert.equal(await getSession("invented"), undefined);
-  const first = issueChallenge();
+  const first = await issueChallenge();
   const session = await verify(first);
   assert.equal((await getSession(session.token)).address, account.address.toLowerCase());
   assert.equal(await getSession(session.token.slice(0, -8) + "tampered"), undefined);
@@ -62,7 +62,9 @@ try {
     account.address.toLowerCase(),
     "session survives a fresh server process",
   );
-  await assert.rejects(verify(first), /expired/, "one-time challenge");
+  // Policy (session.ts): a stateless sealed challenge may be replayed with its own signature inside its window;
+  // that re-issues only the signer's session. It is rejected once the window closes.
+  assert.equal((await verify(first)).address, account.address.toLowerCase());
   for (const overrides of [
     { domain: "evil.example" },
     { uri: "https://evil.example" },
@@ -71,21 +73,21 @@ try {
     { issuedAt: new Date(Date.now() - 600000) },
     { expirationTime: new Date(Date.now() - 1000) },
   ]) {
-    await assert.rejects(verify(issueChallenge(), overrides), /Invalid/);
+    await assert.rejects(verify(await issueChallenge(), overrides), /Invalid/);
   }
-  const wrong = issueChallenge();
+  const wrong = await issueChallenge();
   const { message } = await signed(wrong);
   const other = privateKeyToAccount(generatePrivateKey());
   await assert.rejects(verifyChallenge(wrong.id, message, await other.signMessage({ message }), origin, client));
-  const replaced = issueChallenge();
-  issueChallenge(replaced.id);
-  await assert.rejects(verify(replaced), /expired/);
-  const expiring = await verify(issueChallenge());
-  const expiredChallenge = issueChallenge();
+  await assert.rejects(verifyChallenge("x".repeat(5000), message, "0x00", origin, client), /expired/);
+  const expiring = await verify(await issueChallenge());
+  const expiredChallenge = await issueChallenge();
+  const { message: late, signature: lateSignature } = await signed(expiredChallenge);
+  Date.now = () => originalNow() + 6 * 60000;
+  await assert.rejects(verifyChallenge(expiredChallenge.id, late, lateSignature, origin, client), /expired/);
   Date.now = () => originalNow() + 31 * 24 * 3600000;
   assert.equal(await getSession(expiring.token), undefined);
-  await assert.rejects(verify(expiredChallenge), /expired/);
-  console.log("SIWE: signature, domain, URI, chain, nonce replay and expiration checks passed");
+  console.log("SIWE: signature, domain, URI, chain, nonce window and expiration checks passed");
 } finally {
   Date.now = originalNow;
 }

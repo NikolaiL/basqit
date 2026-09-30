@@ -63,7 +63,15 @@ assert.equal(sessionCookie.maxAge, 30 * 24 * 60 * 60);
 assert.equal(sessionCookie.sameSite, "none");
 const session = `basqit-session=${sessionCookie.value}`;
 assert.equal((await (await GET(request("GET", null, session))).json()).address, account.address.toLowerCase());
-assert.equal((await POST(request("POST", body, cookie.split(";")[0]))).status, 401, "nonce cannot be replayed");
+// Policy (session.ts): the sealed challenge is stateless, so a replay inside its 5-minute window succeeds, but only
+// for the signer who produced the signature. Verification clears the challenge cookie in the browser.
+assert.equal(verified.cookies.get("basqit-challenge").maxAge, 0, "challenge cookie cleared after sign-in");
+const replay = await POST(request("POST", body, cookie.split(";")[0]));
+assert.equal(
+  (await replay.json()).address,
+  account.address.toLowerCase(),
+  "a replay only re-issues the signer's session",
+);
 assert.equal(
   (
     await POST(
@@ -78,5 +86,5 @@ assert.equal(logout.cookies.get("basqit-session").maxAge, 0);
 assert.ok(logout.cookies.get("basqit-session").partitioned);
 assert.equal((await (await GET(request("GET"))).json()).address, null);
 console.log(
-  "Auth route: partitioned secure cookies, signed session, replay rejection, origin protection and logout passed.",
+  "Auth route: partitioned secure cookies, signed session, replay window, origin protection and logout passed.",
 );

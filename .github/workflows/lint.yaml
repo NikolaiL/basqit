@@ -1,4 +1,4 @@
-name: Lint
+name: CI
 
 on:
   push:
@@ -8,40 +8,53 @@ on:
     branches:
       - main
 
+# Actions are pinned to commit SHAs (tag in the comment); bump them deliberately after review.
 jobs:
   ci:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: [lts/*]
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup node env
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 24.12.0
           cache: yarn
 
       - name: Install dependencies
         run: yarn install --immutable
-      
+
       - name: Install foundry-toolchain
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
-          version: nightly
+          version: v1.8.3
+
+      # Fork tests need a live RPC and stay opt-in; invariant depth is bounded to keep the gate predictable.
+      - name: Contract tests
+        env:
+          FOUNDRY_INVARIANT_RUNS: 100
+          FOUNDRY_INVARIANT_DEPTH: 50
+        run: yarn foundry:test --no-match-path 'test/fork/*'
 
       - name: Run foundry node, deploy contracts (& generate contracts typescript output)
         env:
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-        run: yarn chain & yarn deploy
+        run: |
+          yarn chain &
+          for i in $(seq 60); do cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1 && break; sleep 1; done
+          cast chain-id --rpc-url http://127.0.0.1:8545
+          yarn deploy
 
       - name: Run nextjs lint
         run: yarn next:lint --max-warnings=0
 
       - name: Check typings on nextjs
         run: yarn next:check-types
+
+      - name: Frontend tests (offline)
+        run: yarn workspace @se-2/nextjs test
+
+      - name: Production build
+        run: yarn next:build

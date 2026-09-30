@@ -1,5 +1,13 @@
-import { readQuoteDetails } from "./quote-details.ts";
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+
+// Next resolves extensionless imports; the native test runner needs the extension added.
+registerHooks({
+  resolve(specifier, context, next) {
+    return next(specifier.startsWith("./") && !/\.[a-z]+$/.test(specifier) ? `${specifier}.ts` : specifier, context);
+  },
+});
+const { readQuoteDetails } = await import("./quote-details.ts");
 
 const originalFetch = globalThis.fetch;
 const originalNow = Date.now;

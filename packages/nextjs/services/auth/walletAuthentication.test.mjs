@@ -171,6 +171,8 @@ vm.runInNewContext(buttonCode, {
     if (name === "@rainbow-me/rainbowkit") return { ConnectButton: { Custom: "connect" } };
     if (name === "@scaffold-ui/hooks") return { getBlockExplorerAddressLink: () => "" };
     if (name.endsWith("useTargetNetwork")) return { useTargetNetwork: () => ({ targetNetwork: { id: 1 } }) };
+    if (name === "~~/components/MiniappProvider")
+      return { useMiniapp: () => ({ isMiniApp: false, connectWallet: async () => {}, walletError: undefined }) };
     return {};
   },
 });
