@@ -155,7 +155,7 @@ export function TradeDialog({
             <h2 id="trade-title">
               {side === "buy" ? "Buy" : "Sell"} {asset.symbol}
             </h2>
-            <small>Robinhood Chain</small>
+            <small>Robinhood Chain · Uses real funds</small>
           </div>
         </div>
         <div className="bq-trade-body">

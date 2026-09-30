@@ -5,7 +5,7 @@ import { WaitlistForm } from "~~/components/waitlist/WaitlistForm";
 
 export const metadata: Metadata = {
   title: "Packs",
-  description: "Open a pack of real Stock Tokens for a small fixed price. In design; not on sale.",
+  description: "Packs of Stock Tokens for a small fixed price. In design; testnet demo only, not on sale.",
 };
 
 export default function PacksPage() {
@@ -13,11 +13,12 @@ export default function PacksPage() {
     <main className="bq-dashboard bq-soon">
       <section className="bq-soon-hero">
         <div>
-          <p className="bq-soon-status">In design</p>
-          <h1>Open a pack. Pull real shares.</h1>
+          <p className="bq-soon-status">In design · testnet demo below</p>
+          <h1>Explore a pack of Stock Tokens.</h1>
           <p className="bq-soon-lead">
-            One small, fixed price. A random mix of real Stock Tokens inside, straight to your wallet. Some packs are
-            worth less than you paid.
+            One small, fixed price. A random mix of Stock Tokens inside, straight to your wallet. Some packs are worth
+            less than you paid. The demo below uses test tokens with no value; public availability remains subject to
+            review.
           </p>
           <WaitlistForm product="packs" cta="Hear first when Packs open" confetti={["RKLB", "NVDA", "TSLA"]} />
         </div>

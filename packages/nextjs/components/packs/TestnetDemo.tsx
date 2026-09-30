@@ -87,6 +87,7 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
   return (
     <section className="bq-demo" aria-labelledby="bq-demo-title">
       <h2 id="bq-demo-title">{title}</h2>
+      <p className="bq-soon-status">Testnet · Test tokens only</p>
       <p className="bq-demo-lead">
         Everything below runs on Robinhood Chain testnet with test tokens that have no value.
         {kind === "packs" && (

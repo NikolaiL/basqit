@@ -365,8 +365,9 @@ function WalletFunding({
                 <div>
                   <h2 id={titleId}>{pending ? `${destination} transfer` : `Get ${destination}`}</h2>
                   <small>
+                    {pending ? "Track your transfer" : "Uses real funds from your wallet on the source network. "}
                     {pending
-                      ? "Track your transfer"
+                      ? ""
                       : destination === "ETH"
                         ? "You need ETH on Robinhood Chain for stock purchases. Suggested top-up: $1–2 of ETH. Choose your amount; network fees vary."
                         : "You need USDG to buy stock tokens on Robinhood Chain."}

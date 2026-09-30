@@ -331,6 +331,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         <DialogClose label="Close purchase" disabled={!!busy} onClick={onClose} />
         <div className="bq-discover-detail-heading">
           <h2 id="batch-buy-title">Buy these stocks</h2>
+          <small>Robinhood Chain · Uses real funds</small>
         </div>
         <p>
           {selected.length
