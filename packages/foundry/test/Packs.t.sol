@@ -280,6 +280,37 @@ contract PacksTest is Test {
         packs.withdrawProceeds(roundId, alice);
     }
 
+    function test_ClaimAllAndRefundAllTakeOnlyTheCallersPacks() public {
+        uint256 roundId = _open(4);
+        _sellOut(roundId, 4); // alice packs 0-1, bob packs 2-3
+        dice.reveal(_draw(roundId), bytes32(uint256(11)));
+        vm.expectRevert(abi.encodeWithSelector(BasqitPacks.WrongStatus.selector, BasqitPacks.Status.Seeded));
+        vm.prank(alice);
+        packs.claimAll(roundId);
+        packs.finalize(roundId);
+        packs.claim(roundId, 1); // one of alice's packs claimed on her behalf first
+        vm.prank(alice);
+        assertEq(packs.claimAll(roundId), 1, "only the unclaimed one");
+        assertTrue(packs.settled(roundId, 0) && !packs.settled(roundId, 2), "bob's packs untouched");
+        vm.prank(alice);
+        vm.expectRevert(BasqitPacks.NothingToSettle.selector);
+        packs.claimAll(roundId);
+        vm.prank(bob);
+        assertEq(packs.claimAll(roundId), 2);
+        assertEq(nvda.balanceOf(address(packs)) + aapl.balanceOf(address(packs)), 0, "every prize paid");
+
+        packs.clearTemplate();
+        uint256 unsold = _open(3);
+        vm.prank(alice);
+        packs.buy(unsold, 2, alice);
+        vm.warp(block.timestamp + SALE + 1);
+        packs.cancel(unsold);
+        uint256 before = usdg.balanceOf(alice);
+        vm.prank(alice);
+        assertEq(packs.refundAll(unsold), 2);
+        assertEq(usdg.balanceOf(alice) - before, 2 * PRICE);
+    }
+
     function test_RenounceDisabled() public {
         vm.expectRevert(BasqitPacks.RenounceDisabled.selector);
         packs.renounceOwnership();

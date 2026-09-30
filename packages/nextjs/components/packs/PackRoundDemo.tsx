@@ -106,6 +106,7 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
   if (!data || data.roundId === 0n) return null;
   const { round, prizes, sold, mine, fee, now, roundId, latest, canStartNext } = data;
   const left = round.size - sold;
+  const pending = mine.filter(pack => !pack.settled);
   const status = STATUS[round.status];
   const expired =
     (round.status === 1 && now > Number(round.saleDeadline)) ||
@@ -257,6 +258,24 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
       {mine.length > 0 && (
         <div className="bq-demo-mine">
           <h4>Your packs</h4>
+          {pending.length > 1 && (round.status === 5 || round.status === 6) && (
+            <button
+              className="btn btn-primary btn-sm bq-demo-all"
+              disabled={!ready || !!busy}
+              onClick={() =>
+                // One transaction in any wallet: the contract settles every pack the caller owns in the round.
+                act("all", () =>
+                  write({ ...packs, functionName: round.status === 5 ? "claimAll" : "refundAll", args: [roundId] }),
+                )
+              }
+            >
+              {busy === "all"
+                ? round.status === 5
+                  ? "Claiming…"
+                  : "Refunding…"
+                : `${round.status === 5 ? "Claim" : "Refund"} all ${pending.length}`}
+            </button>
+          )}
           <ul>
             {mine.map(pack => (
               <li key={pack.packId}>

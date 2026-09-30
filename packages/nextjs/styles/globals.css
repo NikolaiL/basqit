@@ -3738,3 +3738,8 @@ html [data-rk] {
     animation: none;
   }
 }
+
+/* "Claim all" sits under the heading, clear of the per-pack buttons. */
+.bq-demo-all {
+  margin: 4px 0 12px;
+}

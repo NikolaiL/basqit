@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   46630: {
     TestnetToken: {
-      address: "0xbe4f43e64192b5a7f250e438084b90ab3061c01a",
+      address: "0xe3dd0683d1df8ae757c615a52875b39c33867eb4",
       abi: [
         {
           type: "constructor",
@@ -503,10 +503,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126625788,
+      deployedOnBlock: 126655827,
     },
     BasqitTestnetFaucet: {
-      address: "0xa35bf7aa470890baf375a6c93f619d556b9388fa",
+      address: "0x651cbf57313e1965ad47d6de85038f0743462a72",
       abi: [
         {
           type: "constructor",
@@ -678,10 +678,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626000,
+      deployedOnBlock: 126656038,
     },
     BasqitFactory: {
-      address: "0x5d8d033074fe3643ae021b2adac81498f4e047a4",
+      address: "0x207d48ca51a7539fe362e0eb74d053a04bbb84e4",
       abi: [
         {
           type: "constructor",
@@ -1311,10 +1311,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626038,
+      deployedOnBlock: 126656069,
     },
     TestnetSwapAdapter: {
-      address: "0x78d609c589a53464dd02118343c9d76561a37308",
+      address: "0x6f182d2c0b5fdad6a18dc344c40bd5ceb9416d6b",
       abi: [
         {
           type: "constructor",
@@ -1715,10 +1715,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626047,
+      deployedOnBlock: 126656093,
     },
     BasqitPurchaseRouter: {
-      address: "0x361408e1cb1b131011cfaa696e5b7effc9b8af67",
+      address: "0x6572f357244f17b0068428f5a11e86c206512ca0",
       abi: [
         {
           type: "constructor",
@@ -2376,10 +2376,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626326,
+      deployedOnBlock: 126656314,
     },
     BasqitSellRouter: {
-      address: "0x52711e4db7912049644df6e0492050aa6a2850da",
+      address: "0x2f89c1f1d9c896cf2222880a9b66a1d8e1bc8dcb",
       abi: [
         {
           type: "constructor",
@@ -3036,10 +3036,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626341,
+      deployedOnBlock: 126656333,
     },
     BasqitGifts: {
-      address: "0x4f40a6dcaf802d4a1e5d82705697aa7c8181d9ae",
+      address: "0x7f023746437a68dc5def93b9f520a75113634e99",
       abi: [
         {
           type: "constructor",
@@ -4209,10 +4209,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626400,
+      deployedOnBlock: 126656382,
     },
     BasqitGiftRouter: {
-      address: "0x821c02fdc2c5fccd16e182df059c4300098aa4f1",
+      address: "0x6ad77e91195f3f11ce98ff25975b6b8646524c18",
       abi: [
         {
           type: "constructor",
@@ -5138,10 +5138,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626420,
+      deployedOnBlock: 126656398,
     },
     BasqitPacks: {
-      address: "0x6eb85b0d7b02dac1ed9c7d027747551d99e1beda",
+      address: "0x44e21187e7be16cf4ace97cc035f6b0541209756",
       abi: [
         {
           type: "constructor",
@@ -5329,6 +5329,25 @@ const deployedContracts = {
             },
           ],
           outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "claimAll",
+          inputs: [
+            {
+              name: "roundId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [
+            {
+              name: "count",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
           stateMutability: "nonpayable",
         },
         {
@@ -5601,6 +5620,25 @@ const deployedContracts = {
             },
           ],
           outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "refundAll",
+          inputs: [
+            {
+              name: "roundId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [
+            {
+              name: "count",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
           stateMutability: "nonpayable",
         },
         {
@@ -6416,6 +6454,11 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "NothingToSettle",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "OnlyEntropy",
           inputs: [],
         },
@@ -6543,7 +6586,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126626442,
+      deployedOnBlock: 126656412,
     },
   },
 } as const;

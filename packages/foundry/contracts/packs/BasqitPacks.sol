@@ -141,6 +141,7 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     error NotCancellable();
     error AlreadySettled(uint256 packId);
     error NoFeeToRefund();
+    error NothingToSettle();
     error EthTransferFailed();
     error RenounceDisabled();
     error NotTestnet();
@@ -370,6 +371,19 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         _claim(roundId, packId, to);
     }
 
+    /// @notice Claims every unclaimed pack the caller owns in a finalized round, in one transaction. If one prize
+    /// token is paused the whole call reverts; `claim` or `claimTo` still work pack by pack.
+    function claimAll(uint256 roundId) external nonReentrant returns (uint256 count) {
+        address[] storage owners = _owners[roundId];
+        for (uint256 packId = 0; packId < owners.length; packId++) {
+            if (owners[packId] == msg.sender && !settled[roundId][packId]) {
+                _claim(roundId, packId, msg.sender);
+                count++;
+            }
+        }
+        if (count == 0) revert NothingToSettle();
+    }
+
     function _claim(uint256 roundId, uint256 packId, address to) private {
         Round storage round = _rounds[roundId];
         if (round.status != Status.Finalized) revert WrongStatus(round.status);
@@ -415,6 +429,18 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         if (_owners[roundId][packId] != msg.sender) revert NotPackOwner(packId);
         if (to == address(0) || to == address(this)) revert ZeroAddress();
         _refund(roundId, packId, to);
+    }
+
+    /// @notice Refunds every unrefunded pack the caller owns in a cancelled round, in one transaction.
+    function refundAll(uint256 roundId) external nonReentrant returns (uint256 count) {
+        address[] storage owners = _owners[roundId];
+        for (uint256 packId = 0; packId < owners.length; packId++) {
+            if (owners[packId] == msg.sender && !settled[roundId][packId]) {
+                _refund(roundId, packId, msg.sender);
+                count++;
+            }
+        }
+        if (count == 0) revert NothingToSettle();
     }
 
     function _refund(uint256 roundId, uint256 packId, address to) private {
