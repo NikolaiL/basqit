@@ -30,9 +30,18 @@ assert.deepEqual(discoveryShape(""), { discovery_length: "0" });
 assert.deepEqual(discoveryShape("AI"), { discovery_length: "1-20" });
 assert.deepEqual(discoveryShape("🚀".repeat(21)), { discovery_length: "21-60" });
 
+// Callers may pass more than the emitter allows; none of it may reach analytics.
+const sensitive = {
+  sell_token: "0x2222222222222222222222222222222222222222",
+  buy_token: "0x3333333333333333333333333333333333333333",
+  sell_amount_raw: "123456789",
+  quoted_buy_amount_raw: "987654321",
+  taker: "0x1111111111111111111111111111111111111111",
+  hash: `0x${"a".repeat(64)}`,
+};
 const legs = [
-  { swap_type: "batch", sell_token: "USDG", buy_token: "AAPL" },
-  { swap_type: "batch", sell_token: "USDG", buy_token: "NVDA" },
+  { swap_type: "batch", provider: "uniswap", source_chain: 4663, destination_chain: 4663, fee_bps: 15, ...sensitive },
+  { swap_type: "batch", provider: "lifi", source_chain: 4663, destination_chain: 4663, fee_bps: 15, ...sensitive },
 ];
 for (const [name, params, action, stages] of [
   [
@@ -98,6 +107,8 @@ for (const [name, params, action, stages] of [
   );
   assert.equal(new Set(events.map(c => c[2].attempt_id)).size, 1, "same attempt across legs and stages");
   assert.ok(events.every(c => c[2].token_count === params.length));
+  const sent = JSON.stringify(events);
+  for (const value of Object.values(sensitive)) assert.ok(!sent.includes(value), `${name}: ${value} not sent`);
 }
 
 const storage = new Map();

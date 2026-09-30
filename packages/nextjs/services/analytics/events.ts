@@ -40,14 +40,28 @@ export function trackDiscovery(action: string, text: string, parameters: Paramet
   trackEvent(`discovery_${action}`, { ...parameters, ...discoveryShape(text) });
 }
 
-// One event per swap leg; a shared attempt ID groups an atomic stock purchase.
-export async function trackSwap<T>(legs: Parameters[], execute: (submitted: () => void) => Promise<T>): Promise<T> {
+/** What a swap event may say: lifecycle, provider and networks. Never amounts, tokens, wallets or hashes. */
+export type SwapLeg = {
+  swap_type: string;
+  provider: string;
+  source_chain: number;
+  destination_chain: number;
+  fee_bps: number;
+};
+
+// One event per swap leg; a shared attempt ID groups an atomic stock purchase. Fields are copied by name, so a
+// caller passing more (amounts, token addresses) can never widen what is sent.
+export async function trackSwap<T>(legs: SwapLeg[], execute: (submitted: () => void) => Promise<T>): Promise<T> {
   const attemptId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   let sent = false;
   const emit = (stage: string) =>
     legs.forEach((leg, index) =>
       trackEvent(`swap_${stage}`, {
-        ...leg,
+        swap_type: leg.swap_type,
+        provider: leg.provider,
+        source_chain: leg.source_chain,
+        destination_chain: leg.destination_chain,
+        fee_bps: leg.fee_bps,
         attempt_id: attemptId,
         leg_index: index,
         token_count: legs.length,

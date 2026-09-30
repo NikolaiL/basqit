@@ -136,12 +136,6 @@ export function useStockTrade() {
       provider: leg.provider,
       source_chain: robinhoodChain.id,
       destination_chain: robinhoodChain.id,
-      sell_token: leg.sellToken,
-      buy_token: leg.buyToken,
-      sell_amount_raw: leg.sellAmount,
-      sell_decimals: leg.sellDecimals,
-      buy_decimals: leg.buyDecimals,
-      quoted_buy_amount_raw: leg.buyAmount,
       fee_bps: leg.basqitFee.bps,
     }));
 
@@ -220,42 +214,27 @@ export function useStockTrade() {
 
   async function swap(quote: TradeQuote | BatchStep, batch?: string) {
     const legs = "legs" in quote ? quote.legs : [quote];
-    return trackSwap(
-      legs.map(leg => ({
-        swap_type: "legs" in quote ? "batch" : "single",
-        provider: leg.provider,
-        source_chain: robinhoodChain.id,
-        destination_chain: robinhoodChain.id,
-        sell_token: leg.sellToken,
-        buy_token: leg.buyToken,
-        sell_amount_raw: leg.sellAmount,
-        sell_decimals: leg.sellDecimals,
-        buy_decimals: leg.buyDecimals,
-        quoted_buy_amount_raw: leg.buyAmount,
-        fee_bps: leg.basqitFee.bps,
-      })),
-      async submitted => {
-        await checkWallet(quote);
-        if (Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
-        const [balance, allowance] = await Promise.all([
-          atlasClient.readContract({
-            address: quote.sellToken,
-            abi: tradeTokenAbi,
-            functionName: "balanceOf",
-            args: [quote.taker],
-          }),
-          atlasClient.readContract({
-            address: quote.sellToken,
-            abi: tradeTokenAbi,
-            functionName: "allowance",
-            args: [quote.taker, quote.spender],
-          }),
-        ]);
-        if (balance < BigInt(quote.sellAmount) || allowance < BigInt(quote.sellAmount))
-          throw new Error("Balance or allowance changed. Request a new quote.");
-        return send(quote, quote.transaction.to, quote.transaction.data, { batch }, submitted);
-      },
-    );
+    return trackSwap(events(legs, "legs" in quote), async submitted => {
+      await checkWallet(quote);
+      if (Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
+      const [balance, allowance] = await Promise.all([
+        atlasClient.readContract({
+          address: quote.sellToken,
+          abi: tradeTokenAbi,
+          functionName: "balanceOf",
+          args: [quote.taker],
+        }),
+        atlasClient.readContract({
+          address: quote.sellToken,
+          abi: tradeTokenAbi,
+          functionName: "allowance",
+          args: [quote.taker, quote.spender],
+        }),
+      ]);
+      if (balance < BigInt(quote.sellAmount) || allowance < BigInt(quote.sellAmount))
+        throw new Error("Balance or allowance changed. Request a new quote.");
+      return send(quote, quote.transaction.to, quote.transaction.data, { batch }, submitted);
+    });
   }
   return { approve, swap, buyAtomic };
 }
