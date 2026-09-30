@@ -51,7 +51,18 @@
   },
   "resolutions": {
     "@coinbase/cdp-sdk": "1.52.0",
-    "burner-connector/viem": "2.56.8"
+    "burner-connector/viem": "2.56.8",
+    "axios@npm:1.16.0": "1.20.0",
+    "elliptic@npm:6.5.4": "6.6.1",
+    "js-yaml@npm:4.1.1": "4.3.2",
+    "minimatch@npm:10.1.1": "10.2.6",
+    "path-to-regexp@npm:6.1.0": "6.3.0",
+    "path-to-regexp@npm:8.2.0": "8.4.2",
+    "path-to-regexp@npm:8.3.0": "8.4.2",
+    "smol-toml@npm:1.5.2": "1.9.0",
+    "tar@npm:7.5.7": "7.5.22",
+    "ws@npm:7.4.6": "7.5.13",
+    "ws@npm:8.18.0": "8.21.3"
   },
   "devDependencies": {
     "husky": "~9.1.6",
