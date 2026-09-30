@@ -8,9 +8,12 @@ cd "$(dirname "$0")/.."
 set -a && . ./.env && set +a
 URL="${BASQIT_URL:-http://localhost:3000}"
 RPC=robinhoodTestnet
-JSON=../nextjs/contracts/packsTestnet.json
-SHOP=$(node -p "require('$JSON').deployment.swapAdapter")
-for token in $(node -p "require('$JSON').deployment.stocks.join(' ')"); do
+# Addresses from the latest `yarn deploy --network robinhoodTestnet` broadcast.
+RUN=broadcast/Deploy.s.sol/46630/run-latest.json
+addr() { node -p "require('./$RUN').transactions.filter(t => t.contractName === '$1').at(-1).contractAddress"; }
+SHOP=$(addr TestnetSwapAdapter)
+FACTORY=$(addr BasqitFactory)
+for token in $(cast call "$FACTORY" 'stockTokens()(address[])' --rpc-url $RPC | tr -d '[],'); do
   symbol=$(cast call "$token" 'symbol()(string)' --rpc-url $RPC | tr -d '"')
   ticker=${symbol#t}
   price=$(curl -fsS "$URL/api/stocks/details?symbol=$ticker" |

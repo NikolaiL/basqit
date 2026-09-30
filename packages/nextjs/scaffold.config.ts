@@ -25,7 +25,7 @@ const scaffoldConfig = {
     chains.base,
     chains.arbitrum,
     chains.optimism,
-    // The Packs testnet demo only; the app's main network stays Robinhood Chain mainnet (first).
+    // The Baskets, Gifts and Packs testnet demos; the app's main network stays Robinhood Chain mainnet (first).
     robinhoodTestnet,
   ],
   // The interval at which your front-end polls the RPC servers for new data (it has no effect if you only target the local network (default is 4000))

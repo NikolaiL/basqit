@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
+import { deadlineIn, deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, erc20Abi, formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
-import { packsClient, robinhoodTestnet } from "~~/services/packs/testnet";
+import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
 import { getParsedError } from "~~/utils/scaffold-eth";
 
 type Item = { token: Address; amount: bigint };
@@ -16,9 +16,6 @@ const MIXES = [
   { name: "Tech Giants", dollars: { AAPL: 7, AMZN: 7, META: 7 } },
   { name: "Chips & Cars", dollars: { NVDA: 12, TSLA: 7 } },
 ] as const;
-
-/** A purchase deadline `minutes` from now, so a transaction stuck in a wallet cannot fill at an old price. */
-const deadlineIn = (minutes: number) => BigInt(Math.floor(Date.now() / 1000) + minutes * 60);
 
 export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
   const { address, chainId } = useAccount();
@@ -39,7 +36,7 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
     queryFn: async () => {
       const feeBps = (await packsClient.readContract({ ...router, functionName: "feeBps" })) as number;
       const rows = await Promise.all(
-        deployment.stocks.map(async token => {
+        (await testnetAssets()).stocks.map(async token => {
           const [price, stock, balance] = await Promise.all([
             packsClient.readContract({
               address: deployment.swapAdapter,
@@ -114,13 +111,12 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
     return token ? `${formatToken(item.amount, token.decimals)} ${token.symbol}` : "…";
   };
   const tokenOf = (ticker: string) =>
-    Object.values(tokens.data ?? {}).find(token => token.ticker === ticker && token.address !== deployment.usdg)
-      ?.address;
+    Object.values(tokens.data ?? {}).find(token => token.ticker === ticker && token.symbol !== "tUSDG")?.address;
 
   /** Buys the items through the router and seals them for the recipient, in one transaction. */
   const buy = async (items: Item[]) => {
     const { total: budget } = totalOf(items);
-    await ensureAllowance(write, address!, deployment.usdg, deployment.giftRouter, budget);
+    await ensureAllowance(write, address!, (await testnetAssets()).usdg, deployment.giftRouter, budget);
     const purchases = items.map(item => ({
       token: item.token,
       amount: item.amount,

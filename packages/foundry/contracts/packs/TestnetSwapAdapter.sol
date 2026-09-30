@@ -99,7 +99,9 @@ contract TestnetSwapAdapter is IExactInputAdapter, IExactOutputAdapter, Ownable2
         usdG.safeTransfer(recipient, amountOut);
     }
 
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function _transferOwnership(address newOwner) internal override {
+        // Renouncing (a zero owner) is disabled; `renounceOwnership` stays a normal write that reverts here.
+        if (newOwner == address(0)) revert RenounceDisabled();
+        super._transferOwnership(newOwner);
     }
 }

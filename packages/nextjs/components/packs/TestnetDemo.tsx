@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BasketsDemo } from "./BasketsDemo";
 import { GiftsDemo } from "./GiftsDemo";
 import { PackRoundDemo } from "./PackRoundDemo";
 import { deployment, formatToken, usePacksWrite } from "./usePacks";
@@ -16,12 +17,13 @@ import {
   packsClient,
   packsTestnet,
   robinhoodTestnet,
+  testnetAssets,
 } from "~~/services/packs/testnet";
 import { getParsedError } from "~~/utils/scaffold-eth";
 
-/** Gifts or Packs on Robinhood Chain testnet: test tokens with no value; Packs use real Dice Protocol draws. */
-export function TestnetDemo({ kind }: { kind: "gifts" | "packs" }) {
-  const title = kind === "gifts" ? "Try Gifts on testnet" : "Try Packs on testnet";
+/** Baskets, Gifts or Packs on Robinhood Chain testnet: test tokens with no value; Packs use real Dice Protocol draws. */
+export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
+  const title = `Try ${kind[0].toUpperCase()}${kind.slice(1)} on testnet`;
   const { address, chainId } = useAccount();
   const { openConnectModal } = useWalletConnectModal();
   const { switchChainAsync } = useSwitchChain();
@@ -36,7 +38,7 @@ export function TestnetDemo({ kind }: { kind: "gifts" | "packs" }) {
       const [eth, usdg, next] = await Promise.all([
         packsClient.getBalance({ address: address! }),
         packsClient.readContract({
-          address: deployment.usdg,
+          address: (await testnetAssets()).usdg,
           abi: erc20Abi,
           functionName: "balanceOf",
           args: [address!],
@@ -136,7 +138,9 @@ export function TestnetDemo({ kind }: { kind: "gifts" | "packs" }) {
         </p>
       )}
 
-      {kind === "gifts" ? <GiftsDemo onError={setError} /> : <PackRoundDemo onError={setError} />}
+      {kind === "baskets" && <BasketsDemo onError={setError} />}
+      {kind === "gifts" && <GiftsDemo onError={setError} />}
+      {kind === "packs" && <PackRoundDemo onError={setError} />}
 
       {kind === "packs" && (
         <aside className="bq-demo-dice">

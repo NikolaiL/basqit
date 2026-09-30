@@ -92,8 +92,10 @@ abstract contract BasqitRouterBase is Ownable2Step, ReentrancyGuard {
     }
 
     /// @notice Disabled: without an owner a compromised adapter could never be switched off.
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function _transferOwnership(address newOwner) internal override {
+        // Renouncing (a zero owner) is disabled; `renounceOwnership` stays a normal write that reverts here.
+        if (newOwner == address(0)) revert RenounceDisabled();
+        super._transferOwnership(newOwner);
     }
 
     /// @dev Fee rounds up. It is sent to the creator right away, so routers do not pool fees that a

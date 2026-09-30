@@ -4,7 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Abi, type Address, erc20Abi, formatUnits } from "viem";
 import { useAccount, useWalletClient } from "wagmi";
 import { useTransactor } from "~~/hooks/scaffold-eth";
-import { type PacksDeployment, packsClient, packsTestnet, robinhoodTestnet } from "~~/services/packs/testnet";
+import {
+  type PacksDeployment,
+  packsClient,
+  packsTestnet,
+  robinhoodTestnet,
+  testnetAssets,
+} from "~~/services/packs/testnet";
 
 export const deployment = packsTestnet as PacksDeployment;
 
@@ -13,11 +19,12 @@ export type TokenInfo = { address: Address; symbol: string; ticker: string; deci
 /** Symbols and decimals of the test tokens; the ticker drops the testnet "t" prefix for logos. */
 export function useTokens() {
   return useQuery({
-    queryKey: ["packs-tokens", packsTestnet?.usdg],
+    queryKey: ["packs-tokens", packsTestnet?.factory],
     enabled: !!packsTestnet,
     staleTime: Infinity,
     queryFn: async () => {
-      const addresses = [deployment.usdg, ...deployment.stocks];
+      const { usdg, stocks } = await testnetAssets();
+      const addresses = [usdg, ...stocks];
       const results = await packsClient.multicall({
         contracts: addresses.flatMap(address => [
           { address, abi: erc20Abi, functionName: "symbol" },
@@ -67,6 +74,9 @@ export function useUsdPrices(tickers: string[]) {
 export const formatUsd = (value: number) =>
   value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: value < 1 ? 3 : 2 });
 
+/** A trade deadline `minutes` from now, so a transaction stuck in a wallet cannot fill at an old price. */
+export const deadlineIn = (minutes: number) => BigInt(Math.floor(Date.now() / 1000) + minutes * 60);
+
 export const formatToken = (amount: bigint, decimals: number) => {
   const value = Number(formatUnits(amount, decimals));
   return value.toLocaleString("en-US", { maximumFractionDigits: value < 1 ? 4 : 2 });
@@ -86,16 +96,20 @@ export function usePacksWrite() {
     value?: bigint;
   }) => {
     if (!wallet || !address) throw new Error("Connect a wallet on Robinhood Chain testnet.");
+    const request = {
+      account: address,
+      address: call.address,
+      abi: call.abi as Abi,
+      functionName: call.functionName,
+      args: call.args ?? [],
+      value: call.value,
+    };
+    // Estimate on our own RPC and hand the wallet a gas limit. A wallet whose node has not yet seen the approval
+    // just sent otherwise fails its own estimate and shows an absurd gas limit; a call that would revert fails
+    // here with a readable error instead.
+    const gas = await packsClient.estimateContractGas(request);
     const hash = await transact(() =>
-      wallet.writeContract({
-        chain: robinhoodTestnet,
-        account: address,
-        address: call.address,
-        abi: call.abi as Abi,
-        functionName: call.functionName,
-        args: call.args ?? [],
-        value: call.value,
-      }),
+      wallet.writeContract({ ...request, chain: robinhoodTestnet, gas: (gas * 13n) / 10n }),
     );
     if (hash) await packsClient.waitForTransactionReceipt({ hash });
     await client.invalidateQueries({ predicate: query => String(query.queryKey[0]).startsWith("packs") });

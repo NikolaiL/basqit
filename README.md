@@ -12,7 +12,7 @@ Basqit is a fun way to find Stock Tokens. Type an idea — *companies with orang
 
 ## In progress
 
-- **Baskets** — *in progress:* Anyone can create a basket of Stock Tokens, publish it with a name and a thesis, and earn a fee whenever someone buys or sells it. Every basket is fully collateralized, and its holdings are verifiable onchain.
+- **Baskets** — *testnet demo:* Anyone can create a basket of Stock Tokens, publish it with a name and a thesis, and earn a fee whenever someone buys or sells it. Every basket is fully collateralized, and its holdings are verifiable onchain. Try it on `/baskets`.
 - **Gifts** — *testnet demo:* a sealed gift of Stock Tokens with fixed contents, worth what you paid when you
   bought it; keep it or send it to a friend. Try it on `/gifts`.
 - **Packs** — *testnet demo:* a random mix of Stock Tokens for a small fixed price. Prizes are distributed by one draw

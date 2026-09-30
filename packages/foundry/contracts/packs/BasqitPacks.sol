@@ -460,8 +460,10 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
 
     /// @notice Disabled: the template, the reserve and the sales need an owner, and ownership should never be lost
     /// by accident.
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function _transferOwnership(address newOwner) internal override {
+        // Renouncing (a zero owner) is disabled; `renounceOwnership` stays a normal write that reverts here.
+        if (newOwner == address(0)) revert RenounceDisabled();
+        super._transferOwnership(newOwner);
     }
 
     // ---------------------------------------------------------------- views

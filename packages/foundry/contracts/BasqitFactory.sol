@@ -163,8 +163,10 @@ contract BasqitFactory is Ownable2Step {
     }
 
     /// @notice Disabled: without an owner the adapter and token lists could never change again.
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function _transferOwnership(address newOwner) internal override {
+        // Renouncing (a zero owner) is disabled; `renounceOwnership` stays a normal write that reverts here.
+        if (newOwner == address(0)) revert RenounceDisabled();
+        super._transferOwnership(newOwner);
     }
 
     function _currentBps(CreatorFee memory fee) private view returns (uint16) {

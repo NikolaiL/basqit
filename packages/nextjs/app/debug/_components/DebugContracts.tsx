@@ -4,14 +4,24 @@ import { useEffect, useMemo } from "react";
 import { ContractUI } from "./ContractUI";
 import "@scaffold-ui/debug-contracts/styles.css";
 import { useSessionStorage } from "usehooks-ts";
+import { useAccount, useSwitchChain } from "wagmi";
 import { BarsArrowUpIcon } from "@heroicons/react/20/solid";
-import { ContractName, GenericContract } from "~~/utils/scaffold-eth/contract";
+import { useTargetNetwork } from "~~/hooks/scaffold-eth";
+import scaffoldConfig from "~~/scaffold.config";
+import { ContractName, GenericContract, contracts } from "~~/utils/scaffold-eth/contract";
 import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
 
 const selectedContractStorageKey = "scaffoldEth2.selectedContract";
 
 export function DebugContracts() {
   const contractsData = useAllContracts();
+  const { targetNetwork } = useTargetNetwork();
+  const { isConnected } = useAccount();
+  const { switchChain } = useSwitchChain();
+  // Networks that do have deployed contracts, so an empty page can say where to look.
+  const deployedOn = scaffoldConfig.targetNetworks.filter(
+    network => Object.keys((contracts as Record<number, object | undefined>)?.[network.id] ?? {}).length > 0,
+  );
   const contractNames = useMemo(
     () =>
       Object.keys(contractsData).sort((a, b) => {
@@ -35,7 +45,27 @@ export function DebugContracts() {
   return (
     <div className="flex flex-col gap-y-6 lg:gap-y-8 py-8 lg:py-12 justify-center items-center">
       {contractNames.length === 0 ? (
-        <p className="text-3xl mt-14">No contracts found!</p>
+        <div className="mt-14 text-center">
+          <p className="text-3xl">No contracts on {targetNetwork.name}</p>
+          {deployedOn.length > 0 && (
+            <div className="mt-4 flex flex-col items-center gap-3">
+              <p>Deployed on {deployedOn.map(network => network.name).join(", ")}.</p>
+              {isConnected ? (
+                deployedOn.map(network => (
+                  <button
+                    key={network.id}
+                    className="btn btn-primary btn-sm"
+                    onClick={() => switchChain({ chainId: network.id })}
+                  >
+                    Switch to {network.name}
+                  </button>
+                ))
+              ) : (
+                <p>Connect a wallet on that network to see and call them.</p>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <>
           {contractNames.length > 1 && (

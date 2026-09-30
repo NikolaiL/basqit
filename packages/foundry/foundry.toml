@@ -43,6 +43,8 @@ robinhoodTestnet = "https://rpc.testnet.chain.robinhood.com"
 localhost = "http://127.0.0.1:8545"
 
 [etherscan]
+# Blockscout needs no real API key; `--verify` on `forge script` uses this entry.
+robinhoodTestnet = { key = "blockscout", chain = 46630, url = "https://explorer.testnet.chain.robinhood.com/api/" }
 polygonMumbai = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
 

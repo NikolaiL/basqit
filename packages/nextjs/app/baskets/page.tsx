@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TestnetDemo } from "~~/components/packs/TestnetDemo";
 import { BasketArt } from "~~/components/waitlist/SoonArt";
 import { WaitlistForm } from "~~/components/waitlist/WaitlistForm";
 
@@ -41,6 +42,7 @@ export default function BasketsPage() {
           Set a small creator fee on every buy and sell. Buyers see it before they confirm.
         </li>
       </ol>
+      <TestnetDemo kind="baskets" />
       <p className="bq-soon-fine">
         Baskets launch on testnet first. Creator fees and pooled shares get a legal review before any public launch.
       </p>

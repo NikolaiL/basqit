@@ -3515,6 +3515,12 @@ html [data-rk] {
 .bq-demo-row .input {
   width: 90px;
 }
+/* Text fields in the basket form share the row instead of sitting at the number-field width. */
+.bq-demo-builder > .bq-demo-row .input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
 .bq-demo-wait {
   display: flex;
   align-items: center;

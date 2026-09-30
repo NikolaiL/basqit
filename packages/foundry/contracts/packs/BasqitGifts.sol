@@ -218,8 +218,10 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
         return interfaceId == bytes4(0x49064906) || super.supportsInterface(interfaceId);
     }
 
-    function renounceOwnership() public pure override {
-        revert RenounceDisabled();
+    function _transferOwnership(address newOwner) internal override {
+        // Renouncing (a zero owner) is disabled; `renounceOwnership` stays a normal write that reverts here.
+        if (newOwner == address(0)) revert RenounceDisabled();
+        super._transferOwnership(newOwner);
     }
 
     /// @dev Only ipfs:// and data:image/ URIs: content that cannot change behind a URI after holders pick it. The URI goes into JSON as is, so quotes, backslashes and

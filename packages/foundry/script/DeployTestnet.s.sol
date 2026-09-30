@@ -10,23 +10,33 @@ import { MockDiceEntropy } from "../contracts/mocks/MockDiceEntropy.sol";
 import { BasqitGiftRouter } from "../contracts/packs/BasqitGiftRouter.sol";
 import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { BasqitFactory } from "../contracts/BasqitFactory.sol";
+import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
+import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
+import { BasqitToken } from "../contracts/BasqitToken.sol";
 
 /**
- * @notice Packs demo on Robinhood Chain testnet (46630) or the local chain (31337). Never mainnet.
+ * @notice Everything on Robinhood Chain testnet (46630) or the local chain (31337). Never mainnet.
  *  - Test tokens: tUSDG (6 decimals) and five test "stock" tokens with no value, minted by the deployer.
  *  - Faucet: 100 tUSDG per address per day, global daily cap.
- *  - Gifts: seal listed tokens into a gift NFT. Buying goes through BasqitGiftRouter and a testnet swap adapter
- *    that sells test stocks at owner-set prices (script/sync-gift-prices.sh keeps them at live prices).
- *  - Packs: a 10-pack template with a 50-round prize reserve; anyone starts the next round once the
- *    last is done. Drawn by Dice Protocol (https://diceprotocol.world) on testnet, MockDiceEntropy locally.
+ *  - Baskets: the factory lists the test stocks (the one token list for baskets and gifts); purchase and sell routers
+ *    trade through a testnet swap adapter at mainnet Stock Token prices (script/sync-gift-prices.sh keeps them live);
+ *    two sample baskets.
+ *  - Gifts: seal listed tokens into a gift NFT; BasqitGiftRouter buys and seals in one transaction.
+ *  - Packs: a 10-pack template with a 50-round prize reserve; anyone starts the next round once the last is done.
+ *    Drawn by Dice Protocol (https://diceprotocol.world) on testnet, MockDiceEntropy locally.
  *
- * forge script script/DeployPacks.s.sol --rpc-url robinhoodTestnet --private-key $TESTNET_DEPLOYER_PRIVATE_KEY --broadcast
+ * Run through the main script: yarn deploy --network robinhoodTestnet, then yarn verify --network robinhoodTestnet.
  */
-contract DeployPacks is ScaffoldETHDeploy {
+contract DeployTestnet is ScaffoldETHDeploy {
     /// Dice docs, testnet section: https://diceprotocol.world/docs/ (verified on-chain 28 Sept 2026).
     address internal constant DICE_TESTNET = 0x43c8A7B1a85384cabf3D3Fd45a15C01F5b51A42D;
 
     error UnsupportedNetwork(uint256 chainId);
+
+    TestnetToken internal usdg;
+    TestnetToken[5] internal stocks;
+    BasqitFactory internal factory;
+    TestnetSwapAdapter internal shop;
 
     function run() external ScaffoldEthDeployerRunner {
         address dice;
@@ -34,43 +44,64 @@ contract DeployPacks is ScaffoldETHDeploy {
         else if (block.chainid == 31337) dice = address(new MockDiceEntropy());
         else revert UnsupportedNetwork(block.chainid);
 
-        TestnetToken usdg = new TestnetToken("Test Global Dollar (testnet, no value)", "tUSDG", 6, deployer);
+        _tokensAndShop();
+        _baskets();
+        BasqitGifts gifts = new BasqitGifts(deployer, address(factory));
+        new BasqitGiftRouter(address(usdg), address(factory), address(gifts), deployer, _adapters());
+        _packs(dice);
+    }
+
+    function _tokensAndShop() internal {
+        usdg = new TestnetToken("Test Global Dollar (testnet, no value)", "tUSDG", 6, deployer);
         string[5] memory symbols = ["NVDA", "AAPL", "TSLA", "AMZN", "META"];
-        TestnetToken[5] memory stocks;
+        address[] memory listed = new address[](5);
         for (uint256 i = 0; i < 5; i++) {
             stocks[i] = new TestnetToken(
                 string.concat("Test ", symbols[i], " (testnet, no value)"), string.concat("t", symbols[i]), 18, deployer
             );
             stocks[i].mint(deployer, 1_000_000e18);
+            listed[i] = address(stocks[i]);
         }
-
         BasqitTestnetFaucet faucet = new BasqitTestnetFaucet(address(usdg), 100e6, 1 days, 100_000e6);
         usdg.setMinter(address(faucet), true);
 
-        BasqitPacks packs = new BasqitPacks(deployer, dice);
-        for (uint256 i = 0; i < 5; i++) {
-            stocks[i].approve(address(packs), type(uint256).max);
-        }
-
-        // Gifts: the factory lists the test stocks; the router buys them from the testnet adapter (standing in
-        // for Uniswap) at mainnet Stock Token prices of 29 Sept 2026, then seals them for the recipient.
-        address[] memory listed = new address[](5);
-        for (uint256 i = 0; i < 5; i++) {
-            listed[i] = address(stocks[i]);
-        }
         // One token list for baskets and gifts: the factory's.
-        BasqitFactory factory = new BasqitFactory(deployer, listed);
-        BasqitGifts gifts = new BasqitGifts(deployer, address(factory));
-        TestnetSwapAdapter shop = new TestnetSwapAdapter(address(usdg), deployer);
+        factory = new BasqitFactory(deployer, listed);
+        // Stands in for Uniswap at mainnet Stock Token prices of 29 Sept 2026; holds stock to sell and tUSDG to buy.
+        shop = new TestnetSwapAdapter(address(usdg), deployer);
         uint256[5] memory usdPrices = [uint256(229.92e6), 337.54e6, 358.32e6, 246.33e6, 716.52e6];
         for (uint256 i = 0; i < 5; i++) {
             shop.setPrice(address(stocks[i]), usdPrices[i]);
             stocks[i].transfer(address(shop), 1000e18);
         }
-        address[] memory adapters = new address[](1);
-        adapters[0] = address(shop);
-        new BasqitGiftRouter(address(usdg), address(factory), address(gifts), deployer, adapters);
+        usdg.mint(address(shop), 1_000_000e6);
+    }
 
+    function _adapters() internal view returns (address[] memory adapters) {
+        adapters = new address[](1);
+        adapters[0] = address(shop);
+    }
+
+    /// Routers plus two sample baskets (about $15 and $12 a share); creator fees stay switched off.
+    function _baskets() internal {
+        new BasqitPurchaseRouter(address(usdg), address(factory), deployer, _adapters());
+        new BasqitSellRouter(address(usdg), address(factory), deployer, _adapters());
+        BasqitToken.Component[] memory five = new BasqitToken.Component[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            five[i] = BasqitToken.Component(address(stocks[i]), i == 4 ? 0.005e18 : 0.01e18);
+        }
+        factory.createBasket("Tech Five", "TECH5", five, 50);
+        BasqitToken.Component[] memory ai = new BasqitToken.Component[](2);
+        ai[0] = BasqitToken.Component(address(stocks[0]), 0.03e18); // NVDA
+        ai[1] = BasqitToken.Component(address(stocks[4]), 0.007e18); // META
+        factory.createBasket("AI Builders", "AIB", ai, 50);
+    }
+
+    function _packs(address dice) internal {
+        BasqitPacks packs = new BasqitPacks(deployer, dice);
+        for (uint256 i = 0; i < 5; i++) {
+            stocks[i].approve(address(packs), type(uint256).max);
+        }
         // Packs: 10 packs at 1 tUSDG. Prizes add up to 75% of sales ($7.50 of $10) at mainnet Stock Token
         // prices on 29 Sept 2026 (NVDA 229.92, AAPL 337.54, TSLA 358.32, AMZN 246.33, META 716.52); they drift with
         // prices. One $3 slot, the rest $1 down to $0.20.
