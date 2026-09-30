@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 
-let pending, busy, stateIndex, portals, effects;
+let pending, busy, stateIndex, portals, effects, statusData, statusAt;
 const exports = {};
 const jsx = (type, props) => ({ type, props });
 const code = ts.transpileModule(
@@ -28,7 +28,10 @@ const dependencies = {
     },
   },
   "@tanstack/react-query": {
-    useQuery: options => ({ data: options.queryKey[0].startsWith("basqit-funding") ? pending : undefined }),
+    useQuery: options =>
+      options.queryKey[0] === "funding-status"
+        ? { data: statusData, dataUpdatedAt: statusAt }
+        : { data: options.queryKey[0].startsWith("basqit-funding") ? pending : undefined },
     useQueryClient: () => ({}),
     useInfiniteQuery: () => ({}),
   },
@@ -39,6 +42,9 @@ const dependencies = {
   viem: { isAddress: () => true },
   "~~/components/WalletAuthentication": { useWalletSession: () => ({ authenticated: true }) },
   "~~/hooks/scaffold-eth/useFundingTransfer": { useFundingTransfer: () => ({}) },
+  "~~/hooks/scaffold-eth/useCopyToClipboard": {
+    useCopyToClipboard: () => ({ copyToClipboard: () => {}, isCopiedToClipboard: false }),
+  },
   "~~/hooks/scaffold-eth/useWalletConnectModal": { useWalletConnectModal: () => ({}) },
   "~~/services/funding/shared": {
     fundingDestinations: { ETH: { decimals: 18 }, USDG: { decimals: 6 } },
@@ -82,4 +88,24 @@ for (const destination of ["ETH", "USDG"]) {
     assert.equal(pending, record, "visibility must not discard the saved transfer");
   }
 }
-console.log("Funding dialog: wallet confirmation hidden; tracking and interrupted-send recovery preserved.");
+// T5: a transfer needing manual action, or unresolved for 30 minutes, offers support and copyable details.
+const rendered = () => {
+  stateIndex = 0;
+  effects = [];
+  const panel = exports.FundingPanel({ destination: "USDG" });
+  return JSON.stringify(panel.type(panel.props));
+};
+busy = "";
+pending = { quoteId: "0x1", hash: "0x123", chainId: 8453, createdAt: 0 };
+for (const [name, data, at, expected] of [
+  ["manual action required", { status: "bridge_failed", failure: { status: "manual_action_required" } }, 1000, true],
+  ["long unknown state", { status: "origin_tx_confirmed" }, 31 * 60000, true],
+  ["normal progress", { status: "origin_tx_confirmed" }, 60000, false],
+]) {
+  statusData = data;
+  statusAt = at;
+  assert.equal(rendered().includes("Copy transfer details"), expected, name);
+}
+console.log(
+  "Funding dialog: wallet confirmation hidden; tracking, interrupted-send recovery and attention support preserved.",
+);

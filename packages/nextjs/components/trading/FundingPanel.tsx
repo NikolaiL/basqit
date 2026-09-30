@@ -15,6 +15,7 @@ import { LoadingBars } from "~~/components/LoadingBars";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
+import { useCopyToClipboard } from "~~/hooks/scaffold-eth/useCopyToClipboard";
 import { useFundingTransfer } from "~~/hooks/scaffold-eth/useFundingTransfer";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { trackFundingResult } from "~~/services/analytics/events";
@@ -306,6 +307,19 @@ function WalletFunding({
     setError("");
   }
   const source = fundingChains.find(c => c.id === pending?.chainId);
+  const { copyToClipboard, isCopiedToClipboard } = useCopyToClipboard();
+  const recovery = status.data?.failure?.recovery;
+  const recoverySummary = [
+    `Quote ID: ${pending?.quoteId}`,
+    `Source: ${source?.name} (${pending?.chainId})`,
+    `Transaction: ${pending?.hash ?? "not recorded"}`,
+    `Status: ${status.data?.status ?? "unavailable"}${status.data?.failure ? ` / ${status.data.failure.status}` : ""}`,
+    status.data?.zid && `Provider reference: ${status.data.zid}`,
+    recovery &&
+      `Recovery: ${recovery.amount ?? recovery.settledAmount ?? "unknown"} base units of ${recovery.token} on chain ${recovery.chainId}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
   const blocked = disabled || !!busy;
   return (
     <section className="bq-funding">
@@ -456,6 +470,24 @@ function WalletFunding({
                         </button>
                       </>
                     )}
+                    {pending.hash &&
+                      (status.isError ||
+                        (!terminalStatus(status.data) &&
+                          (status.data?.status === "bridge_failed" ||
+                            status.dataUpdatedAt - pending.createdAt > 30 * 60000))) && (
+                        <>
+                          <p className="bq-fine-print">
+                            This transfer needs attention. Nothing is sent automatically, and a refund is not
+                            guaranteed. Share these details with 0x support; the transfer stays saved here.
+                          </p>
+                          <button className="btn btn-secondary btn-sm" onClick={() => copyToClipboard(recoverySummary)}>
+                            {isCopiedToClipboard ? "Copied" : "Copy transfer details"}
+                          </button>
+                          <a className="link" href="https://help.0x.org/" target="_blank" rel="noreferrer">
+                            Contact 0x support <Arrow out />
+                          </a>
+                        </>
+                      )}
                     {terminalStatus(status.data) && status.data?.status !== "bridge_filled" && (
                       <>
                         <a className="link" href="https://help.0x.org/" target="_blank" rel="noreferrer">
