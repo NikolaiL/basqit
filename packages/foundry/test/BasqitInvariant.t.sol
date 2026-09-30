@@ -9,6 +9,7 @@ import { BasqitToken } from "../contracts/BasqitToken.sol";
 import { MockStockToken } from "../contracts/mocks/MockStockToken.sol";
 import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { MockUSDG } from "../contracts/mocks/MockUSDG.sol";
+import { IssuerToken } from "./Basqit.t.sol";
 
 /// @dev Random buys, sells, direct mints and redeems by several users, with fees on.
 contract BasqitHandler is Test {
@@ -154,5 +155,106 @@ contract BasqitInvariantTest is Test {
         assertEq(basket.balanceOf(address(sellRouter)), 0);
         assertEq(stocks[0].balanceOf(address(buyRouter)), 0);
         assertEq(stocks[1].balanceOf(address(sellRouter)), 0);
+    }
+}
+
+/// @dev Direct mints and redeems around an issuer-controlled component: pauses, partial redemptions that leave
+/// owed debt, issuer burns and top-ups, and owed claims.
+contract BasqitDebtHandler is Test {
+    BasqitToken internal basket;
+    MockStockToken internal plain;
+    IssuerToken internal iss;
+    address[3] internal actors = [address(0xA11CE), address(0xB0B), address(0xCA7)];
+    /// Set if a mint ever succeeds while a component cannot cover both owed debt and every share.
+    bool public mintedIntoDeficit;
+
+    constructor(BasqitToken basket_, MockStockToken plain_, IssuerToken iss_) {
+        basket = basket_;
+        plain = plain_;
+        iss = iss_;
+        for (uint256 i = 0; i < actors.length; i++) {
+            plain.mint(actors[i], 1e24);
+            iss.mint(actors[i], 1e24);
+            vm.startPrank(actors[i]);
+            plain.approve(address(basket), type(uint256).max);
+            iss.approve(address(basket), type(uint256).max);
+            vm.stopPrank();
+        }
+    }
+
+    function mint(uint256 actorSeed, uint256 shares) external {
+        address actor = actors[actorSeed % actors.length];
+        vm.prank(actor);
+        try basket.mint(bound(shares, 1, 5e18), actor) {
+            uint256 supply = basket.totalSupply();
+            if (
+                iss.balanceOf(address(basket)) < basket.totalOwed(address(iss)) + supply
+                    || plain.balanceOf(address(basket)) < basket.totalOwed(address(plain)) + supply
+            ) mintedIntoDeficit = true;
+        } catch { }
+    }
+
+    function redeemAvailable(uint256 actorSeed, uint256 shares) external {
+        address actor = actors[actorSeed % actors.length];
+        uint256 balance = basket.balanceOf(actor);
+        if (balance == 0) return;
+        vm.prank(actor);
+        basket.redeemAvailable(bound(shares, 1, balance), actor);
+    }
+
+    /// Full exits make zero supply with unpaid debt reachable, the state a plain amount rarely hits.
+    function exitAll(uint256 actorSeed) external {
+        address actor = actors[actorSeed % actors.length];
+        uint256 balance = basket.balanceOf(actor);
+        if (balance == 0) return;
+        vm.prank(actor);
+        basket.redeemAvailable(balance, actor);
+    }
+
+    function claimOwed(uint256 actorSeed) external {
+        address actor = actors[actorSeed % actors.length];
+        if (basket.owed(actor, address(iss)) == 0) return;
+        vm.prank(actor);
+        try basket.claimOwed(address(iss), actor) { } catch { }
+    }
+
+    function setPaused(bool value) external {
+        iss.setPaused(value);
+    }
+
+    function issuerBurn(uint256 amount) external {
+        uint256 balance = iss.balanceOf(address(basket));
+        if (balance == 0) return;
+        iss.adminBurn(address(basket), bound(amount, 1, balance));
+    }
+
+    function issuerTopUp(uint256 amount) external {
+        iss.mint(address(basket), bound(amount, 1, 10e18));
+    }
+}
+
+contract BasqitDebtInvariantTest is Test {
+    BasqitToken internal basket;
+    IssuerToken internal iss;
+    BasqitDebtHandler internal handler;
+
+    function setUp() public {
+        MockStockToken plain = new MockStockToken("A", "A");
+        iss = new IssuerToken();
+        address[] memory listed = new address[](2);
+        listed[0] = address(plain);
+        listed[1] = address(iss);
+        BasqitFactory factory = new BasqitFactory(address(this), listed);
+        BasqitToken.Component[] memory c = new BasqitToken.Component[](2);
+        c[0] = BasqitToken.Component(address(plain), 1e18);
+        c[1] = BasqitToken.Component(address(iss), 1e18);
+        basket = BasqitToken(factory.createBasket("Debt", "DEBT", c, 0));
+        handler = new BasqitDebtHandler(basket, plain, iss);
+        targetContract(address(handler));
+    }
+
+    /// A new deposit never lands in a basket that owes past redeemers more than it holds.
+    function invariant_mintNeverCoversOldDebt() public view {
+        assertFalse(handler.mintedIntoDeficit());
     }
 }
