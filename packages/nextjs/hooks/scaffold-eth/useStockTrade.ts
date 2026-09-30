@@ -1,6 +1,6 @@
 import { useTransactor } from "./useTransactor";
-import { useQuery } from "@tanstack/react-query";
-import { BaseError, encodeFunctionData } from "viem";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { encodeFunctionData } from "viem";
 import { useWalletClient } from "wagmi";
 import { tradeTokenAbi } from "~~/contracts/externalContracts";
 import { trackSwap } from "~~/services/analytics/events";
@@ -8,6 +8,16 @@ import { atlasClient, robinhoodChain } from "~~/services/atlas/client";
 import { NATIVE } from "~~/services/funding/shared";
 import type { BatchQuote, BatchStep } from "~~/services/trading/batch";
 import { LIFI_DIAMOND } from "~~/services/trading/lifi";
+import {
+  type PendingTrade,
+  assertNoPendingTrade,
+  clearPendingTrade,
+  isUnsupportedBatch,
+  provesNotSent,
+  readPendingTrade,
+  reconcilePendingTrade,
+  savePendingTrade,
+} from "~~/services/trading/pending";
 import { ALLOWANCE_HOLDER, type ExecutionQuote, type TradeQuote, USDG, ZEROX_ENABLED } from "~~/services/trading/quote";
 import { V3_ROUTER } from "~~/services/trading/uniswap";
 
@@ -47,11 +57,32 @@ export function useStockTrade() {
       throw new Error("Not enough ETH on Robinhood Chain for network fees. Add ETH and try again.");
     await checkWallet(quote);
     if (swap && Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
+    const record: PendingTrade | undefined = swap
+      ? {
+          taker: quote.taker,
+          chainId: robinhoodChain.id,
+          kind: "tx",
+          tokens:
+            "legs" in quote ? (quote as BatchStep).legs.map(leg => leg.buyToken) : [(quote as TradeQuote).buyToken],
+          createdAt: Date.now(),
+        }
+      : undefined;
+    if (record) assertNoPendingTrade(record.chainId, record.taker);
     const hash = await transact(async () => {
-      const hash = await client.sendTransaction(tx);
+      if (record) savePendingTrade(record);
+      let hash: `0x${string}`;
+      try {
+        hash = await client.sendTransaction(tx);
+      } catch (error) {
+        if (record && provesNotSent(error)) clearPendingTrade(record.chainId, record.taker);
+        throw error;
+      }
+      if (record) savePendingTrade({ ...record, ref: hash });
       submitted?.();
       return hash;
     });
+    // Reached only once the receipt says success; a timeout or failed lookup keeps the record for reconciling.
+    if (record) clearPendingTrade(record.chainId, record.taker);
     if (!hash) throw new Error("Transaction was not submitted.");
     return hash;
   }
@@ -101,10 +132,12 @@ export function useStockTrade() {
 
   /**
    * EIP-5792: approvals and every purchase go to the wallet as one atomic batch — one confirmation,
-   * all or nothing. Returns null when the wallet cannot batch atomically, so the caller falls back to steps.
+   * all or nothing. Returns null only when the wallet cannot batch atomically; the caller must then ask the
+   * buyer before switching to separate steps, which can complete partially.
    */
-  async function buyAtomic(quote: BatchQuote) {
+  async function buyAtomic(quote: BatchQuote): Promise<{ hash?: string } | null> {
     for (const step of quote.steps) await checkWallet(step);
+    assertNoPendingTrade(robinhoodChain.id, quote.taker);
     const client = wallet!;
     const capabilities = await client
       .getCapabilities({ account: quote.taker, chainId: robinhoodChain.id })
@@ -125,24 +158,36 @@ export function useStockTrade() {
         })),
       ...quote.steps.map(step => ({ to: step.transaction.to, data: step.transaction.data })),
     ];
+    const record: PendingTrade = {
+      taker: quote.taker,
+      chainId: robinhoodChain.id,
+      kind: "calls",
+      tokens: quote.legs.map(leg => leg.buyToken),
+      createdAt: Date.now(),
+    };
     return trackSwap(events(quote.legs, true), async submitted => {
+      savePendingTrade(record);
       let id: string;
       try {
         ({ id } = await client.sendCalls({ account: quote.taker, chain: robinhoodChain, calls, forceAtomic: true }));
       } catch (error) {
-        // EIP-5792 errors 5700–5760 mean the wallet declined the batch shape, not the user: use separate steps.
-        const walletCode = (e: unknown) => {
-          const code = e && typeof e === "object" && "code" in e ? (e as { code: unknown }).code : undefined;
-          return typeof code === "number" && code >= 5700 && code <= 5760;
-        };
-        if (error instanceof BaseError ? error.walk(walletCode) : walletCode(error)) return null;
+        if (provesNotSent(error)) clearPendingTrade(record.chainId, record.taker);
+        // Only "cannot do this batch" falls back; 5750 is the buyer refusing and 5720 an already-used id.
+        if (isUnsupportedBatch(error)) return null;
         throw error;
       }
+      savePendingTrade({ ...record, ref: id });
       submitted();
       const result = await client.waitForCallsStatus({ id, timeout: 180000 });
-      if (result.status !== "success")
+      if (result.status === "failure") {
+        clearPendingTrade(record.chainId, record.taker);
         throw new Error("The purchase did not complete, so nothing was bought. Request a new quote and try again.");
-      return result.receipts?.at(-1)?.transactionHash ?? null;
+      }
+      if (result.status !== "success")
+        throw new Error("The purchase is still being confirmed. Check it before buying again.");
+      clearPendingTrade(record.chainId, record.taker);
+      // A confirmed bundle is a success even when the wallet returns no receipt to link to.
+      return { hash: result.receipts?.at(-1)?.transactionHash };
     });
   }
 
@@ -186,6 +231,45 @@ export function useStockTrade() {
     );
   }
   return { approve, swap, buyAtomic };
+}
+
+/** The wallet's unresolved trade, checked on chain until it resolves; resolved records are cleared. */
+export function usePendingTrade(owner?: `0x${string}`) {
+  const { data: wallet } = useWalletClient();
+  const client = useQueryClient();
+  const query = useQuery({
+    queryKey: ["pending-trade", robinhoodChain.id, owner],
+    enabled: !!owner,
+    retry: false,
+    refetchInterval: data => (data.state.data ? 10000 : false),
+    queryFn: async () => {
+      const trade = readPendingTrade(robinhoodChain.id, owner!);
+      if (!trade) return null;
+      const outcome = await reconcilePendingTrade(trade, {
+        receipt: hash => atlasClient.getTransactionReceipt({ hash }),
+        calls: wallet ? id => wallet.getCallsStatus({ id }) : undefined,
+      });
+      if (outcome === "unknown") return trade;
+      clearPendingTrade(trade.chainId, trade.taker);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
+        client.invalidateQueries({ queryKey: ["trade-balance"] }),
+      ]);
+      return null;
+    },
+  });
+  return {
+    ...query,
+    /** Manual recovery, as in funding: track a hash from wallet history, or confirm nothing was sent. */
+    track: (hash: `0x${string}`) => {
+      if (query.data) savePendingTrade({ ...query.data, kind: "tx", ref: hash });
+      void query.refetch();
+    },
+    dismiss: () => {
+      if (owner) clearPendingTrade(robinhoodChain.id, owner);
+      void query.refetch();
+    },
+  };
 }
 
 /** True when the wallet can confirm a whole purchase as one atomic EIP-5792 batch on Robinhood Chain. */

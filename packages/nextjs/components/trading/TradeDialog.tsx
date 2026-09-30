@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FundingPanel } from "./FundingPanel";
 import { GasFundingNotice } from "./GasFundingNotice";
+import { PendingTradeNotice } from "./PendingTradeNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
 import { DialogClose } from "~~/components/DialogClose";
 import { TokenAmount } from "~~/components/TokenAmount";
-import { useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
+import { usePendingTrade, useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
 import { type QuoteState, watchQuote } from "~~/services/trading/autoQuote";
@@ -93,6 +94,8 @@ export function TradeDialog({
   const expired = !!currentQuote && now >= currentQuote.expiresAt;
   const gasEstimate = useTradeGas(currentQuote);
   const approval = !!currentQuote && BigInt(currentQuote.allowance) < BigInt(currentQuote.sellAmount);
+  const pendingTrade = usePendingTrade(address && isAddress(address) ? (address as `0x${string}`) : undefined);
+  const tradeBlocked = !!pendingTrade.data || pendingTrade.isError;
 
   useEffect(() => {
     if (connectModalOpen || fundingOpen) dialog.current?.close();
@@ -352,6 +355,7 @@ export function TradeDialog({
               </a>
             </p>
           )}
+          {!hash && <PendingTradeNotice pending={pendingTrade} />}
           {!hash && (
             <GasFundingNotice
               required={gasEstimate.data}
@@ -422,11 +426,15 @@ export function TradeDialog({
           ) : (
             <button
               className="btn btn-primary"
-              disabled={!!busy || !!hash}
+              disabled={!!busy || !!hash || tradeBlocked}
               onClick={() =>
                 void run("Confirming swap…", async () => {
-                  const result = await trade.swap(currentQuote);
-                  setHash(result);
+                  try {
+                    await trade.swap(currentQuote).then(setHash);
+                  } finally {
+                    // Shows the unresolved record at once if the outcome is unknown.
+                    void pendingTrade.refetch();
+                  }
                   onSuccess?.();
 
                   await Promise.all([

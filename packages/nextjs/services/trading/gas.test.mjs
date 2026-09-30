@@ -10,7 +10,24 @@ let nativeBalance = 240n,
   allowance = 100n,
   sent = 0,
   estimation,
-  query;
+  query,
+  receiptFails = false;
+const storage = new Map();
+const localStorage = {
+  getItem: key => storage.get(key) ?? null,
+  setItem: (key, value) => storage.set(key, value),
+  removeItem: key => storage.delete(key),
+};
+const load = (path, context) => {
+  const moduleExports = {};
+  vm.runInNewContext(
+    ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS },
+    }).outputText,
+    { exports: moduleExports, ...context },
+  );
+  return moduleExports;
+};
 const exports = {};
 const deps = {
   "@tanstack/react-query": {
@@ -32,7 +49,15 @@ const deps = {
     }),
   },
   viem: { encodeFunctionData: ({ args }) => `approval:${args[1]}` },
-  "./useTransactor": { useTransactor: () => action => action() },
+  // Like the real transactor: the wallet broadcasts, then a receipt timeout throws without returning the hash.
+  "./useTransactor": {
+    useTransactor: () => async action => {
+      const hash = await action();
+      if (receiptFails) throw new Error("Timed out while waiting for transaction");
+      return hash;
+    },
+  },
+  "~~/services/trading/pending": load("./pending.ts", { localStorage }),
   "~~/contracts/externalContracts": { tradeTokenAbi: [] },
   "~~/services/analytics/events": { trackSwap: (_legs, execute) => execute(() => {}) },
   "~~/services/atlas/client": {
@@ -83,4 +108,16 @@ assert.equal(sent, 0, "do not prompt a transaction with insufficient ETH");
 nativeBalance = 240n;
 await exports.useStockTrade().swap(quote);
 assert.equal(sent, 1);
-console.log("Gas: swap, approval/reset, insufficient nonzero balance and sufficient balance passed.");
+assert.equal(storage.size, 0, "a confirmed swap leaves no pending record");
+
+// T1: a broadcast swap whose receipt lookup fails must block a retry instead of buying twice.
+receiptFails = true;
+await assert.rejects(exports.useStockTrade().swap(quote), /Timed out/);
+assert.equal(sent, 2);
+assert.match([...storage.values()][0], /"ref":"0xhash"/, "the submitted hash is kept");
+receiptFails = false;
+await assert.rejects(exports.useStockTrade().swap(quote), /still unresolved/);
+assert.equal(sent, 2, "no second wallet send while the first outcome is unknown");
+console.log(
+  "Gas: swap, approval/reset, insufficient nonzero balance, sufficient balance and no retry after receipt failure passed.",
+);

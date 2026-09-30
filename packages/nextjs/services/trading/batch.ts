@@ -17,6 +17,12 @@ export function mergeQuoteErrors(previous: Record<string, string>, results: Batc
   return next;
 }
 
+/** A refreshed quote is usable only if its enforceable minimum is no lower than the one the buyer approved. */
+export const keepsApprovedMinimum = (
+  fresh: Pick<TradeQuote, "minBuyAmount">,
+  approved: Pick<TradeQuote, "minBuyAmount">,
+) => BigInt(fresh.minBuyAmount) >= BigInt(approved.minBuyAmount);
+
 export async function quoteEachStock(tokens: string[], quote: (token: string, index: number) => Promise<TradeQuote>) {
   const results: BatchResult[] = [];
   // Bound RPC fan-out; one failed route must not discard the other results.

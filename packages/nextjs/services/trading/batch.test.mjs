@@ -7,13 +7,17 @@ registerHooks({
     return next(specifier.startsWith("./") && !/\.[a-z]+$/.test(specifier) ? `${specifier}.ts` : specifier, context);
   },
 });
-const { combineBuys, splitAmount, quoteEachStock, mergeQuoteErrors } = await import("./batch.ts");
+const { combineBuys, splitAmount, quoteEachStock, mergeQuoteErrors, keepsApprovedMinimum } = await import("./batch.ts");
 const { USDG } = await import("./quote.ts");
 const { V3_ROUTER, V3_QUOTER, v3Abi, directCalldata } = await import("./uniswap.ts");
 const { LIFI_DIAMOND } = await import("./lifi.ts");
 const account = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6";
 const recipient = "0x1111111111111111111111111111111111111111";
 const fee = { bps: 10, recipient };
+// Approved minimum 99.5 is a floor across every refresh; 99.0025 (0.5% below it) must not pass.
+assert.equal(keepsApprovedMinimum({ minBuyAmount: "990025" }, { minBuyAmount: "995000" }), false);
+assert.equal(keepsApprovedMinimum({ minBuyAmount: "995000" }, { minBuyAmount: "995000" }), true);
+assert.equal(keepsApprovedMinimum({ minBuyAmount: "999000" }, { minBuyAmount: "995000" }), true);
 assert.deepEqual(splitAmount(10000001n, 3), [3333334n, 3333334n, 3333333n]);
 assert.throws(() => splitAmount(1n, 2));
 assert.throws(() => splitAmount(100n, 9));

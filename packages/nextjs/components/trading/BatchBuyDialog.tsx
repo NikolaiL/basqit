@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FundingPanel } from "./FundingPanel";
 import { GasFundingNotice } from "./GasFundingNotice";
+import { PendingTradeNotice } from "./PendingTradeNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,16 +12,23 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { DialogClose } from "~~/components/DialogClose";
 import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
-import { useAtomicBatch, useStockTrade, useTradeBalance, useTradeGas } from "~~/hooks/scaffold-eth/useStockTrade";
+import {
+  useAtomicBatch,
+  usePendingTrade,
+  useStockTrade,
+  useTradeBalance,
+  useTradeGas,
+} from "~~/hooks/scaffold-eth/useStockTrade";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
 import { robinhoodChain } from "~~/services/atlas/client";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
-import { type BatchQuoteResponse, type BatchStep, mergeQuoteErrors } from "~~/services/trading/batch";
+import {
+  type BatchQuoteResponse,
+  type BatchStep,
+  keepsApprovedMinimum,
+  mergeQuoteErrors,
+} from "~~/services/trading/batch";
 import { type TradeQuote, USDG, balancePercentage } from "~~/services/trading/quote";
-
-// A refreshed quote may be at most 0.5% worse than the one shown: the slippage the buyer already accepted.
-const withinSlippage = (fresh: TradeQuote, shown: TradeQuote) =>
-  BigInt(fresh.minBuyAmount) * 1000n >= BigInt(shown.minBuyAmount) * 995n;
 
 export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; onClose: () => void }) {
   const { address, chainId } = useAccount();
@@ -131,10 +139,21 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const pendingApprovals = quote?.approvals.filter(item => BigInt(item.allowance) < BigInt(item.sellAmount)) ?? [];
   const atomic = useAtomicBatch(address && isAddress(address) ? (address as `0x${string}`) : undefined);
   const gasEstimate = useTradeGas(pendingApprovals[0] ?? quote?.steps[0]);
-  const usable = ready && !!quote && !quotes.isFetching && !quotes.isError && now < quote.expiresAt;
+  const pendingTrade = usePendingTrade(address && isAddress(address) ? (address as `0x${string}`) : undefined);
+  // Set once the buyer has been told the wallet cannot batch; only then are separate steps requested.
+  const [separateSteps, setSeparateSteps] = useState(false);
+  const usable =
+    ready &&
+    !!quote &&
+    !quotes.isFetching &&
+    !quotes.isError &&
+    now < quote.expiresAt &&
+    !pendingTrade.data &&
+    !pendingTrade.isError;
   /** Fresh single-stock LiFi quote for a step whose quote aged while earlier steps were confirmed. */
-  async function refreshStep(step: BatchStep): Promise<BatchStep> {
+  async function refreshStep(step: BatchStep, approved: TradeQuote[]): Promise<BatchStep> {
     const [leg] = step.legs;
+    const floor = approved.find(item => item.buyToken.toLowerCase() === leg.buyToken.toLowerCase()) ?? leg;
     if (step.provider !== "lifi" || Date.now() < step.expiresAt - 5000) return step;
     const params = new URLSearchParams({
       token: leg.buyToken,
@@ -150,9 +169,9 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       fresh.provider !== "lifi" ||
       fresh.buyToken.toLowerCase() !== leg.buyToken.toLowerCase() ||
       fresh.sellAmount !== leg.sellAmount ||
-      !withinSlippage(fresh, leg)
+      !keepsApprovedMinimum(fresh, floor)
     )
-      throw new Error("The price moved by more than 0.5%.");
+      throw new Error("The price moved below the minimum you approved. Review the new amounts and press Buy again.");
     return { ...fresh, legs: [fresh] };
   }
   async function execute() {
@@ -162,10 +181,16 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
     const bought: string[] = [];
     try {
       setBusy("Confirm the purchase in your wallet…");
-      const atomicHash = atomic ? await trade.buyAtomic(quote) : null;
-      if (atomicHash) {
+      if (atomic && !separateSteps) {
+        const result = await trade.buyAtomic(quote);
+        if (!result) {
+          setSeparateSteps(true);
+          throw new Error(
+            "Your wallet cannot confirm these purchases as one batch. Press Buy again to confirm each one separately; if one fails, the earlier ones stay bought.",
+          );
+        }
         setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
-        setHash(atomicHash);
+        setHash(result.hash ?? "confirmed");
         await Promise.all([
           client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
           client.invalidateQueries({ queryKey: ["trade-balance"] }),
@@ -195,11 +220,11 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
               leg.buyToken.toLowerCase() !== quote.legs[i].buyToken.toLowerCase() ||
               leg.sellAmount !== quote.legs[i].sellAmount ||
               leg.basqitFee.bps !== quote.legs[i].basqitFee.bps ||
-              !withinSlippage(leg, quote.legs[i]),
+              !keepsApprovedMinimum(leg, quote.legs[i]),
           )
         )
           throw new Error(
-            "Approval confirmed. Prices moved by more than 0.5%; review the new amounts and press Buy again.",
+            "Approval confirmed. Prices moved below the minimum you approved; review the new amounts and press Buy again.",
           );
         if (executable.approvals.some(item => BigInt(item.allowance) < BigInt(item.sellAmount)))
           throw new Error("Approval confirmed. Routes changed; press Buy again.");
@@ -212,7 +237,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             ? `Confirm purchase ${i + 1} of ${executable.steps.length} in your wallet…`
             : "Confirm all purchases in your wallet…",
         );
-        const step = await refreshStep(planned);
+        const step = await refreshStep(planned, quote.legs);
         confirmed = await trade.swap(step);
         bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
         setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
@@ -242,6 +267,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
     } finally {
       lock.current = false;
       setBusy("");
+      void pendingTrade.refetch();
     }
   }
   return (
@@ -412,6 +438,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             </span>
           </p>
         )}
+        {!hash && <PendingTradeNotice pending={pendingTrade} />}
         {!hash && (
           <GasFundingNotice
             required={gasEstimate.data}
