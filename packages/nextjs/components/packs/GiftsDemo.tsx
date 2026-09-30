@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { deadlineIn, deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
-import { type Address, erc20Abi, formatUnits, isAddress, parseUnits } from "viem";
+import { type Address, erc20Abi, formatUnits, isAddress, parseUnits, zeroAddress } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
@@ -73,7 +73,14 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
     }
   };
   const recipient = (friend.trim() || address) as Address;
-  const friendInvalid = !!friend.trim() && !isAddress(friend.trim());
+  // The gift contracts can never pass a gift on, so a gift sent there is lost.
+  const friendInvalid =
+    !!friend.trim() &&
+    (!isAddress(friend.trim()) ||
+      [zeroAddress, deployment.gifts, deployment.giftRouter].some(
+        a => a.toLowerCase() === friend.trim().toLowerCase(),
+      ));
+  // No rows until prices load: an unknown price must never read as a free gift.
   const rows = shop.data?.rows ?? [];
   const legCost = (token: Address, amount: bigint) => {
     const price = rows.find(entry => entry.token === token)?.price ?? 0n;
@@ -81,22 +88,17 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
   };
 
   // Dollars become token amounts at the current price; wrap amounts are taken as typed.
+  // Anything typed that is not a usable amount stays in the list as invalid, so it can never vanish from the gift.
   const itemsFrom = (values: Record<string, string>, as: "buy" | "wrap") =>
     rows.flatMap(({ token, price, stock, balance }) => {
       const raw = (values[token] ?? "").trim();
+      if (!raw) return [];
       const decimals = tokens.data?.[token.toLowerCase()]?.decimals ?? 18;
-      let amount = 0n;
-      try {
-        amount =
-          as === "buy"
-            ? price > 0n
-              ? (parseUnits(raw || "0", 6) * 10n ** 18n) / price
-              : 0n
-            : parseUnits(raw || "0", decimals);
-      } catch {
-        return [];
-      }
-      return amount > 0n ? [{ token, amount, over: as === "buy" ? amount > stock : amount > balance }] : [];
+      const invalid = { token, amount: 0n, over: false, invalid: true };
+      if (!/^(\d+\.?\d*|\.\d+)$/.test(raw) || (as === "buy" && price === 0n)) return [invalid];
+      const amount = as === "buy" ? (parseUnits(raw, 6) * 10n ** 18n) / price : parseUnits(raw, decimals);
+      if (amount === 0n) return /[1-9]/.test(raw) ? [invalid] : [];
+      return [{ token, amount, over: as === "buy" ? amount > stock : amount > balance, invalid: false }];
     });
   const totalOf = (items: Item[]) => {
     const spent = items.reduce((sum, item) => sum + legCost(item.token, item.amount), 0n);
@@ -105,7 +107,8 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
   };
   const picked = itemsFrom(inputs, mode);
   const { total, fee } = totalOf(picked);
-  const canBuild = ready && !friendInvalid && !busy && picked.length > 0 && picked.every(item => !item.over);
+  const canBuild =
+    ready && !friendInvalid && !busy && picked.length > 0 && picked.every(item => !item.over && !item.invalid);
   const itemLabel = (item: Item) => {
     const token = tokens.data?.[item.token.toLowerCase()];
     return token ? `${formatToken(item.amount, token.decimals)} ${token.symbol}` : "…";
@@ -148,8 +151,14 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
           value={friend}
           onChange={event => setFriend(event.target.value)}
           aria-invalid={friendInvalid}
+          aria-describedby={friendInvalid ? "gift-friend-error" : undefined}
         />
       </label>
+      {friendInvalid && (
+        <p id="gift-friend-error" className="bq-demo-error" role="alert">
+          Enter a wallet address (0x followed by 40 characters). Gift contracts and the zero address cannot hold gifts.
+        </p>
+      )}
       <article className="bq-demo-card bq-demo-builder">
         <strong>Build your own</strong>
         <div className="bq-tabs" role="tablist" aria-label="How to fill the gift">
@@ -187,7 +196,9 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                         ? `$${Number(formatUnits(price, 6)).toFixed(2)} each`
                         : `You hold ${info ? formatToken(balance, info.decimals) : "…"}`}
                       {item &&
-                        (item.over ? (
+                        (item.invalid ? (
+                          <em className="is-over"> · enter an amount like 5 or 2.5</em>
+                        ) : item.over ? (
                           <em className="is-over">
                             {mode === "buy" ? " · not enough available" : " · more than you hold"}
                           </em>
@@ -201,7 +212,7 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                     inputMode="decimal"
                     placeholder={mode === "buy" ? "$0" : "0"}
                     aria-label={mode === "buy" ? `Dollars of ${info?.symbol}` : `Amount of ${info?.symbol}`}
-                    aria-invalid={item?.over}
+                    aria-invalid={item?.over || item?.invalid}
                     value={inputs[token] ?? ""}
                     onChange={event => setInputs(current => ({ ...current, [token]: event.target.value }))}
                   />
@@ -209,6 +220,15 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
               );
             })}
         </ul>
+        {shop.isPending && <p className="bq-demo-note">Loading current prices…</p>}
+        {shop.isError && !shop.data && (
+          <p className="bq-demo-note" role="alert">
+            Prices could not be loaded.{" "}
+            <button className="btn btn-link btn-xs" onClick={() => void shop.refetch()}>
+              Retry
+            </button>
+          </p>
+        )}
         {mode === "wrap" && shop.data && !rows.some(entry => entry.balance > 0n) && (
           <p className="bq-demo-note">This wallet holds none of the listed Stock Tokens.</p>
         )}
@@ -228,6 +248,7 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
               setInputs({});
             })
           }
+          aria-describedby="gift-review"
         >
           {busy === "custom"
             ? "Sealing…"
@@ -237,6 +258,12 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                 ? "Wrap and send"
                 : "Wrap for yourself"}
         </button>
+        {ready && !friendInvalid && (
+          <p id="gift-review" className="bq-demo-note">
+            Recipient {recipient === address ? "you" : `${recipient.slice(0, 6)}…${recipient.slice(-4)}`} · Robinhood
+            Chain testnet · test tokens with no value
+          </p>
+        )}
       </article>
       <div className="bq-demo-grid">
         {MIXES.map(mix => {
@@ -259,10 +286,14 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
                   </li>
                 ))}
               </ul>
-              <p className="bq-demo-price">{formatToken(price, 6)} tUSDG at today&apos;s prices</p>
+              <p className="bq-demo-price">
+                {shop.data ? <>{formatToken(price, 6)} tUSDG at today&apos;s prices</> : "Loading prices…"}
+              </p>
               <button
                 className="btn btn-primary btn-sm"
-                disabled={!ready || friendInvalid || !!busy || !items.length || items.some(item => item.over)}
+                disabled={
+                  !ready || friendInvalid || !!busy || !items.length || items.some(item => item.over || item.invalid)
+                }
                 onClick={() => act(`mix-${mix.name}`, () => buy(items.map(({ token, amount }) => ({ token, amount }))))}
               >
                 {busy === `mix-${mix.name}` ? "Buying…" : friend.trim() ? "Send as a gift" : "Buy for yourself"}

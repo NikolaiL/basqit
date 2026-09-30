@@ -15,11 +15,11 @@ export default function GiftsPage() {
       <SealedGifts />
       <section className="bq-soon-hero">
         <div>
-          <p className="bq-soon-status">In design</p>
-          <h1>Send someone real shares.</h1>
+          <p className="bq-soon-status">In design · testnet demo below</p>
+          <h1>Send someone Stock Tokens.</h1>
           <p className="bq-soon-lead">
-            A sealed gift of real Stock Tokens, worth what you paid when you bought it. They see which companies are
-            inside when they open it.
+            A sealed gift of Stock Tokens, worth what you paid when you bought it. They see which companies are inside
+            when they open it. The demo below uses test tokens with no value.
           </p>
           <WaitlistForm product="gifts" cta="Hear first when Gifts open" confetti={["MSFT", "GOOGL", "AAPL"]} />
         </div>

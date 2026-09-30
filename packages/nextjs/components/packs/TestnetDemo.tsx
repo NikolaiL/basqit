@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BasketsDemo } from "./BasketsDemo";
 import { GiftsDemo } from "./GiftsDemo";
 import { PackRoundDemo } from "./PackRoundDemo";
@@ -29,6 +29,8 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
   const { switchChainAsync } = useSwitchChain();
   const write = usePacksWrite();
   const [error, setError] = useState("");
+  const [pending, setPending] = useState("");
+  const lock = useRef(false);
   const onTestnet = chainId === robinhoodTestnet.id;
   const balances = useQuery({
     queryKey: ["packs-balances", address],
@@ -64,12 +66,20 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
       </section>
     );
 
-  const run = async (action: () => Promise<unknown>) => {
+  // One wallet action at a time: repeated clicks must not open more prompts or send transactions that revert.
+  const run = async (label: string, action: () => Promise<unknown>) => {
+    if (lock.current) return;
+    lock.current = true;
+    setPending(label);
     setError("");
     try {
       await action();
+      await balances.refetch();
     } catch (failure) {
       setError(getParsedError(failure));
+    } finally {
+      lock.current = false;
+      setPending("");
     }
   };
   const canDrip = balances.data?.canDrip ?? true;
@@ -103,9 +113,10 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
           ) : (
             <button
               className="btn btn-primary btn-sm"
-              onClick={() => run(() => switchChainAsync({ chainId: robinhoodTestnet.id }))}
+              disabled={!!pending}
+              onClick={() => run("Switching…", () => switchChainAsync({ chainId: robinhoodTestnet.id }))}
             >
-              Switch to Robinhood Chain Testnet
+              {pending === "Switching…" ? pending : "Switch to Robinhood Chain Testnet"}
             </button>
           )}
         </li>
@@ -123,12 +134,14 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
           <span>{balances.data ? `${formatToken(balances.data.usdg, 6)} tUSDG` : ""}</span>
           <button
             className="btn btn-primary btn-sm"
-            disabled={!address || !onTestnet || !canDrip}
+            disabled={!address || !onTestnet || !canDrip || !!pending}
             onClick={() =>
-              run(() => write({ address: deployment.faucet, abi: deployment.abis.faucet, functionName: "drip" }))
+              run("Confirming…", () =>
+                write({ address: deployment.faucet, abi: deployment.abis.faucet, functionName: "drip" }),
+              )
             }
           >
-            {canDrip ? "Get 100 test USDG" : "Come back tomorrow"}
+            {pending === "Confirming…" ? pending : canDrip ? "Get 100 test USDG" : "Come back tomorrow"}
           </button>
         </li>
       </ol>
