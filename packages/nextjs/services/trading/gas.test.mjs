@@ -11,7 +11,26 @@ let nativeBalance = 240n,
   sent = 0,
   estimation,
   query,
-  receiptFails = false;
+  receiptFails = false,
+  receipt = null,
+  seenNonce = null,
+  confirmedNonce = 0;
+const queries = {};
+// Web Locks with `ifAvailable`, shared by every hook instance: the browser's per-origin lock manager.
+const held = new Set();
+const navigator = {
+  locks: {
+    request: async (name, _options, callback) => {
+      if (held.has(name)) return callback(null);
+      held.add(name);
+      try {
+        return await callback({ name });
+      } finally {
+        held.delete(name);
+      }
+    },
+  },
+};
 const storage = new Map();
 const localStorage = {
   getItem: key => storage.get(key) ?? null,
@@ -32,10 +51,13 @@ const exports = {};
 const deps = {
   "@tanstack/react-query": {
     useQuery: options => {
-      query = options;
+      queries[options.queryKey[0]] = options;
+      if (options.queryKey[0] === "trade-gas") query = options;
       return options;
     },
+    useQueryClient: () => ({ setQueryData: () => {}, invalidateQueries: async () => {} }),
   },
+  react: { useEffect: () => {} },
   wagmi: {
     useWalletClient: () => ({
       data: {
@@ -43,7 +65,9 @@ const deps = {
         getAddresses: async () => [address],
         sendTransaction: async () => {
           sent++;
-          return "0xhash";
+          // Let a concurrent caller run while the wallet is open.
+          await new Promise(resolve => setTimeout(resolve, 5));
+          return `0x${String(sent).padStart(64, "0")}`;
         },
       },
     }),
@@ -57,7 +81,7 @@ const deps = {
       return hash;
     },
   },
-  "~~/services/trading/pending": load("./pending.ts", { localStorage }),
+  "~~/services/trading/pending": load("./pending.ts", { localStorage, navigator }),
   "~~/contracts/externalContracts": { tradeTokenAbi: [] },
   "~~/services/analytics/events": { trackSwap: (_legs, execute) => execute(() => {}) },
   "~~/services/atlas/client": {
@@ -70,6 +94,9 @@ const deps = {
       estimateFeesPerGas: async () => ({ maxFeePerGas: 2n }),
       getBalance: async () => nativeBalance,
       readContract: async ({ functionName }) => (functionName === "allowance" ? allowance : 1000n),
+      getTransactionReceipt: async () => receipt,
+      getTransaction: async () => (seenNonce === null ? null : { nonce: seenNonce }),
+      getTransactionCount: async () => confirmedNonce,
     },
   },
   "~~/services/trading/quote": { ZEROX_ENABLED: false },
@@ -114,10 +141,63 @@ assert.equal(storage.size, 0, "a confirmed swap leaves no pending record");
 receiptFails = true;
 await assert.rejects(exports.useStockTrade().swap(quote), /Timed out/);
 assert.equal(sent, 2);
-assert.match([...storage.values()][0], /"ref":"0xhash"/, "the submitted hash is kept");
+assert.match([...storage.values()][0], /"ref":"0x0{63}2"/, "the submitted hash is kept");
 receiptFails = false;
 await assert.rejects(exports.useStockTrade().swap(quote), /still unresolved/);
 assert.equal(sent, 2, "no second wallet send while the first outcome is unknown");
+const pending = deps["~~/services/trading/pending"];
+const hook = exports.usePendingTrade;
+const reconcile = () => (hook(address), queries["pending-trade"].queryFn());
+
+// F3: the hash was replaced or dropped (no receipt, nonce used). Not cleared automatically: a speed-up may have
+// bought. The nonce learned while the transaction was visible is kept.
+seenNonce = 7;
+assert.equal((await reconcile()).outcome, "unknown", "nonce not used yet");
+assert.equal(pending.readPendingTrade(4663, address).nonce, 7);
+seenNonce = null;
+confirmedNonce = 8;
+assert.equal((await reconcile()).outcome, "replaced");
+assert.ok(pending.readPendingTrade(4663, address), "replaced trade still blocks until the buyer checks history");
+pending.clearPendingTrade(4663, address);
+confirmedNonce = 0;
+
+// F1: A confirms, B broadcasts and times out, the dialog is closed, B confirms late; only C may be bought again.
+const [A, B, C] = ["0xa", "0xb", "0xc"].map(t => t.padEnd(42, "0"));
+pending.saveBatch({
+  id: "batch-1",
+  taker: address,
+  chainId: 4663,
+  legs: [A, B, C].map(t => ({ token: t, sellAmount: "1000000" })),
+  bought: [],
+  createdAt: 1,
+});
+await exports.useStockTrade().swap({ ...quote, buyToken: A }, "batch-1");
+receiptFails = true;
+await assert.rejects(exports.useStockTrade().swap({ ...quote, buyToken: B }, "batch-1"), /Timed out/);
+receiptFails = false;
+assert.deepEqual(
+  [...pending.readBatch(4663, address).bought],
+  [A],
+  "only confirmed legs are marked before reconciling",
+);
+receipt = { status: "success" };
+assert.equal(await reconcile(), null, "late success resolves the record");
+receipt = null;
+const batch = pending.readBatch(4663, address);
+assert.deepEqual([...batch.bought], [A, B], "late success marks its leg bought, surviving the closed dialog");
+assert.deepEqual(
+  [...batch.legs.filter(leg => !batch.bought.includes(leg.token)).map(leg => leg.token)],
+  [C],
+  "only C remains, at its original allocation",
+);
+pending.clearBatch(4663, address);
+
+// F2: two callers (dialogs or tabs) for one wallet: only one may reach the wallet.
+const before = sent;
+const both = await Promise.allSettled([exports.useStockTrade().swap(quote), exports.useStockTrade().swap(quote)]);
+assert.equal(sent - before, 1, "one wallet send");
+assert.equal(both.filter(result => result.status === "rejected").length, 1);
+assert.match(String(both.find(result => result.status === "rejected").reason), /another tab|still unresolved/);
 console.log(
-  "Gas: swap, approval/reset, insufficient nonzero balance, sufficient balance and no retry after receipt failure passed.",
+  "Gas and recovery: swap, approval/reset, ETH checks, no retry after receipt failure, replaced hash, late batch leg and single submitter passed.",
 );

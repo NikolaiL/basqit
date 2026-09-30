@@ -28,6 +28,7 @@ import {
   keepsApprovedMinimum,
   mergeQuoteErrors,
 } from "~~/services/trading/batch";
+import { clearBatch, newOperationId, readBatch, readPendingTrade, saveBatch } from "~~/services/trading/pending";
 import { type TradeQuote, USDG, balancePercentage } from "~~/services/trading/quote";
 
 export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; onClose: () => void }) {
@@ -47,14 +48,44 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const [excluded, setExcluded] = useState<string[]>([]);
   // Lower-case addresses bought in this dialog: shown faded with a check, never offered again.
   const [purchased, setPurchased] = useState<string[]>([]);
-  const isBought = (asset: DiscoveryAsset) => purchased.includes(asset.address.toLowerCase());
-  const selected = assets.filter(asset => !excluded.includes(asset.address) && !isBought(asset));
+  const owner = address && isAddress(address) ? (address as `0x${string}`) : undefined;
+  // A partly bought batch survives remounts and late confirmations: its bought legs are never offered again,
+  // and only its remaining legs, at their original amounts, can be bought.
+  const savedBatch =
+    useQuery({
+      queryKey: ["trade-batch", robinhoodChain.id, owner],
+      enabled: !!owner,
+      queryFn: () => {
+        const batch = readBatch(robinhoodChain.id, owner!);
+        if (batch && batch.legs.every(leg => batch.bought.includes(leg.token))) {
+          clearBatch(robinhoodChain.id, owner!);
+          return null;
+        }
+        return batch;
+      },
+    }).data ?? null;
+  const remainingLegs = savedBatch?.legs.filter(leg => !savedBatch.bought.includes(leg.token)) ?? [];
+  const isBought = (asset: DiscoveryAsset) =>
+    purchased.includes(asset.address.toLowerCase()) || !!savedBatch?.bought.includes(asset.address.toLowerCase());
+  const selected = assets.filter(
+    asset =>
+      !excluded.includes(asset.address) &&
+      !isBought(asset) &&
+      (!savedBatch || remainingLegs.some(leg => leg.token === asset.address.toLowerCase())),
+  );
+  const remainingAmount = savedBatch
+    ? formatUnits(
+        remainingLegs.reduce((sum, leg) => sum + BigInt(leg.sellAmount), 0n),
+        6,
+      )
+    : undefined;
   const [input, setInput] = useState<{ key: string; percentage: number; manual?: string }>();
   const inputKey = address ?? "";
   const currentInput = input?.key === inputKey || input?.key === "" ? input : undefined;
   const percentage = currentInput?.percentage ?? 50;
   const amount =
     currentInput?.manual ??
+    remainingAmount ??
     (balance.data ? balancePercentage(balance.data.balance, balance.data.decimals, percentage) : "");
   const sliderPercentage =
     currentInput?.manual !== undefined && balance.data
@@ -179,10 +210,20 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
     lock.current = true;
     setError("");
     const bought: string[] = [];
+    const batchId = savedBatch?.id ?? newOperationId();
+    if (!savedBatch)
+      saveBatch({
+        id: batchId,
+        taker: quote.taker,
+        chainId: robinhoodChain.id,
+        legs: quote.legs.map(leg => ({ token: leg.buyToken.toLowerCase(), sellAmount: leg.sellAmount })),
+        bought: [],
+        createdAt: Date.now(),
+      });
     try {
       setBusy("Confirm the purchase in your wallet…");
       if (atomic && !separateSteps) {
-        const result = await trade.buyAtomic(quote);
+        const result = await trade.buyAtomic(quote, batchId);
         if (!result) {
           setSeparateSteps(true);
           throw new Error(
@@ -190,6 +231,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           );
         }
         setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
+        clearBatch(robinhoodChain.id, quote.taker);
         setHash(result.hash ?? "confirmed");
         await Promise.all([
           client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
@@ -238,10 +280,11 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             : "Confirm all purchases in your wallet…",
         );
         const step = await refreshStep(planned, quote.legs);
-        confirmed = await trade.swap(step);
+        confirmed = await trade.swap(step, batchId);
         bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
         setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
       }
+      clearBatch(robinhoodChain.id, quote.taker);
       setHash(confirmed);
       await Promise.all([
         client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
@@ -249,17 +292,16 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       ]);
     } catch (failure) {
       const reason = failure instanceof Error ? failure.message.split("\n")[0] : "Purchase failed. Please try again.";
+      // Nothing bought and nothing left unresolved: the batch never happened.
+      let unresolved = true;
+      try {
+        unresolved = !!readPendingTrade(robinhoodChain.id, quote.taker);
+      } catch {}
+      if (!bought.length && !savedBatch && !unresolved) clearBatch(robinhoodChain.id, quote.taker);
       if (bought.length) {
-        // Completed purchases stay done. The rest keeps its original share, not a new share of the balance.
-        const remaining = quote.legs.filter(leg => !bought.includes(leg.buyToken.toLowerCase()));
-        setInput({
-          key: inputKey,
-          percentage,
-          manual: formatUnits(
-            remaining.reduce((sum, leg) => sum + BigInt(leg.sellAmount), 0n),
-            6,
-          ),
-        });
+        // Completed purchases stay done. The rest keeps its original share (from the saved batch), not a new share
+        // of the balance.
+        setInput({ key: inputKey, percentage });
         void client.invalidateQueries({ queryKey: ["stock-portfolio"] });
         void client.invalidateQueries({ queryKey: ["trade-balance"] });
         setError(`${reason} Bought ${bought.length} of ${quote.legs.length}; press Buy for the rest.`);
@@ -268,6 +310,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       lock.current = false;
       setBusy("");
       void pendingTrade.refetch();
+      void client.invalidateQueries({ queryKey: ["trade-batch"] });
     }
   }
   return (
@@ -439,6 +482,26 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           </p>
         )}
         {!hash && <PendingTradeNotice pending={pendingTrade} />}
+        {!hash && savedBatch && (
+          <div className="bq-fine-print" role="status">
+            <p>
+              An earlier purchase from this wallet is incomplete: {savedBatch.bought.length} of {savedBatch.legs.length}{" "}
+              bought. Buy only the rest, at its original amount, or start over.
+              {!selected.length && " The remaining stocks are not in this list."}
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={!!busy || !!pendingTrade.data}
+              onClick={() => {
+                clearBatch(robinhoodChain.id, savedBatch.taker);
+                void client.invalidateQueries({ queryKey: ["trade-batch"] });
+              }}
+            >
+              Start over
+            </button>
+          </div>
+        )}
         {!hash && (
           <GasFundingNotice
             required={gasEstimate.data}
