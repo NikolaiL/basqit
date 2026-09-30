@@ -1,6 +1,13 @@
 import { ALLOWANCE_HOLDER, swapFeeConfig } from "../trading/quote";
 import { ScanError } from "./balances";
-import { type FundingQuote, fundingDestinations, parseFundingInput } from "./shared";
+import { type FundingQuote, NATIVE, fundingDestinations, parseFundingInput } from "./shared";
+
+// ponytail: calibration knobs, not verified protocol limits. The 0x cross-chain transaction target is not
+// independently verified, so the payload is bounded instead: native value, target and output tolerance.
+// Native bridge fee a route may add on top of the input (0x documents such fees); shown to the buyer.
+export const MAX_FUNDING_NATIVE_FEE = 5_000_000_000_000_000n; // 0.005 ETH
+// Largest gap between expected and minimum output the buyer can be asked to accept.
+export const MAX_FUNDING_SLIPPAGE_BPS = 500n;
 
 // ponytail: per-process budget; move to a shared limiter if paid 0x usage grows.
 const globals = globalThis as typeof globalThis & {
@@ -97,6 +104,16 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     (spender && spender.toLowerCase() !== ALLOWANCE_HOLDER.toLowerCase())
   )
     throw new ScanError("No valid funding quote returned.", 502);
+  // Metadata is not execution: bind what the wallet will actually send to the approved intent.
+  const nativeInput = p.token.toLowerCase() === NATIVE ? BigInt(p.amount) : 0n;
+  const nativeFee = BigInt(tx.value) - nativeInput;
+  if (
+    nativeFee < 0n ||
+    nativeFee > MAX_FUNDING_NATIVE_FEE ||
+    [p.token, p.wallet, NATIVE].some(a => a.toLowerCase() === tx.to.toLowerCase()) ||
+    BigInt(q.minBuyAmount) * 10000n < BigInt(q.buyAmount) * (10000n - MAX_FUNDING_SLIPPAGE_BPS)
+  )
+    throw new ScanError("Funding quote does not match the requested transfer.", 502);
   if (issues?.balance || issues?.simulationIncomplete)
     throw new ScanError("Check your source balance; this route could not be fully simulated.", 422);
   const fees = q.fees?.integratorFees ?? (q.fees?.integratorFee ? [q.fees.integratorFee] : []);
@@ -129,6 +146,7 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     provider: q.steps?.find((s: { type: string }) => s.type === "bridge")?.provider ?? "0x",
     seconds: q.estimatedTimeSeconds,
     fee: q.fees?.zeroExFee ?? null,
+    nativeFee: nativeFee.toString(),
     transaction: { to: tx.to, data: tx.data, value: tx.value },
   };
 }

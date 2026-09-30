@@ -89,6 +89,9 @@ export function useFundingTransfer() {
           data: q.transaction.data,
           value: BigInt(q.transaction.value),
         };
+        // The provider's target is not independently verified; at least refuse a plain address (a bare transfer).
+        if (((await rpc.getCode({ address: tx.to }))?.length ?? 0) <= 2)
+          throw new Error("Funding route target is not a contract. Request a new quote.");
         const gas = await rpc.estimateGas(tx),
           fees = await rpc.estimateFeesPerGas();
         assertFundingGasReserve(

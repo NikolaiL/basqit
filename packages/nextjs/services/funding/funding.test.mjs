@@ -119,6 +119,7 @@ try {
   process.env.BASQIT_SWAP_FEE_BPS = "15";
   process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
   const first = await getFundingQuote(params());
+  assert.equal(first.nativeFee, "0");
   assert.equal(first.basqitFee.amount, "15000000000000");
   assert.equal(first.basqitFee.recipient, wallet);
   assert.equal(first.buyAmount, "27000000");
@@ -132,6 +133,33 @@ try {
     d => ({ ...d, allowanceTarget: wallet }),
     d => ({ ...d, quotes: [{ ...d.quotes[0], sellAmount: "1" }] }),
     d => ({ ...d, quotes: [{ ...d.quotes[0], issues: { simulationIncomplete: true } }] }),
+    // T2: a payload unrelated to the quoted conversion (1 ETH to an EOA), a transfer on the sell token itself,
+    // and a minimum far below the expected output.
+    d => ({
+      ...d,
+      quotes: [
+        {
+          ...d.quotes[0],
+          transaction: { chainType: "evm", details: { to: wallet, data: "0x00", value: "1000000000000000000" } },
+        },
+      ],
+    }),
+    d => ({
+      ...d,
+      quotes: [
+        {
+          ...d.quotes[0],
+          transaction: { chainType: "evm", details: { to: ALLOWANCE_HOLDER, data: "0x00", value: "5000000000000001" } },
+        },
+      ],
+    }),
+    d => ({
+      ...d,
+      quotes: [
+        { ...d.quotes[0], transaction: { chainType: "evm", details: { to: token, data: "0xa9059cbb", value: "0" } } },
+      ],
+    }),
+    d => ({ ...d, quotes: [{ ...d.quotes[0], minBuyAmount: "1" }] }),
   ]) {
     globalThis.basqitFundingProvider.cache.clear();
     modify = change;

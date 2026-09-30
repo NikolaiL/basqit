@@ -7,7 +7,9 @@ import { BaseError, UserRejectedRequestError } from "viem";
 const wallet = "0x1111111111111111111111111111111111111111";
 const native = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 const hash = `0x${"1".repeat(64)}`;
-let sendError, receiptError;
+let sendError,
+  receiptError,
+  code = "0x6001";
 const exports = {};
 const dependencies = {
   "~~/services/analytics/events": { trackSwap: (_legs, execute) => execute(() => {}) },
@@ -16,6 +18,7 @@ const dependencies = {
     http: () => {},
     createPublicClient: () => ({
       getBalance: async () => 1000n,
+      getCode: async () => code,
       estimateGas: async () => 1n,
       estimateFeesPerGas: async () => ({ maxFeePerGas: 1n }),
     }),
@@ -86,4 +89,18 @@ for (const [name, sending, receipt, expected] of [
   else await result;
   assert.deepEqual(events, expected, name);
 }
+// T2: a route target without code is a plain transfer, never a conversion; the wallet is never opened.
+code = "0x";
+sendError = receiptError = undefined;
+const blocked = [];
+await assert.rejects(
+  exports.useFundingTransfer().send(
+    quote,
+    () => blocked.push("saved"),
+    () => {},
+    () => {},
+  ),
+  /not a contract/,
+);
+assert.deepEqual(blocked, []);
 console.log("Funding rejection: explicit cancellation resets intent; uncertain sends and submitted hashes retained.");
