@@ -50,10 +50,21 @@ export async function getActions(): Promise<ActionsResponse> {
   }
   const completed = actions.filter(action => action.status === "CORPORATE_ACTION_STATUS_COMPLETED");
   try {
-    const addresses = [
-      ...new Set(completed.flatMap(action => (deployments.get(action.id) ? [deployments.get(action.id)!] : []))),
-    ].sort();
-    const history = addresses.length ? await readMultiplierHistory(addresses) : [];
+    // Updates land up to ~10 days before a processing date and ~5 after; they are scheduled a few days ahead, so
+    // each token is scanned from 17 days before its earliest event to 5 days after its latest.
+    const days = new Map<`0x${string}`, number[]>();
+    for (const action of completed) {
+      const address = deployments.get(action.id);
+      if (!address || !action.date) continue;
+      days.set(address, [
+        ...(days.get(address) ?? []),
+        Math.floor(Date.parse(`${action.date}T00:00:00Z`) / 86_400_000),
+      ]);
+    }
+    const ranges = [...days.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([address, list]) => ({ address, fromDay: Math.min(...list) - 17, toDay: Math.max(...list) + 5 }));
+    const history = ranges.length ? await readMultiplierHistory(ranges) : [];
     for (const action of completed) {
       const address = deployments.get(action.id);
       const match = address
