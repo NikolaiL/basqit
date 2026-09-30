@@ -103,7 +103,8 @@ contract BasqitGiftRouter is BasqitRouterBase {
     }
 
     /// @notice The fee buyers see before they confirm; capped at MAX_FEE_BPS and bounded by each buyer's budget.
-    function setFee(address recipient, uint16 bps) external onlyOwner {
+    /// Guarded so a receiver callback during `buyGift` cannot raise the fee after the buyer's cap was checked.
+    function setFee(address recipient, uint16 bps) external onlyOwner nonReentrant {
         if (recipient == address(0)) revert ZeroAddress();
         if (recipient == address(this)) revert InvalidRecipient(recipient);
         if (bps > MAX_FEE_BPS) revert FeeTooHigh(bps);

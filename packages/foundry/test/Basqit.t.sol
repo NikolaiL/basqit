@@ -559,6 +559,21 @@ contract BasqitTest is Test {
         b.mint(1e18, alice);
     }
 
+    /// Supply 0 with unpaid owed debt: a new deposit must not be able to cover the old deficit.
+    function test_issuerBurn_owedDeficitBlocksMintAtZeroSupply() public {
+        (BasqitToken b, IssuerToken iss) = _issuerBasket();
+        iss.setPaused(true);
+        vm.prank(alice);
+        b.redeemAvailable(10e18, alice); // supply 0, 10 iss owed
+        iss.setPaused(false);
+        iss.adminBurn(address(b), 6e18); // balance 4 < owed 10
+        assertEq(b.totalSupply(), 0);
+        assertFalse(b.isFullyBacked());
+        vm.prank(alice);
+        vm.expectRevert(BasqitToken.UnderBacked.selector);
+        b.mint(10e18, alice);
+    }
+
     function test_feeOnTransferComponent_mintReverts() public {
         (BasqitToken b, IssuerToken iss) = _issuerBasket();
         iss.setFeeBps(100);

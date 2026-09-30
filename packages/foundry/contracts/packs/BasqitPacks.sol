@@ -127,6 +127,7 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
     event ReserveWithdrawn(address indexed token, address to, uint256 amount);
 
     error ZeroAddress();
+    error NotFeePayer();
     error BadRoundSize(uint256 size);
     error BadDuration();
     error PriceTooHigh();
@@ -466,6 +467,17 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
 
     /// @notice After a cancelled draw, reclaims Dice's fee (after its refund delay) for whoever paid it.
     function refundDiceFee(uint256 roundId) external nonReentrant {
+        _refundDiceFee(roundId, _rounds[roundId].feePayer);
+    }
+
+    /// @notice The payer's own route for the same refund, for a payer that cannot receive plain ETH.
+    function refundDiceFeeTo(uint256 roundId, address to) external nonReentrant {
+        if (msg.sender != _rounds[roundId].feePayer) revert NotFeePayer();
+        if (to == address(0) || to == address(this)) revert ZeroAddress();
+        _refundDiceFee(roundId, to);
+    }
+
+    function _refundDiceFee(uint256 roundId, address to) private {
         Round storage round = _rounds[roundId];
         if (round.status != Status.Cancelled) revert WrongStatus(round.status);
         address payer = round.feePayer;
@@ -474,9 +486,9 @@ contract BasqitPacks is Ownable2Step, ReentrancyGuard {
         uint256 before = address(this).balance;
         entropy.refundRequest(round.provider, round.sequence);
         uint256 amount = address(this).balance - before;
-        (bool ok,) = payer.call{ value: amount }("");
+        (bool ok,) = to.call{ value: amount }("");
         if (!ok) revert EthTransferFailed();
-        emit DiceFeeRefunded(roundId, payer, amount);
+        emit DiceFeeRefunded(roundId, to, amount);
     }
 
     /// @dev Only Dice refunds arrive here.

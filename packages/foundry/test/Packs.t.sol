@@ -793,3 +793,61 @@ contract TestnetFaucetTest is Test {
         new BasqitTestnetFaucet(address(1), 1, 1, 1);
     }
 }
+
+/// Owner-controlled gift recipient that tries to raise the fee from inside `buyGift`.
+contract GiftFeeCallbackTest is GiftsTest {
+    function onERC721Received(address, address, uint256, bytes calldata) external returns (bytes4) {
+        router.setFee(treasury, 500);
+        return this.onERC721Received.selector;
+    }
+
+    function test_setFeeCannotRunInsideBuyGift() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        router.buyGift(_purchases(), 100e6, 0, address(gifts), address(this), block.timestamp);
+        assertEq(usdg.balanceOf(treasury), 0);
+    }
+
+    function test_giftCannotBeTransferredToGiftsContract() public {
+        vm.prank(alice);
+        uint256 id = gifts.wrap(_one(address(nvda), 1e17), alice);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(BasqitGifts.InvalidRecipient.selector, address(gifts)));
+        gifts.transferFrom(alice, address(gifts), id);
+        vm.prank(alice);
+        gifts.open(id);
+    }
+}
+
+contract NonPayableDrawCaller {
+    function draw(BasqitPacks packs, uint256 round) external payable {
+        packs.requestDraw{ value: msg.value }(round);
+    }
+
+    function refundTo(BasqitPacks packs, uint256 round, address to) external {
+        packs.refundDiceFeeTo(round, to);
+    }
+}
+
+contract DiceFeeRefundToTest is PacksTest {
+    function test_nonPayablePayerRedirectsDiceFee() public {
+        uint256 id = _open(2);
+        _sellOut(id, 2);
+        NonPayableDrawCaller caller = new NonPayableDrawCaller();
+        uint256 fee = packs.drawFee();
+        vm.deal(address(this), 1 ether);
+        caller.draw{ value: fee }(packs, id);
+        vm.warp(block.timestamp + DRAW + 1);
+        packs.cancel(id);
+
+        vm.expectRevert(BasqitPacks.EthTransferFailed.selector);
+        packs.refundDiceFee(id);
+        vm.expectRevert(BasqitPacks.NotFeePayer.selector);
+        packs.refundDiceFeeTo(id, alice);
+
+        uint256 before = alice.balance;
+        caller.refundTo(packs, id, alice);
+        assertEq(alice.balance - before, fee);
+        assertEq(packs.getRound(id).feePayer, address(0));
+    }
+}

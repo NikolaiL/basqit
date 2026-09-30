@@ -120,6 +120,12 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
         emit GiftWrapped(giftId, msg.sender, recipient);
     }
 
+    /// @dev A gift held by this contract could never be opened or moved again; plain `transferFrom` would allow it.
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        if (to == address(this)) revert InvalidRecipient(to);
+        return super._update(to, tokenId, auth);
+    }
+
     /// @notice Opens a gift: burns it and sends its contents to the holder.
     function open(uint256 giftId) external nonReentrant {
         if (ownerOf(giftId) != msg.sender) revert NotHolder(giftId);

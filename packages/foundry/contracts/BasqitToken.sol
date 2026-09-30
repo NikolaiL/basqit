@@ -165,6 +165,9 @@ contract BasqitToken is ERC20, ReentrancyGuard {
         uint256 supply = totalSupply();
         for (uint256 i = 0; i < _components.length; i++) {
             Component memory c = _components[i];
+            // Unpaid redemptions come first: at zero supply the share check below is trivially met,
+            // so without this a new deposit would cover old holders' deficit.
+            if (IERC20(c.token).balanceOf(address(this)) < totalOwed[c.token]) return false;
             if (_available(c.token) < Math.mulDiv(c.unitsPerShare, supply, SHARE_UNIT, Math.Rounding.Ceil)) {
                 return false;
             }
