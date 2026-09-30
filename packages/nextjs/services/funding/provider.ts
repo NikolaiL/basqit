@@ -9,16 +9,21 @@ export const MAX_FUNDING_NATIVE_FEE = 5_000_000_000_000_000n; // 0.005 ETH
 // Largest gap between expected and minimum output the buyer can be asked to accept.
 export const MAX_FUNDING_SLIPPAGE_BPS = 500n;
 
-// ponytail: per-process budget; move to a shared limiter if paid 0x usage grows.
+// ponytail: per-process budget; move to a shared limiter if paid 0x usage grows or more instances run.
+// Quotes and status have separate capacity (same 60/min, 4 concurrent in total), so quote traffic can never use up
+// the status checks that transfer recovery depends on.
+const LIMITS = { quotes: { perMinute: 40, active: 3 }, status: { perMinute: 20, active: 1 } } as const;
+type Budget = { start: number; count: number; active: number };
 const globals = globalThis as typeof globalThis & {
   basqitFundingProvider?: {
-    start: number;
-    count: number;
-    active: number;
+    budgets: Record<keyof typeof LIMITS, Budget>;
     cache: Map<string, { until: number; promise: Promise<any> }>;
   };
 };
-const state = (globals.basqitFundingProvider ??= { start: 0, count: 0, active: 0, cache: new Map() });
+const state = (globals.basqitFundingProvider ??= {
+  budgets: { quotes: { start: 0, count: 0, active: 0 }, status: { start: 0, count: 0, active: 0 } },
+  cache: new Map(),
+});
 export async function fundingRequest(path: "quotes" | "status", params: URLSearchParams) {
   if (process.env.BASQIT_ENABLE_FUNDING !== "true") throw new ScanError("Cross-chain funding is not enabled.", 503);
   const key = process.env.ZEROX_API_KEY?.trim();
@@ -28,14 +33,17 @@ export async function fundingRequest(path: "quotes" | "status", params: URLSearc
   const cached = state.cache.get(id);
   if (cached && cached.until > now) return cached.promise;
   for (const [k, v] of state.cache) if (v.until <= now) state.cache.delete(k);
-  if (now - state.start >= 60000) {
-    state.start = now;
-    state.count = 0;
+  const budget = state.budgets[path];
+  if (now - budget.start >= 60000) {
+    budget.start = now;
+    budget.count = 0;
   }
-  if (state.count >= 60 || state.active >= 4 || state.cache.size >= 256)
+  if (budget.count >= LIMITS[path].perMinute || budget.active >= LIMITS[path].active || state.cache.size >= 256) {
+    console.warn(`[budget] funding ${path} provider budget used up`);
     throw new ScanError("Funding request limit reached. Try again shortly.", 429);
-  state.count++;
-  state.active++;
+  }
+  budget.count++;
+  budget.active++;
   const entry = { until: Infinity, promise: Promise.resolve() as Promise<any> };
   entry.promise = (async () => {
     try {
@@ -56,7 +64,7 @@ export async function fundingRequest(path: "quotes" | "status", params: URLSearc
     } catch (error) {
       throw error instanceof ScanError ? error : new ScanError("Funding provider is temporarily unavailable.", 503);
     } finally {
-      state.active--;
+      budget.active--;
       entry.until = Date.now() + 5000;
     }
   })();

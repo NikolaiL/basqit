@@ -13,7 +13,7 @@ registerHooks({
 });
 const { fundingTokens, parseFundingInput, terminalStatus, fundingStatusLabel, NATIVE, assertFundingGasReserve } =
   await import("./shared.ts");
-const { getFundingQuote } = await import("./provider.ts");
+const { getFundingQuote, fundingRequest } = await import("./provider.ts");
 const { USDG, ALLOWANCE_HOLDER } = await import("../trading/quote.ts");
 const wallet = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6",
   token = "0x4200000000000000000000000000000000000006";
@@ -205,6 +205,26 @@ try {
   process.env.BASQIT_SWAP_FEE_RECIPIENT = "";
   await assert.rejects(getFundingQuote(params()), /RECIPIENT/);
   process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
+  // S2: quote traffic uses up only the quote budget; status checks for recovery keep their own capacity.
+  for (let i = 0; i < 60; i++) {
+    globalThis.basqitFundingProvider.cache.clear();
+    const extra = params();
+    extra.set("amount", String(10000000000000000 + i));
+    await getFundingQuote(extra).catch(() => {});
+  }
+  await assert.rejects(getFundingQuote(params()), /limit reached/);
+  const statusParams = new URLSearchParams({
+    originChain: "8453",
+    originTxHash: `0x${"1".repeat(64)}`,
+    quoteId: "0x1",
+  });
+  const quoteFetch = globalThis.fetch;
+  globalThis.fetch = async url => {
+    assert.match(String(url), /cross-chain\/status/);
+    return Response.json({ status: "origin_tx_confirmed" });
+  };
+  assert.equal((await fundingRequest("status", statusParams)).status, "origin_tx_confirmed");
+  globalThis.fetch = quoteFetch;
   process.env.BASQIT_ENABLE_FUNDING = "false";
   await assert.rejects(getFundingQuote(params()), /not enabled/);
   console.log(

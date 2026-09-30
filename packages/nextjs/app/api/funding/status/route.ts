@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ScanError } from "~~/services/funding/balances";
 import { fundingRequest } from "~~/services/funding/provider";
 import { fundingChains } from "~~/services/funding/shared";
+import { clientKey, takeAllowance } from "~~/services/rate-limit";
 
 export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
@@ -17,6 +18,10 @@ export async function GET(request: NextRequest) {
       !/^0x[0-9a-f]{1,128}$/i.test(p.get("quoteId") ?? "")
     )
       throw new ScanError("Invalid transfer reference.", 400);
+    // No sign-in required: recovery must work after a session expires. Status has its own provider capacity.
+    const who = clientKey(request.headers);
+    if (who && !takeAllowance(`funding-status:${who}`, 20))
+      throw new ScanError("Too many status checks. Try again in a minute.", 429);
     const result = await fundingRequest("status", p);
     // No recovery calldata is executed by the client. Only display progress and provider recovery information.
     return NextResponse.json(

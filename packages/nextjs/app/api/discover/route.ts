@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { discoveryCatalog } from "~~/services/discover/catalog";
 import companyContext from "~~/services/discover/company-context.json";
 import logoColors from "~~/services/discover/logo-colors.json";
@@ -12,6 +13,7 @@ import {
   selectMatches,
 } from "~~/services/discover/matching";
 import { packQuestions } from "~~/services/discover/request-budget";
+import { clientKey, takeAllowance } from "~~/services/rate-limit";
 
 const cache = new Map<string, { until: number; matches: DiscoveryMatch[] }>();
 // Scores depend only on the committed company data, so a theme's answer stays valid for a day.
@@ -114,6 +116,17 @@ export async function GET(request: NextRequest) {
     if (!key) return reply({ error: "Stock discovery is not configured yet." }, 503);
     // Only uncached themes spend the budget (one theme is ~5 Jev calls); cached, exact-symbol and random answers are free.
     // ponytail: per-process budget; move to a shared limiter before running multiple instances.
+    // Per consumer first, so one caller cannot spend everyone's share: signed-in wallets get more than anonymous IPs.
+    const session = await getSession(request.cookies.get(SESSION_COOKIE)?.value).catch(() => undefined);
+    const who = clientKey(request.headers, session?.address);
+    if (
+      who &&
+      !takeAllowance(
+        `discover:${who}`,
+        session ? limit("BASQIT_DISCOVER_PER_WALLET", 30) : limit("BASQIT_DISCOVER_PER_IP", 8),
+      )
+    )
+      return reply({ error: "Lots of ideas from you at once. Try again in a minute." }, 429);
     if (Date.now() - windowStarted > 60000) {
       windowStarted = Date.now();
       requests = 0;
