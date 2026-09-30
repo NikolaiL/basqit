@@ -332,6 +332,8 @@ export function StockDiscovery({
                 key={asset.symbol}
                 data-symbol={asset.symbol}
                 className={`bq-discover-coin ${matched ? "is-match" : ""}`}
+                // With results showing, only matches are in the tab order; the rest of the pile stays clickable.
+                tabIndex={matches.length > 0 && !matched ? -1 : undefined}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}
