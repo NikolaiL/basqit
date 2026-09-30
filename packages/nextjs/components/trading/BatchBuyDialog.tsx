@@ -30,7 +30,7 @@ import {
   mergeQuoteErrors,
   resumeAmount,
 } from "~~/services/trading/batch";
-import { clearBatch, newOperationId, readBatch, readPendingTrade, saveBatch } from "~~/services/trading/pending";
+import { clearBatch, newOperationId, readActiveBatch, readPendingTrade, saveBatch } from "~~/services/trading/pending";
 import { type TradeQuote, USDG, balancePercentage } from "~~/services/trading/quote";
 
 export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; onClose: () => void }) {
@@ -57,14 +57,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
     useQuery({
       queryKey: ["trade-batch", robinhoodChain.id, owner],
       enabled: !!owner,
-      queryFn: () => {
-        const batch = readBatch(robinhoodChain.id, owner!);
-        if (batch && batch.legs.every(leg => batch.bought.includes(leg.token))) {
-          clearBatch(robinhoodChain.id, owner!);
-          return null;
-        }
-        return batch;
-      },
+      queryFn: () => readActiveBatch(robinhoodChain.id, owner!),
     }).data ?? null;
   const remainingLegs = savedBatch?.legs.filter(leg => !savedBatch.bought.includes(leg.token)) ?? [];
   const isBought = (asset: DiscoveryAsset) =>
@@ -241,7 +234,6 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           );
         }
         setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
-        clearBatch(robinhoodChain.id, quote.taker);
         setHash(result.hash ?? "confirmed");
         await Promise.all([
           client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
@@ -294,7 +286,8 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
         setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
       }
-      clearBatch(robinhoodChain.id, quote.taker);
+      // No clear here: the saved batch goes away only once every saved leg is bought (see the batch query), so
+      // finishing a subset keeps the other remaining legs and their allocations.
       setHash(confirmed);
       await Promise.all([
         client.invalidateQueries({ queryKey: ["stock-portfolio"] }),

@@ -17,6 +17,7 @@ let nativeBalance = 240n,
   seenTx = null,
   confirmedNonce = 0;
 const queries = {};
+const replacementHash = `0x${"c".repeat(64)}`;
 // Web Locks with `ifAvailable`, shared by every hook instance: the browser's per-origin lock manager.
 const held = new Set();
 const navigator = {
@@ -97,7 +98,9 @@ const deps = {
       getBalance: async () => nativeBalance,
       readContract: async ({ functionName }) => (functionName === "allowance" ? allowance : 1000n),
       getTransactionReceipt: async () => receipt,
-      getTransaction: async () => seenTx ?? (seenNonce === null ? null : { nonce: seenNonce }),
+      // A pasted replacement is visible under its own hash only; the original under the original.
+      getTransaction: async ({ hash }) =>
+        seenTx && hash === replacementHash ? seenTx : seenNonce === null ? null : { nonce: seenNonce },
       getTransactionCount: async () => confirmedNonce,
     },
   },
@@ -225,7 +228,7 @@ const pendingFor = token => {
     createdAt: 1,
   });
 };
-const replacement = `0x${"c".repeat(64)}`;
+const replacement = replacementHash;
 const track = async () => {
   (await loadedHook()).track(replacement);
   receipt = { status: "success" };
@@ -240,7 +243,16 @@ assert.equal(pending.readBatch(4663, address).bought.length, 0, "nothing marked 
 (await loadedHook()).resolve(false);
 assert.equal(pending.readPendingTrade(4663, address), null);
 assert.equal(pending.readBatch(4663, address).bought.length, 0, "'nothing was bought' marks nothing");
+// The same call under another nonce is a different, earlier or later purchase, not this one's replacement.
 pendingFor(B);
+const withNonce = pending.readPendingTrade(4663, address);
+pending.savePendingTrade({ ...withNonce, nonce: 9 });
+seenTx = { nonce: 4, from: address, to: router, input: "0x1234" };
+assert.equal((await track()).outcome, "unverified", "identical call, other nonce");
+assert.equal(pending.readBatch(4663, address).bought.length, 0);
+pending.clearPendingTrade(4663, address);
+pendingFor(B);
+pending.savePendingTrade({ ...pending.readPendingTrade(4663, address), nonce: 9 });
 seenTx = { nonce: 9, from: address, to: router, input: "0x1234" };
 assert.equal(await track(), null, "a sped-up copy of the same call settles the purchase");
 assert.deepEqual([...pending.readBatch(4663, address).bought], [B]);
@@ -250,6 +262,28 @@ seenTx = null;
 assert.deepEqual([...pending.readBatch(4663, address).bought], [C], "'went through' marks the legs bought");
 pending.clearBatch(4663, address);
 
+// Resuming with only a subset: A bought, B and C remain, only C is bought now. B and its allocation stay saved.
+pending.saveBatch({
+  id: "batch-3",
+  taker: address,
+  chainId: 4663,
+  legs: [A, B, C].map(t => ({ token: t, sellAmount: "1000000" })),
+  bought: [A],
+  createdAt: 1,
+});
+await exports.useStockTrade().swap({ ...quote, buyToken: C }, "batch-3");
+const afterSubset = pending.readBatch(4663, address);
+assert.deepEqual([...afterSubset.bought], [A, C]);
+assert.deepEqual(
+  [...afterSubset.legs.filter(leg => !afterSubset.bought.includes(leg.token)).map(leg => leg.token)],
+  [B],
+  "B's unfinished allocation survives a subset purchase",
+);
+assert.ok(pending.readActiveBatch(4663, address), "an unfinished batch stays active");
+await exports.useStockTrade().swap({ ...quote, buyToken: B }, "batch-3");
+assert.equal(pending.readActiveBatch(4663, address), null, "finished once every saved leg is bought");
+assert.equal(pending.readBatch(4663, address), null, "and only then removed");
+
 // F2: two callers (dialogs or tabs) for one wallet: only one may reach the wallet.
 const before = sent;
 const both = await Promise.allSettled([exports.useStockTrade().swap(quote), exports.useStockTrade().swap(quote)]);
@@ -257,5 +291,5 @@ assert.equal(sent - before, 1, "one wallet send");
 assert.equal(both.filter(result => result.status === "rejected").length, 1);
 assert.match(String(both.find(result => result.status === "rejected").reason), /another tab|still unresolved/);
 console.log(
-  "Gas and recovery: swap, approval/reset, ETH checks, no retry after receipt failure, replaced hash, late batch leg, cancellation hash, manual answers and single submitter passed.",
+  "Gas and recovery: swap, approval/reset, ETH checks, no retry after receipt failure, replaced hash, late batch leg, cancellation hash, nonce binding, manual answers, subset resume and single submitter passed.",
 );

@@ -283,7 +283,7 @@ export function usePendingTrade(owner?: `0x${string}`) {
         calls: wallet ? id => wallet.getCallsStatus({ id }) : undefined,
       });
       if (outcome === "unknown" || outcome === "replaced" || outcome === "unverified") {
-        if (nonce !== undefined && nonce !== trade.nonce) savePendingTrade({ ...trade, nonce });
+        if (nonce !== undefined && trade.nonce === undefined) savePendingTrade({ ...trade, nonce });
         return { ...trade, nonce, outcome };
       }
       if (outcome === "success" && trade.batch) markBatchBought(trade.chainId, trade.taker, trade.batch, trade.tokens);
@@ -332,6 +332,7 @@ export function usePendingTrade(owner?: `0x${string}`) {
           batch: trade.batch,
           to: trade.to,
           data: trade.data,
+          nonce: trade.nonce,
           tracked: true,
           createdAt: trade.createdAt,
         });

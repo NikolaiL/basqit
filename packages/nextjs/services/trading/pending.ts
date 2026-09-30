@@ -76,6 +76,16 @@ export function readBatch(chainId: number, taker: string): BatchPurchase | null 
   return readOwned<BatchPurchase>(batchKey(chainId, taker), chainId, taker);
 }
 
+/** The saved batch while any leg is unbought; one whose every leg is bought is finished and removed here only. */
+export function readActiveBatch(chainId: number, taker: string): BatchPurchase | null {
+  const batch = readBatch(chainId, taker);
+  if (batch && batch.legs.every(leg => batch.bought.includes(leg.token))) {
+    clearBatch(chainId, taker);
+    return null;
+  }
+  return batch;
+}
+
 export function saveBatch(batch: BatchPurchase) {
   localStorage.setItem(batchKey(batch.chainId, batch.taker), JSON.stringify(batch));
 }
@@ -158,12 +168,15 @@ export async function reconcilePendingTrade(
       !!trade.data &&
       sent.from?.toLowerCase() === trade.taker.toLowerCase() &&
       sent.to?.toLowerCase() === trade.to.toLowerCase() &&
-      sent.input?.toLowerCase() === trade.data.toLowerCase();
+      sent.input?.toLowerCase() === trade.data.toLowerCase() &&
+      // A replacement reuses the original nonce; an identical call from another time is a different purchase.
+      (trade.nonce === undefined || sent.nonce === trade.nonce);
     if (!same) return { outcome: "unverified", nonce: sent.nonce };
     return { outcome: receipt.status === "success" ? "success" : "failure" };
   }
   const seen = lookup.transaction ? await lookup.transaction(hash).catch(() => null) : null;
-  const nonce = seen?.nonce ?? trade.nonce;
+  // The first nonce learned is kept: a pasted hash must never move the binding to another transaction.
+  const nonce = trade.nonce ?? seen?.nonce;
   if (nonce === undefined || !lookup.confirmedNonce) return { outcome: "unknown", nonce };
   const confirmed = await lookup.confirmedNonce().catch(() => undefined);
   // The nonce is used, yet this hash has no receipt: it was replaced (sped up or cancelled) or dropped.
