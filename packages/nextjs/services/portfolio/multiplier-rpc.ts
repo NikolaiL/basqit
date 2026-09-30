@@ -140,10 +140,16 @@ async function fromAlchemy(ranges: HistoryRange[]): Promise<Entry[] | null> {
   }
 }
 
+/**
+ * `complete` is true only for Alchemy's scan of every block. The public-RPC fallback scans block ranges estimated
+ * from recent block rates and date margins, so it may miss events: finding nothing there proves nothing.
+ */
 export const readMultiplierHistory = unstable_cache(
   async (ranges: HistoryRange[]) => {
     const head = await atlasClient.getBlock();
-    const entries = (await fromAlchemy(ranges)) ?? (await fromRpc(ranges, head));
+    const full = await fromAlchemy(ranges);
+    const complete = full !== null;
+    const entries = full ?? (await fromRpc(ranges, head));
     const seen = new Set<string>();
     const ordered = entries
       .filter(entry => {
@@ -171,8 +177,8 @@ export const readMultiplierHistory = unstable_cache(
         logIndex: entry.logIndex,
       });
     }
-    return transitions;
+    return { transitions, complete };
   },
-  ["stock-multiplier-history-v5"],
+  ["stock-multiplier-history-v6"],
   { revalidate: 1800 },
 );

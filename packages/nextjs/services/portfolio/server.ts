@@ -64,7 +64,9 @@ export async function getActions(): Promise<ActionsResponse> {
     const ranges = [...days.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([address, list]) => ({ address, fromDay: Math.min(...list) - 17, toDay: Math.max(...list) + 5 }));
-    const history = ranges.length ? await readMultiplierHistory(ranges) : [];
+    const { transitions: history, complete } = ranges.length
+      ? await readMultiplierHistory(ranges)
+      : { transitions: [], complete: true };
     for (const action of completed) {
       const address = deployments.get(action.id);
       const match = address
@@ -74,7 +76,8 @@ export async function getActions(): Promise<ActionsResponse> {
             history.filter(log => log.address === address),
           )
         : undefined;
-      action.onchain = { status: address ? "unmatched" : "unavailable" };
+      // "Unmatched" claims the history was searched; an estimated (incomplete) scan cannot support that claim.
+      action.onchain = { status: address && complete ? "unmatched" : "unavailable" };
       if (match) {
         action.multiplierBefore = match.before;
         action.multiplierAfter = match.after;
