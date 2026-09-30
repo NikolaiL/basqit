@@ -106,6 +106,11 @@ export function StockDiscovery({
     };
   }, [theme]);
   const query = normalizeTheme(theme);
+  // One action for the pile and the keyboard list, so both open the same asset details.
+  const openAsset = (symbol: string, matched: boolean) => {
+    trackDiscovery("token_open", query ?? "", { symbol, matched });
+    setSelected(symbol);
+  };
   const matches = result?.theme === query ? result.matches : [];
   const matchSymbols = matches.map(match => match.symbol).join(",");
   const dragQuery = useRef(query);
@@ -332,16 +337,13 @@ export function StockDiscovery({
                 key={asset.symbol}
                 data-symbol={asset.symbol}
                 className={`bq-discover-coin ${matched ? "is-match" : ""}`}
-                // While a theme is entered (even with no results), only matches are in the tab order; the rest of the
-                // pile stays clickable, and keyboard users go straight to the results or the search controls.
-                tabIndex={query && !matched ? -1 : undefined}
+                // Only matches are in the tab order; the rest of the pile stays clickable. Keyboard users browse every
+                // stock through the list below instead of tabbing through the pile.
+                tabIndex={matched ? undefined : -1}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
                 aria-label={`Explore ${asset.symbol}, ${asset.name}`}
-                onClick={() => {
-                  trackDiscovery("token_open", query ?? "", { symbol: asset.symbol, matched });
-                  setSelected(asset.symbol);
-                }}
+                onClick={() => openAsset(asset.symbol, matched)}
               >
                 <StockLogo symbol={asset.symbol} size={46} />
                 <span className="bq-discover-ticker">{asset.symbol}</span>
@@ -394,6 +396,26 @@ export function StockDiscovery({
             </div>
           )}
         </div>
+        <details className="bq-discover-browse">
+          <summary>Browse all {assets.length} stocks as a list</summary>
+          <ul>
+            {assets.map(asset => (
+              <li key={asset.symbol}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openAsset(
+                      asset.symbol,
+                      matches.some(m => m.symbol === asset.symbol),
+                    )
+                  }
+                >
+                  <b>{asset.symbol}</b> {asset.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
       </section>
       {current && (
         <AssetDetails
