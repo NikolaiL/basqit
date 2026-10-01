@@ -14,6 +14,16 @@ registerHooks({
 const { fundingTokens, parseFundingInput, terminalStatus, fundingStatusLabel, NATIVE, assertFundingGasReserve } =
   await import("./shared.ts");
 const { getFundingQuote, fundingRequest } = await import("./provider.ts");
+// Metadata tests use a stand-in for the calldata verifier (covered with real quotes in across.test.mjs).
+let verified = true;
+const stubChecks = {
+  verify: () => {
+    if (!verified) throw new Error("Funding execution does not match the quote: recipient.");
+    return { settler: "0x7d19077317b7574cd01aafa143e5e09f0f4df466" };
+  },
+  isSettler: async () => true,
+};
+const quoteWith = p => getFundingQuote(p, stubChecks);
 const { USDG, ALLOWANCE_HOLDER } = await import("../trading/quote.ts");
 const wallet = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6",
   token = "0x4200000000000000000000000000000000000006";
@@ -118,14 +128,13 @@ try {
   process.env.ZEROX_API_KEY = "test";
   process.env.BASQIT_SWAP_FEE_BPS = "15";
   process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
-  const first = await getFundingQuote(params());
-  assert.equal(first.nativeFee, "0");
+  const first = await quoteWith(params());
   assert.equal(first.basqitFee.amount, "15000000000000");
   assert.equal(first.basqitFee.recipient, wallet);
   assert.equal(first.buyAmount, "27000000");
   assert.equal(first.expiresAt, 130000);
   now += 1000;
-  assert.equal((await getFundingQuote(params())).expiresAt, 130000, "cache must not extend executable expiry");
+  assert.equal((await quoteWith(params())).expiresAt, 130000, "cache must not extend executable expiry");
   assert.equal(calls, 1);
   for (const change of [
     d => ({ ...d, destinationChainId: 1 }),
@@ -175,7 +184,7 @@ try {
   ]) {
     globalThis.basqitFundingProvider.cache.clear();
     modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees }] });
-    await assert.rejects(getFundingQuote(params()), /fee/);
+    await assert.rejects(quoteWith(params()), /fee/);
   }
   globalThis.basqitFundingProvider.cache.clear();
   expectedBuyToken = NATIVE;
@@ -186,12 +195,12 @@ try {
     buyToken: NATIVE,
     quotes: [{ ...d.quotes[0], buyAmount: "9000000000000000", minBuyAmount: "8900000000000000" }],
   });
-  const eth = await getFundingQuote(ethParams);
+  const eth = await quoteWith(ethParams);
   assert.equal(eth.destination, "ETH");
   assert.equal(eth.buyAmount, "9000000000000000");
   globalThis.basqitFundingProvider.cache.clear();
   modify = d => d;
-  await assert.rejects(getFundingQuote(ethParams), /valid funding quote/, "reject USDG output for ETH requests");
+  await assert.rejects(quoteWith(ethParams), /valid funding quote/, "reject USDG output for ETH requests");
   expectedBuyToken = USDG;
   globalThis.basqitFundingProvider.cache.clear();
   const badDestination = params();
@@ -200,19 +209,30 @@ try {
   assert.equal(fundingStatusLabel({ status: "bridge_filled" }, "ETH"), "ETH received");
   process.env.BASQIT_SWAP_FEE_BPS = "0";
   modify = d => ({ ...d, quotes: [{ ...d.quotes[0], fees: null }] });
-  assert.equal((await getFundingQuote(params())).basqitFee.amount, "0");
+  assert.equal((await quoteWith(params())).basqitFee.amount, "0");
   process.env.BASQIT_SWAP_FEE_BPS = "15";
   process.env.BASQIT_SWAP_FEE_RECIPIENT = "";
-  await assert.rejects(getFundingQuote(params()), /RECIPIENT/);
+  await assert.rejects(quoteWith(params()), /RECIPIENT/);
   process.env.BASQIT_SWAP_FEE_RECIPIENT = wallet;
+  // The verifier's verdict is binding, and so is the on-chain registry check.
+  globalThis.basqitFundingProvider.cache.clear();
+  modify = d => d;
+  verified = false;
+  await assert.rejects(quoteWith(params()), /does not match the quote: recipient/);
+  verified = true;
+  globalThis.basqitFundingProvider.cache.clear();
+  await assert.rejects(
+    getFundingQuote(params(), { ...stubChecks, isSettler: async () => false }),
+    /registered 0x bridge settler/,
+  );
   // S2: quote traffic uses up only the quote budget; status checks for recovery keep their own capacity.
   for (let i = 0; i < 60; i++) {
     globalThis.basqitFundingProvider.cache.clear();
     const extra = params();
     extra.set("amount", String(10000000000000000 + i));
-    await getFundingQuote(extra).catch(() => {});
+    await quoteWith(extra).catch(() => {});
   }
-  await assert.rejects(getFundingQuote(params()), /limit reached/);
+  await assert.rejects(quoteWith(params()), /limit reached/);
   const statusParams = new URLSearchParams({
     originChain: "8453",
     originTxHash: `0x${"1".repeat(64)}`,
@@ -226,7 +246,7 @@ try {
   assert.equal((await fundingRequest("status", statusParams)).status, "origin_tx_confirmed");
   globalThis.fetch = quoteFetch;
   process.env.BASQIT_ENABLE_FUNDING = "false";
-  await assert.rejects(getFundingQuote(params()), /not enabled/);
+  await assert.rejects(quoteWith(params()), /not enabled/);
   console.log(
     "Funding validation, native metadata, spam filters, recovery states, destination binding, spender and expiry checks passed",
   );

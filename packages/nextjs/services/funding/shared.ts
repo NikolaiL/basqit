@@ -39,8 +39,6 @@ export type FundingQuote = {
   provider: string;
   seconds: number;
   fee: { amount: string; token: string } | null;
-  /** Native value sent beyond the input itself (a bridge fee), in source-chain wei. */
-  nativeFee: string;
   transaction: { to: `0x${string}`; data: `0x${string}`; value: string };
 };
 export type FundingStatus = {

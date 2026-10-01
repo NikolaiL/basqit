@@ -1,13 +1,24 @@
 import { ALLOWANCE_HOLDER, swapFeeConfig } from "../trading/quote";
+import { isRegisteredBridgeSettler, verifyAcrossFunding } from "./across";
 import { ScanError } from "./balances";
-import { type FundingQuote, NATIVE, fundingDestinations, parseFundingInput } from "./shared";
+import { type FundingQuote, fundingChains, fundingDestinations, parseFundingInput } from "./shared";
+import { createPublicClient, http } from "viem";
 
-// ponytail: calibration knobs, not verified protocol limits. The 0x cross-chain transaction target is not
-// independently verified, so the payload is bounded instead: native value, target and output tolerance.
-// Native bridge fee a route may add on top of the input (0x documents such fees); shown to the buyer.
-export const MAX_FUNDING_NATIVE_FEE = 5_000_000_000_000_000n; // 0.005 ETH
-// Largest gap between expected and minimum output the buyer can be asked to accept.
+// ponytail: calibration knob. Largest gap between expected and minimum output the buyer can be asked to accept.
 export const MAX_FUNDING_SLIPPAGE_BPS = 500n;
+
+// The bridge settler a quote targets must be the source chain's registered one; cached briefly per chain and address.
+const settlerChecks = new Map<string, { until: number; ok: Promise<boolean> }>();
+async function registeredSettler(chainId: number, settler: string) {
+  const key = `${chainId}:${settler}`;
+  const hit = settlerChecks.get(key);
+  if (hit && hit.until > Date.now()) return hit.ok;
+  const chain = fundingChains.find(c => c.id === chainId);
+  if (!chain) return false;
+  const ok = isRegisteredBridgeSettler(createPublicClient({ chain, transport: http() }), settler).catch(() => false);
+  settlerChecks.set(key, { until: Date.now() + 300_000, ok });
+  return ok;
+}
 
 // ponytail: per-process budget; move to a shared limiter if paid 0x usage grows or more instances run.
 // Quotes and status have separate capacity (same 60/min, 4 concurrent in total), so quote traffic can never use up
@@ -71,7 +82,10 @@ export async function fundingRequest(path: "quotes" | "status", params: URLSearc
   state.cache.set(id, entry);
   return entry.promise;
 }
-export async function getFundingQuote(params: URLSearchParams): Promise<FundingQuote> {
+export async function getFundingQuote(
+  params: URLSearchParams,
+  checks = { verify: verifyAcrossFunding, isSettler: registeredSettler },
+): Promise<FundingQuote> {
   const p = parseFundingInput(params);
   const fee = swapFeeConfig(process.env.BASQIT_SWAP_FEE_BPS, process.env.BASQIT_SWAP_FEE_RECIPIENT);
   const data = await fundingRequest(
@@ -112,16 +126,29 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     (spender && spender.toLowerCase() !== ALLOWANCE_HOLDER.toLowerCase())
   )
     throw new ScanError("No valid funding quote returned.", 502);
-  // Metadata is not execution: bind what the wallet will actually send to the approved intent.
-  const nativeInput = p.token.toLowerCase() === NATIVE ? BigInt(p.amount) : 0n;
-  const nativeFee = BigInt(tx.value) - nativeInput;
-  if (
-    nativeFee < 0n ||
-    nativeFee > MAX_FUNDING_NATIVE_FEE ||
-    [p.token, p.wallet, NATIVE].some(a => a.toLowerCase() === tx.to.toLowerCase()) ||
-    BigInt(q.minBuyAmount) * 10000n < BigInt(q.buyAmount) * (10000n - MAX_FUNDING_SLIPPAGE_BPS)
-  )
+  if (BigInt(q.minBuyAmount) * 10000n < BigInt(q.buyAmount) * (10000n - MAX_FUNDING_SLIPPAGE_BPS))
     throw new ScanError("Funding quote does not match the requested transfer.", 502);
+  // Metadata is not execution: decode what the wallet will sign and check it carries out this exact transfer, through
+  // the verified route only (basqit-docs/docs/FUNDING-ROUTE-VERIFICATION.md).
+  let settler: string;
+  try {
+    ({ settler } = checks.verify(
+      {
+        chainId: p.chainId,
+        token: p.token,
+        sellAmount: BigInt(p.amount),
+        wallet: p.wallet,
+        destination: p.destination,
+        minBuyAmount: BigInt(q.minBuyAmount),
+        basqitFee: { bps: fee.bps, recipient: fee.recipient ?? null },
+      },
+      { to: tx.to, data: tx.data, value: tx.value },
+    ));
+  } catch (error) {
+    throw new ScanError(error instanceof Error ? error.message : "Funding quote does not match the transfer.", 502);
+  }
+  if (!(await checks.isSettler(p.chainId, settler)))
+    throw new ScanError("Funding route is not the registered 0x bridge settler. Try again later.", 502);
   if (issues?.balance || issues?.simulationIncomplete)
     throw new ScanError("Check your source balance; this route could not be fully simulated.", 422);
   const fees = q.fees?.integratorFees ?? (q.fees?.integratorFee ? [q.fees.integratorFee] : []);
@@ -154,7 +181,6 @@ export async function getFundingQuote(params: URLSearchParams): Promise<FundingQ
     provider: q.steps?.find((s: { type: string }) => s.type === "bridge")?.provider ?? "0x",
     seconds: q.estimatedTimeSeconds,
     fee: q.fees?.zeroExFee ?? null,
-    nativeFee: nativeFee.toString(),
     transaction: { to: tx.to, data: tx.data, value: tx.value },
   };
 }

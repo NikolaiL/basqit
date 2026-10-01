@@ -701,14 +701,6 @@ function WalletFunding({
                               </dd>
                             </div>
                           )}
-                          {quote && BigInt(quote.nativeFee) > 0n && (
-                            <div>
-                              <dt>Bridge fee (added to the transaction)</dt>
-                              <dd>
-                                <TokenAmount value={formatUnits(BigInt(quote.nativeFee), 18)} /> ETH
-                              </dd>
-                            </div>
-                          )}
                           {quote && (
                             <div>
                               <dt>Route</dt>
