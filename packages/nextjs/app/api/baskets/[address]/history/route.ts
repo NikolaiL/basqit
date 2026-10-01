@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "viem";
-import { readHistoryEvents } from "~~/services/baskets/chain";
-import { earliestSnapshot, hasDatabase, insertSnapshots, readSnapshots } from "~~/services/baskets/db";
-import { type Point, chartStep, rebuildHistory, thin } from "~~/services/baskets/history";
+import { readPricesAndSupply, readTimeline, tokensEverHeld } from "~~/services/baskets/chain";
+import { earliestSnapshot, hasDatabase, hasRebuild, insertSnapshots, readSnapshots } from "~~/services/baskets/db";
+import { type Point, backfillNeeded, chartStep, rebuildHistory, thin, windowed } from "~~/services/baskets/history";
 import { testnetAssets } from "~~/services/packs/testnet";
 
 export const runtime = "nodejs";
@@ -17,32 +17,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const range = (request.nextUrl.searchParams.get("range") ?? "all") as keyof typeof RANGES;
   const [span, step] = RANGES[range] ?? RANGES.all;
 
-  const events = await readHistoryEvents(address);
-  if (!events) return NextResponse.json({ error: "Not a basket" }, { status: 404 });
+  const timeline = await readTimeline(address);
+  if (!timeline) return NextResponse.json({ error: "Not a basket" }, { status: 404 });
   const { usdg } = await testnetAssets();
-  const rebalances = events.rebalances.map(r => r.at);
+  const rebalances = timeline.rebalances.map(r => r.at);
   const from = span === Infinity ? 0 : Math.floor(Date.now() / 1000) - span;
+  // Prices and supply from chain: the costly read, done only to rebuild missing history.
+  const fullEvents = async () => ({ ...timeline, ...(await readPricesAndSupply(address, tokensEverHeld(timeline))) });
 
   let points: Point[];
   let fromChain = false;
   try {
     if (!hasDatabase()) throw new Error("no database");
-    const earliest = await earliestSnapshot(address);
-    // Rebuild only the gap before the first stored point, once; later requests read Postgres alone.
-    if (earliest === null || earliest > events.createdAt) {
-      await insertSnapshots(address, rebuildHistory(events, usdg, earliest ?? Infinity));
+    const [earliest, rebuilt] = await Promise.all([earliestSnapshot(address), hasRebuild(address)]);
+    // Rebuild the gap before the first stored point once; afterwards Postgres alone serves the chart.
+    if (backfillNeeded({ earliest, createdAt: timeline.createdAt, rebuilt })) {
+      await insertSnapshots(address, rebuildHistory(await fullEvents(), usdg, earliest ?? Infinity));
     }
     points = await readSnapshots(address, from);
   } catch {
     fromChain = true;
-    points = rebuildHistory(events, usdg).filter(p => p.at >= from);
+    points = windowed(rebuildHistory(await fullEvents(), usdg), from);
   }
 
   const shown = thin(points, chartStep(points, step), new Set(rebalances));
   return NextResponse.json({
     points: shown.map(p => ({ at: p.at, value: p.value.toString(), supply: p.supply.toString(), source: p.source })),
     rebalances,
-    createdAt: events.createdAt,
+    createdAt: timeline.createdAt,
     fromChain,
   });
 }

@@ -36,3 +36,13 @@ export async function earliestSnapshot(basket: string): Promise<number | null> {
     where chain_id = ${CHAIN_ID} and basket = ${basket.toLowerCase()}`) as { at: number | null }[];
   return row?.at == null ? null : Math.round(row.at);
 }
+
+/** Whether a rebuild from chain was ever saved for this basket. */
+export async function hasRebuild(basket: string): Promise<boolean> {
+  const [row] = (await sql()`
+    select exists(
+      select 1 from basket_snapshots
+      where chain_id = ${CHAIN_ID} and basket = ${basket.toLowerCase()} and source = 'chain'
+    ) as rebuilt`) as { rebuilt: boolean }[];
+  return !!row?.rebuilt;
+}

@@ -1,6 +1,5 @@
 import { adapterEvents, basketAbi, basketEvent, factoryEvents, priceAbi } from "./abi";
 import { blockTimes } from "./blockTime";
-import type { HistoryEvents } from "./history";
 import type { Component } from "./value";
 import type { Address } from "viem";
 import { packsClient, packsTestnet } from "~~/services/packs/testnet";
@@ -46,27 +45,47 @@ export async function currentPrices(tokens: Address[]) {
 /** A log's block time; the block cache lives as long as the server instance. */
 export const timeOf = blockTimes(blockNumber => packsClient.getBlock({ blockNumber }));
 
-/** Creation, rebalances, prices and supply changes since the factory's deploy, for one basket; `null` when the
- * address is not a basket of this factory. The testnet RPC returns every log of this deployment in one call; chunk by
- * block range if that ever stops holding. */
-export async function readHistoryEvents(basket: Address): Promise<HistoryEvents | null> {
+/** Orders events in the same second: block number, then log index. */
+const seqOf = (log: { blockNumber: bigint | null; logIndex: number | null }) =>
+  Number(log.blockNumber) * 100_000 + (log.logIndex ?? 0);
+
+/** Creation and rebalances of one basket: cheap, two filtered log reads. `null` when it is not a basket of this
+ * factory. */
+export async function readTimeline(basket: Address) {
   const fromBlock = BigInt(packsTestnet!.deployBlock);
-  const zero = "0x0000000000000000000000000000000000000000";
-  const transfer = basketEvent("Transfer");
-  const [created, rebalanced, priced, mints, burns] = await Promise.all([
+  const [created, rebalanced] = await Promise.all([
     packsClient.getLogs({ address: packsTestnet!.factory, event: factoryEvents[0], args: { basket }, fromBlock }),
     packsClient.getLogs({ address: basket, event: basketEvent("Rebalanced"), fromBlock }),
-    packsClient.getLogs({ address: packsTestnet!.swapAdapter, event: adapterEvents[0], fromBlock }),
-    packsClient.getLogs({ address: basket, event: transfer, args: { from: zero }, fromBlock }),
-    packsClient.getLogs({ address: basket, event: transfer, args: { to: zero }, fromBlock }),
   ]);
   if (!created.length) return null;
   return {
     createdAt: await timeOf(created[0]),
+    createdSeq: seqOf(created[0]),
     start: [...created[0].args.components!],
-    rebalances: await Promise.all(rebalanced.map(async l => ({ at: await timeOf(l), after: [...l.args.after_!] }))),
+    rebalances: await Promise.all(
+      rebalanced.map(async l => ({ at: await timeOf(l), seq: seqOf(l), after: [...l.args.after_!] })),
+    ),
+  };
+}
+
+/** Prices of every token the basket ever held, and its supply changes: the expensive part, read only to rebuild. */
+export async function readPricesAndSupply(basket: Address, tokens: Address[]) {
+  const fromBlock = BigInt(packsTestnet!.deployBlock);
+  const zero = "0x0000000000000000000000000000000000000000";
+  const transfer = basketEvent("Transfer");
+  const [priced, mints, burns] = await Promise.all([
+    packsClient.getLogs({
+      address: packsTestnet!.swapAdapter,
+      event: adapterEvents[0],
+      args: { token: tokens },
+      fromBlock,
+    }),
+    packsClient.getLogs({ address: basket, event: transfer, args: { from: zero }, fromBlock }),
+    packsClient.getLogs({ address: basket, event: transfer, args: { to: zero }, fromBlock }),
+  ]);
+  return {
     prices: await Promise.all(
-      priced.map(async l => ({ at: await timeOf(l), token: l.args.token!, price: l.args.price! })),
+      priced.map(async l => ({ at: await timeOf(l), seq: seqOf(l), token: l.args.token!, price: l.args.price! })),
     ),
     supply: [
       ...(await Promise.all(mints.map(async l => ({ at: await timeOf(l), delta: l.args.value! })))),
@@ -74,3 +93,8 @@ export async function readHistoryEvents(basket: Address): Promise<HistoryEvents 
     ],
   };
 }
+
+/** Every token a basket has held, from its timeline. */
+export const tokensEverHeld = (timeline: { start: Component[]; rebalances: { after: Component[] }[] }) => [
+  ...new Set([timeline.start, ...timeline.rebalances.map(r => r.after)].flat().map(c => c.token as Address)),
+];
