@@ -681,7 +681,7 @@ const deployedContracts = {
       deployedOnBlock: 127081845,
     },
     BasqitFactory: {
-      address: "0x35f1960b89bd4fa5d6b301079b254d633317f843",
+      address: "0x8fee1a09f997e410f588b3c9840a546bb0f5a68f",
       abi: [
         {
           type: "constructor",
@@ -1355,36 +1355,46 @@ const deployedContracts = {
               indexed: false,
               internalType: "uint16",
             },
-          ],
-          anonymous: false,
-        },
-        {
-          type: "event",
-          name: "BasketManagement",
-          inputs: [
             {
-              name: "basket",
-              type: "address",
-              indexed: true,
-              internalType: "address",
-            },
-            {
-              name: "manager",
-              type: "address",
-              indexed: true,
-              internalType: "address",
-            },
-            {
-              name: "noticeHours",
-              type: "uint8",
+              name: "components",
+              type: "tuple[]",
               indexed: false,
-              internalType: "uint8",
+              internalType: "struct BasqitToken.Component[]",
+              components: [
+                {
+                  name: "token",
+                  type: "address",
+                  internalType: "address",
+                },
+                {
+                  name: "unitsPerShare",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+              ],
             },
             {
-              name: "maxSlippageBps",
-              type: "uint16",
+              name: "management",
+              type: "tuple",
               indexed: false,
-              internalType: "uint16",
+              internalType: "struct BasqitFactory.Management",
+              components: [
+                {
+                  name: "managed",
+                  type: "bool",
+                  internalType: "bool",
+                },
+                {
+                  name: "noticeHours",
+                  type: "uint8",
+                  internalType: "uint8",
+                },
+                {
+                  name: "maxSlippageBps",
+                  type: "uint16",
+                  internalType: "uint16",
+                },
+              ],
             },
           ],
           anonymous: false,
@@ -1657,7 +1667,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127081903,
+      deployedOnBlock: 127170300,
     },
     TestnetSwapAdapter: {
       address: "0x1c8e0b6dae26b6aabb89877e307d53c7d3670491",
@@ -2064,7 +2074,7 @@ const deployedContracts = {
       deployedOnBlock: 127081881,
     },
     BasqitPurchaseRouter: {
-      address: "0x4c56a68ae90e0dd9f3055cf7b09471f91ac1057e",
+      address: "0x30cf8e23c99d83693ff110e0afd5ce962f9d851b",
       abi: [
         {
           type: "constructor",
@@ -2722,10 +2732,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127084515,
+      deployedOnBlock: 127170315,
     },
     BasqitSellRouter: {
-      address: "0x7a2d98c0df2ffd474357452e2bdb5a62774d144b",
+      address: "0xa045815a3980f1b7a1c3815b152e181600aa581a",
       abi: [
         {
           type: "constructor",
@@ -3382,10 +3392,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127084534,
+      deployedOnBlock: 127170326,
     },
     BasqitGifts: {
-      address: "0x8566fc6cc15b23884ebbb4d67eb7dae1240b66e4",
+      address: "0xcc793825427cd4fd31021b7a0f4b61b1bec9171c",
       abi: [
         {
           type: "constructor",
@@ -4555,10 +4565,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127084710,
+      deployedOnBlock: 127170614,
     },
     BasqitGiftRouter: {
-      address: "0x7f9974c9158d7a78e7f7f7c57156a6cb193c216d",
+      address: "0xd066a991b645919c27f70d90273249c4178d05a8",
       abi: [
         {
           type: "constructor",
@@ -5484,7 +5494,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127084732,
+      deployedOnBlock: 127170631,
     },
     BasqitPacks: {
       address: "0x315e426562bc6bbd45245166756db136695eb464",
@@ -6958,7 +6968,7 @@ const deployedContracts = {
       deployedOnBlock: 127084747,
     },
     BasqitRebalanceRouter: {
-      address: "0xdb16a34932284b3d19d92d296f19528943fc66a9",
+      address: "0x4d43449dea93e38bf63231cd8ce562cb26c3aafa",
       abi: [
         {
           type: "constructor",
@@ -7559,7 +7569,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 127084552,
+      deployedOnBlock: 127170363,
     },
   },
 } as const;
