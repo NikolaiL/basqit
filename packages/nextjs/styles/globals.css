@@ -3818,6 +3818,78 @@ html [data-rk] {
     align-items: stretch;
   }
 }
+/* Manage panel: the same rows as the create form, then buys, the estimate and one full-width action. */
+.bq-manage-label {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.bq-manage-rows li {
+  grid-template-columns: 28px minmax(0, 1fr) 160px;
+}
+.bq-manage-buys {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-manage-buys li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  align-items: center;
+  gap: 10px;
+}
+.bq-manage-buys select {
+  width: 100%;
+}
+.bq-manage-estimate {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 16px;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bq-paper);
+}
+.bq-manage-estimate dt {
+  color: var(--bq-muted);
+  font-size: 12px;
+}
+.bq-manage-estimate dd {
+  margin: 0;
+  font-family: var(--bq-mono), monospace;
+  font-weight: 700;
+}
+.bq-manage-limits,
+.bq-manage-plan {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.bq-manage-limits {
+  color: var(--bq-muted);
+}
+.bq-manage-window {
+  margin: 0;
+  font-weight: 700;
+}
+.bq-manage-go {
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .bq-manage-rows li {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .bq-manage-rows .bq-basket-qty {
+    grid-column: 2;
+  }
+  .bq-manage-buys li {
+    grid-template-columns: minmax(0, 1fr) 96px auto;
+  }
+}
 /* Phones give dashboard inputs a 44px touch target; the type switch matches them. */
 @media (max-width: 640px) {
   .bq-basket-rules {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { type ActivityRow, ActivityTable, HoldersTable } from "./ActivityTables";
+import { ManagePanel } from "./ManagePanel";
 import { ValueChart } from "./ValueChart";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, erc20Abi } from "viem";
@@ -234,6 +235,18 @@ export function BasketDetails({ basket }: { basket: Address }) {
           </>
         )}
       </section>
+
+      {d && address && d.rules.manager.toLowerCase() === address.toLowerCase() && (
+        <ManagePanel
+          basket={basket}
+          state={d}
+          onDone={() => {
+            void detail.refetch();
+            void history.refetch();
+            void activity.refetch();
+          }}
+        />
+      )}
 
       <section className="bq-demo-card">
         <h2>Holders</h2>
