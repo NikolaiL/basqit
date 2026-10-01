@@ -1026,7 +1026,9 @@
   height: 0.8em;
   border-radius: 999px;
   background: var(--bq-brand);
-  transform: translate(-50%, -50%);
+  /* Measured ends sit 0.03em inside the last glyph (the headline's negative letter-spacing); 0.07em clears it by a
+     few pixels. */
+  transform: translate(0.07em, -50%);
   pointer-events: none;
   animation: bq-caret-fade 1.1s ease-in-out infinite;
 }
