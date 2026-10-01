@@ -491,7 +491,7 @@ contract GiftsTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = address(nvda);
         listed[1] = address(aapl);
-        factory = new BasqitFactory(owner, listed);
+        factory = new BasqitFactory(owner, address(usdg), listed, address(0));
         gifts = new BasqitGifts(owner, address(factory));
         shop = new TestnetSwapAdapter(address(usdg), owner);
         shop.setPrice(address(nvda), 200e6); // $200 per NVDA
@@ -665,7 +665,8 @@ contract GiftsTest is Test {
         paus.mint(alice, 1e18);
         address[] memory list = new address[](1);
         list[0] = address(paus);
-        factory.listStockTokens(list);
+        factory.allowTokens(list);
+        vm.warp(block.timestamp + factory.LISTING_DELAY());
         BasqitGifts.Item[] memory items = new BasqitGifts.Item[](2);
         items[0] = BasqitGifts.Item(address(nvda), 1e17);
         items[1] = BasqitGifts.Item(address(paus), 1e18);
@@ -690,7 +691,7 @@ contract GiftsTest is Test {
         uint256 giftId = gifts.wrap(_one(address(nvda), 1e17), alice);
         address[] memory list = new address[](1);
         list[0] = address(nvda);
-        factory.delistStockTokens(list);
+        factory.disallowTokens(list);
         vm.prank(alice);
         gifts.transferFrom(alice, friend, giftId);
         vm.prank(friend);

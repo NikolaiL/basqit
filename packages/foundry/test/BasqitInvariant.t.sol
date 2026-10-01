@@ -114,7 +114,7 @@ contract BasqitInvariantTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = address(stocks[0]);
         listed[1] = address(stocks[1]);
-        BasqitFactory factory = new BasqitFactory(address(this), listed);
+        BasqitFactory factory = new BasqitFactory(address(this), address(usdG), listed, address(0));
         factory.setFeesEnabled(true);
         vm.warp(block.timestamp + factory.FEE_CHANGE_DELAY());
 
@@ -134,7 +134,7 @@ contract BasqitInvariantTest is Test {
         c[0] = BasqitToken.Component(address(stocks[0]), UNITS_0);
         c[1] = BasqitToken.Component(address(stocks[1]), UNITS_1);
         vm.prank(creator);
-        basket = BasqitToken(factory.createBasket("Odd", "ODD", c, 100));
+        basket = BasqitToken(factory.createBasket("Odd", "ODD", c, 100, BasqitFactory.Management(false, 0, 0)));
 
         handler = new BasqitHandler(usdG, stocks, basket, buyRouter, sellRouter, adapter);
         targetContract(address(handler));
@@ -244,11 +244,11 @@ contract BasqitDebtInvariantTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = address(plain);
         listed[1] = address(iss);
-        BasqitFactory factory = new BasqitFactory(address(this), listed);
+        BasqitFactory factory = new BasqitFactory(address(this), address(new MockUSDG()), listed, address(0));
         BasqitToken.Component[] memory c = new BasqitToken.Component[](2);
         c[0] = BasqitToken.Component(address(plain), 1e18);
         c[1] = BasqitToken.Component(address(iss), 1e18);
-        basket = BasqitToken(factory.createBasket("Debt", "DEBT", c, 0));
+        basket = BasqitToken(factory.createBasket("Debt", "DEBT", c, 0, BasqitFactory.Management(false, 0, 0)));
         handler = new BasqitDebtHandler(basket, plain, iss);
         targetContract(address(handler));
     }

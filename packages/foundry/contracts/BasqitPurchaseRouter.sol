@@ -95,7 +95,7 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
         for (uint256 i = 0; i < amounts.length; i++) {
             address token = parts[i].token;
             // Existing baskets stay redeemable and sellable, but a delisted token is not bought.
-            if (!factory.isStockToken(token)) revert DelistedComponent(token);
+            if (!factory.isAllowedToken(token)) revert DelistedComponent(token);
             startBalances[i] = IERC20(token).balanceOf(address(this));
             // A leg can never reach past the buyer's remaining budget into other funds.
             spent += _buyComponent(token, amounts[i], swaps[i], budget - spent);
@@ -118,10 +118,15 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
         if (actual != usdGBefore + accrued) revert ResidualTokenBalance(address(usdG), usdGBefore + accrued, actual);
     }
 
+    /// @dev A USDG component needs no swap: it comes straight out of the budget and its instruction is ignored.
     function _buyComponent(address token, uint256 amountOut, SwapInstruction calldata swap, uint256 remaining)
         private
         returns (uint256)
     {
+        if (token == address(usdG)) {
+            if (amountOut > remaining) revert TotalSpendExceeded(amountOut, remaining);
+            return amountOut;
+        }
         return _buyExactOutput(token, amountOut, swap.adapter, Math.min(swap.maxAmountIn, remaining), swap.routeData);
     }
 
@@ -140,6 +145,8 @@ contract BasqitPurchaseRouter is BasqitRouterBase {
         for (uint256 i = 0; i < amounts.length; i++) {
             IERC20 token = IERC20(parts[i].token);
             token.forceApprove(address(basket), 0);
+            // USDG still holds the budget here; `_settle` checks it once the fee and refund are paid.
+            if (address(token) == address(usdG)) continue;
             uint256 left = token.balanceOf(address(this));
             if (left != startBalances[i]) revert ResidualTokenBalance(address(token), startBalances[i], left);
         }

@@ -105,7 +105,7 @@ contract BasqitTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = address(tsla);
         listed[1] = address(nvda);
-        factory = new BasqitFactory(owner, listed);
+        factory = new BasqitFactory(owner, address(usdG), listed, address(adapter));
 
         adapter = new TestnetSwapAdapter(address(usdG), address(this));
         adapter.setPrice(address(tsla), 400e6);
@@ -120,7 +120,9 @@ contract BasqitTest is Test {
         sellRouter = new BasqitSellRouter(address(usdG), address(factory), owner, adapters);
 
         vm.prank(creator);
-        basket = BasqitToken(factory.createBasket("Tech Duo", "DUO", _components(), 50));
+        basket = BasqitToken(
+            factory.createBasket("Tech Duo", "DUO", _components(), 50, BasqitFactory.Management(false, 0, 0))
+        );
         usdG.mint(alice, 10_000e6);
     }
 
@@ -185,14 +187,14 @@ contract BasqitTest is Test {
         c[0] = BasqitToken.Component(address(tsla), 1);
         c[1] = BasqitToken.Component(address(tsla), 1);
         vm.expectRevert(abi.encodeWithSelector(BasqitToken.DuplicateToken.selector, address(tsla)));
-        new BasqitToken("x", "x", c);
+        new BasqitToken("x", "x", c, address(0), 0, 0);
 
         c[1] = BasqitToken.Component(address(nvda), 0);
         vm.expectRevert(abi.encodeWithSelector(BasqitToken.ZeroUnits.selector, address(nvda)));
-        new BasqitToken("x", "x", c);
+        new BasqitToken("x", "x", c, address(0), 0, 0);
 
         vm.expectRevert(BasqitToken.EmptyComponents.selector);
-        new BasqitToken("x", "x", new BasqitToken.Component[](0));
+        new BasqitToken("x", "x", new BasqitToken.Component[](0), address(0), 0, 0);
     }
 
     function testFuzz_token_redeemNeverExceedsDeposit(uint96 shares) public {
@@ -211,16 +213,16 @@ contract BasqitTest is Test {
     // --- BasqitFactory: registry ----------------------------------------------------------
 
     function test_factory_listsStockTokensAtDeploy() public view {
-        assertTrue(factory.isStockToken(address(tsla)));
-        assertTrue(factory.isStockToken(address(nvda)));
-        assertEq(factory.stockTokenCount(), 2);
+        assertTrue(factory.isAllowedToken(address(tsla)));
+        assertTrue(factory.isAllowedToken(address(nvda)));
+        assertEq(factory.allowedTokenCount(), 2);
     }
 
     function test_factory_rejectsUnlistedComponent() public {
         BasqitToken.Component[] memory c = new BasqitToken.Component[](1);
         c[0] = BasqitToken.Component(address(unlisted), 1e18);
         vm.expectRevert(abi.encodeWithSelector(BasqitFactory.UnlistedToken.selector, address(unlisted)));
-        factory.createBasket("x", "x", c, 0);
+        factory.createBasket("x", "x", c, 0, BasqitFactory.Management(false, 0, 0));
     }
 
     function test_factory_ownerListsAndDelistsTokens() public {
@@ -229,20 +231,22 @@ contract BasqitTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, alice));
         vm.prank(alice);
-        factory.listStockTokens(tokens);
+        factory.allowTokens(tokens);
 
         vm.prank(owner);
-        factory.listStockTokens(tokens);
-        assertTrue(factory.isStockToken(address(unlisted)));
+        factory.allowTokens(tokens);
+        assertFalse(factory.isAllowedToken(address(unlisted)), "not before the listing delay");
+        vm.warp(block.timestamp + factory.LISTING_DELAY());
+        assertTrue(factory.isAllowedToken(address(unlisted)));
 
         vm.prank(owner);
-        factory.delistStockTokens(tokens);
-        assertFalse(factory.isStockToken(address(unlisted)));
+        factory.disallowTokens(tokens);
+        assertFalse(factory.isAllowedToken(address(unlisted)));
 
         // Listing again restores it without duplicating the list entry.
         vm.prank(owner);
-        factory.listStockTokens(tokens);
-        assertEq(factory.stockTokenCount(), 3);
+        factory.allowTokens(tokens);
+        assertEq(factory.allowedTokenCount(), 3);
     }
 
     function test_factory_delistedComponentBlocksBuysButNotSells() public {
@@ -250,7 +254,7 @@ contract BasqitTest is Test {
         address[] memory tokens = new address[](1);
         tokens[0] = address(tsla);
         vm.prank(owner);
-        factory.delistStockTokens(tokens);
+        factory.disallowTokens(tokens);
 
         vm.startPrank(alice);
         usdG.approve(address(buyRouter), 400e6);
@@ -318,7 +322,7 @@ contract BasqitTest is Test {
 
     function test_factory_capsCreatorFee() public {
         vm.expectRevert(abi.encodeWithSelector(BasqitFactory.FeeTooHigh.selector, uint16(101)));
-        factory.createBasket("x", "x", _components(), 101);
+        factory.createBasket("x", "x", _components(), 101, BasqitFactory.Management(false, 0, 0));
     }
 
     function test_factory_feeChangeWaitsForDelay() public {
@@ -475,11 +479,12 @@ contract BasqitTest is Test {
         address[] memory tokens = new address[](1);
         tokens[0] = address(iss);
         vm.prank(owner);
-        factory.listStockTokens(tokens);
+        factory.allowTokens(tokens);
+        vm.warp(block.timestamp + factory.LISTING_DELAY());
         BasqitToken.Component[] memory c = new BasqitToken.Component[](2);
         c[0] = BasqitToken.Component(address(tsla), 1e18);
         c[1] = BasqitToken.Component(address(iss), 1e18);
-        b = BasqitToken(factory.createBasket("Issuer mix", "MIX", c, 0));
+        b = BasqitToken(factory.createBasket("Issuer mix", "MIX", c, 0, BasqitFactory.Management(false, 0, 0)));
         tsla.mint(alice, 20e18);
         iss.mint(alice, 20e18);
         vm.startPrank(alice);
@@ -593,7 +598,7 @@ contract BasqitTest is Test {
         BasqitToken.Component[] memory c = new BasqitToken.Component[](1);
         c[0] = BasqitToken.Component(address(tsla), 1e18);
         vm.prank(creator);
-        address b = factory.createBasket("One", "ONE", c, 100);
+        address b = factory.createBasket("One", "ONE", c, 100, BasqitFactory.Management(false, 0, 0));
         _enableFees();
 
         usdX.setBlocked(creator, true);

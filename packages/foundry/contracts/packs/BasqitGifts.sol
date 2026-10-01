@@ -31,9 +31,9 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-/// @notice The Stock Token list gifts accept: the basket factory, so gifts and baskets never disagree on it.
+/// @notice The token list gifts accept: the basket factory's allowed tokens, so gifts and baskets never disagree.
 interface IStockTokenList {
-    function isStockToken(address token) external view returns (bool);
+    function isAllowedToken(address token) external view returns (bool);
 }
 
 /// @notice Gifts: a sealed gift of Stock Tokens as an ERC-721. Anyone seals listed tokens they hold into a gift
@@ -95,7 +95,7 @@ contract BasqitGifts is ERC721, IERC4906, Ownable2Step, ReentrancyGuard {
 
     /// @notice Whether new gifts may hold `token`. Gifts already sealed still open after a token is delisted.
     function isListed(address token) public view returns (bool) {
-        return stockTokens.isStockToken(token);
+        return stockTokens.isAllowedToken(token);
     }
 
     // ---------------------------------------------------------------- wrap and open

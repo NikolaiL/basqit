@@ -5,6 +5,7 @@ import "./DeployHelpers.s.sol";
 import { BasqitFactory } from "../contracts/BasqitFactory.sol";
 import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
 import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
+import { BasqitRebalanceRouter } from "../contracts/BasqitRebalanceRouter.sol";
 import { UniswapV3Adapter } from "../contracts/adapters/UniswapV3Adapter.sol";
 
 /**
@@ -28,15 +29,19 @@ contract DeployBasqit is ScaffoldETHDeploy {
     function _deployRobinhood() internal {
         string memory json = vm.readFile(string.concat(vm.projectRoot(), "/script/stock-tokens-4663.json"));
         address[] memory tokens = vm.parseJsonAddressArray(json, ".addresses");
-        // Listed in chunks of 100 (~7M gas each) instead of one ~21M-gas constructor transaction.
-        BasqitFactory factory = new BasqitFactory(deployer, new address[](0));
+        // USDG is allowed at once; Stock Tokens are allowed in chunks of 100 (~7M gas each) instead of one ~21M-gas
+        // constructor transaction, so they become usable after LISTING_DELAY. WETH waits for a verified address.
+        // No price reference yet: managed baskets cannot rebalance until a feed-backed one is scheduled.
+        address[] memory usdG = new address[](1);
+        usdG[0] = USDG_4663;
+        BasqitFactory factory = new BasqitFactory(deployer, USDG_4663, usdG, address(0));
         for (uint256 start = 0; start < tokens.length; start += 100) {
             uint256 end = start + 100 < tokens.length ? start + 100 : tokens.length;
             address[] memory chunk = new address[](end - start);
             for (uint256 i = start; i < end; i++) {
                 chunk[i - start] = tokens[i];
             }
-            factory.listStockTokens(chunk);
+            factory.allowTokens(chunk);
         }
         _routers(USDG_4663, factory, address(new UniswapV3Adapter(SWAP_ROUTER_02_4663)));
     }
@@ -46,5 +51,6 @@ contract DeployBasqit is ScaffoldETHDeploy {
         adapters[0] = adapter;
         new BasqitPurchaseRouter(usdG, address(factory), deployer, adapters);
         new BasqitSellRouter(usdG, address(factory), deployer, adapters);
+        factory.scheduleRebalanceRouter(address(new BasqitRebalanceRouter(usdG, address(factory), deployer, adapters)));
     }
 }

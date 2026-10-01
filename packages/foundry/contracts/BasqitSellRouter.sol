@@ -114,6 +114,11 @@ contract BasqitSellRouter is BasqitRouterBase {
         private
         returns (uint256 received)
     {
+        // A USDG component needs no swap; its instruction's minimum still applies.
+        if (token == address(usdG)) {
+            if (amountIn < swap.minAmountOut) revert SwapUnderpaid(token, amountIn, swap.minAmountOut);
+            return amountIn;
+        }
         _checkAdapter(swap.adapter);
         // Rounding can leave a component with nothing to sell; a per-leg minimum still applies.
         if (amountIn == 0) {

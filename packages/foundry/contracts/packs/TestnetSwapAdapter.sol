@@ -21,6 +21,7 @@ pragma solidity 0.8.28;
 */
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
@@ -51,7 +52,9 @@ contract TestnetSwapAdapter is IExactInputAdapter, IExactOutputAdapter, Ownable2
         usdG = IERC20(usdG_);
     }
 
+    /// @dev Prices are per 1e18 units, so only 18-decimal tokens are priced (USDG itself never is).
     function setPrice(address token, uint256 price) external onlyOwner {
+        if (IERC20Metadata(token).decimals() != 18) revert UnsupportedToken(token);
         priceUsdG[token] = price;
         emit PriceSet(token, price);
     }
@@ -91,12 +94,19 @@ contract TestnetSwapAdapter is IExactInputAdapter, IExactOutputAdapter, Ownable2
         address recipient,
         bytes calldata
     ) external returns (uint256 amountOut) {
-        uint256 price = priceUsdG[tokenIn];
-        if (tokenOut != address(usdG) || price == 0) revert UnsupportedToken(tokenIn);
-        amountOut = Math.mulDiv(amountIn, price, 1e18);
+        if (tokenIn == address(usdG)) {
+            // Buying with an exact amount of USDG, e.g. for a managed basket's rebalance; rounds down.
+            uint256 buyPrice = priceUsdG[tokenOut];
+            if (buyPrice == 0) revert UnsupportedToken(tokenOut);
+            amountOut = Math.mulDiv(amountIn, 1e18, buyPrice);
+        } else {
+            uint256 price = priceUsdG[tokenIn];
+            if (tokenOut != address(usdG) || price == 0) revert UnsupportedToken(tokenIn);
+            amountOut = Math.mulDiv(amountIn, price, 1e18);
+        }
         if (amountOut < minAmountOut) revert InsufficientOutput(amountOut, minAmountOut);
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
-        usdG.safeTransfer(recipient, amountOut);
+        IERC20(tokenOut).safeTransfer(recipient, amountOut);
     }
 
     function _transferOwnership(address newOwner) internal override {

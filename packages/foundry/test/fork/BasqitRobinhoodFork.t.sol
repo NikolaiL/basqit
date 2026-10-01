@@ -39,7 +39,7 @@ contract BasqitRobinhoodForkTest is Test {
         address[] memory listed = new address[](2);
         listed[0] = NVDA;
         listed[1] = AAPL;
-        factory = new BasqitFactory(owner, listed);
+        factory = new BasqitFactory(owner, address(USDG), listed, address(0));
         adapter = new UniswapV3Adapter(SWAP_ROUTER_02);
         address[] memory adapters = new address[](1);
         adapters[0] = address(adapter);
@@ -53,7 +53,7 @@ contract BasqitRobinhoodForkTest is Test {
         c[0] = BasqitToken.Component(NVDA, 0.01e18);
         c[1] = BasqitToken.Component(AAPL, 0.01e18);
         vm.prank(creator);
-        basket = BasqitToken(factory.createBasket("AI Duo", "AIDUO", c, 50));
+        basket = BasqitToken(factory.createBasket("AI Duo", "AIDUO", c, 50, BasqitFactory.Management(false, 0, 0)));
 
         vm.prank(USDG_HOLDER);
         USDG.transfer(alice, 100e6);

@@ -12,15 +12,17 @@ import { TestnetSwapAdapter } from "../contracts/packs/TestnetSwapAdapter.sol";
 import { BasqitFactory } from "../contracts/BasqitFactory.sol";
 import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
 import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
+import { BasqitRebalanceRouter } from "../contracts/BasqitRebalanceRouter.sol";
 import { BasqitToken } from "../contracts/BasqitToken.sol";
 
 /**
  * @notice Everything on Robinhood Chain testnet (46630) or the local chain (31337). Never mainnet.
  *  - Test tokens: tUSDG (6 decimals) and five test "stock" tokens with no value, minted by the deployer.
  *  - Faucet: 100 tUSDG per address per day, global daily cap.
- *  - Baskets: the factory lists the test stocks (the one token list for baskets and gifts); purchase and sell routers
- *    trade through a testnet swap adapter at mainnet Stock Token prices (script/sync-gift-prices.sh keeps them live);
- *    two sample baskets.
+ *  - Baskets: the factory allows the test stocks, tUSDG and tWETH (the one token list for baskets and gifts); purchase,
+ *    sell and rebalance routers trade through a testnet swap adapter at mainnet Stock Token prices (the 5-minute cron
+ *    /api/cron/testnet-prices keeps them live), which is also the price reference for managed baskets; two sample
+ *    baskets, one of them managed.
  *  - Gifts: seal listed tokens into a gift NFT; BasqitGiftRouter buys and seals in one transaction.
  *  - Packs: a 10-pack template with a 50-round prize reserve; anyone starts the next round once the last is done.
  *    Drawn by Dice Protocol (https://diceprotocol.world) on testnet, MockDiceEntropy locally.
@@ -35,6 +37,7 @@ contract DeployTestnet is ScaffoldETHDeploy {
 
     TestnetToken internal usdg;
     TestnetToken[5] internal stocks;
+    TestnetToken internal weth;
     BasqitFactory internal factory;
     TestnetSwapAdapter internal shop;
 
@@ -54,7 +57,7 @@ contract DeployTestnet is ScaffoldETHDeploy {
     function _tokensAndShop() internal {
         usdg = new TestnetToken("Test Global Dollar (testnet, no value)", "tUSDG", 6, deployer);
         string[5] memory symbols = ["NVDA", "AAPL", "TSLA", "AMZN", "META"];
-        address[] memory listed = new address[](5);
+        address[] memory listed = new address[](7);
         for (uint256 i = 0; i < 5; i++) {
             stocks[i] = new TestnetToken(
                 string.concat("Test ", symbols[i], " (testnet, no value)"), string.concat("t", symbols[i]), 18, deployer
@@ -62,18 +65,26 @@ contract DeployTestnet is ScaffoldETHDeploy {
             stocks[i].mint(deployer, 1_000_000e18);
             listed[i] = address(stocks[i]);
         }
+        weth = new TestnetToken("Test Wrapped Ether (testnet, no value)", "tWETH", 18, deployer);
+        weth.mint(deployer, 1_000_000e18);
+        listed[5] = address(usdg);
+        listed[6] = address(weth);
         BasqitTestnetFaucet faucet = new BasqitTestnetFaucet(address(usdg), 100e6, 1 days, 100_000e6);
         usdg.setMinter(address(faucet), true);
 
-        // One token list for baskets and gifts: the factory's.
-        factory = new BasqitFactory(deployer, listed);
         // Stands in for Uniswap at mainnet Stock Token prices of 29 Sept 2026; holds stock to sell and tUSDG to buy.
+        // Also the managed baskets' price reference: on testnet the venue and the reference are the same prices.
         shop = new TestnetSwapAdapter(address(usdg), deployer);
+        // One token list for baskets and gifts: the factory's.
+        factory = new BasqitFactory(deployer, address(usdg), listed, address(shop));
         uint256[5] memory usdPrices = [uint256(229.92e6), 337.54e6, 358.32e6, 246.33e6, 716.52e6];
         for (uint256 i = 0; i < 5; i++) {
             shop.setPrice(address(stocks[i]), usdPrices[i]);
             stocks[i].transfer(address(shop), 1000e18);
         }
+        // A round testnet price for tWETH; it has no live feed and is not synced by the cron.
+        shop.setPrice(address(weth), 3000e6);
+        weth.transfer(address(shop), 1000e18);
         usdg.mint(address(shop), 1_000_000e6);
     }
 
@@ -82,19 +93,23 @@ contract DeployTestnet is ScaffoldETHDeploy {
         adapters[0] = address(shop);
     }
 
-    /// Routers plus two sample baskets (about $15 and $12 a share); creator fees stay switched off.
+    /// Routers plus two sample baskets (about $15 and $12 a share); creator fees stay switched off. AI Builders is
+    /// managed by the deployer with 24 hours' notice and at most 1% slippage.
     function _baskets() internal {
         new BasqitPurchaseRouter(address(usdg), address(factory), deployer, _adapters());
         new BasqitSellRouter(address(usdg), address(factory), deployer, _adapters());
+        factory.scheduleRebalanceRouter(
+            address(new BasqitRebalanceRouter(address(usdg), address(factory), deployer, _adapters()))
+        );
         BasqitToken.Component[] memory five = new BasqitToken.Component[](5);
         for (uint256 i = 0; i < 5; i++) {
             five[i] = BasqitToken.Component(address(stocks[i]), i == 4 ? 0.005e18 : 0.01e18);
         }
-        factory.createBasket("Tech Five", "TECH5", five, 50);
+        factory.createBasket("Tech Five", "TECH5", five, 50, BasqitFactory.Management(false, 0, 0));
         BasqitToken.Component[] memory ai = new BasqitToken.Component[](2);
         ai[0] = BasqitToken.Component(address(stocks[0]), 0.03e18); // NVDA
         ai[1] = BasqitToken.Component(address(stocks[4]), 0.007e18); // META
-        factory.createBasket("AI Builders", "AIB", ai, 50);
+        factory.createBasket("AI Builders", "AIB", ai, 50, BasqitFactory.Management(true, 24, 100));
     }
 
     function _packs(address dice) internal {
