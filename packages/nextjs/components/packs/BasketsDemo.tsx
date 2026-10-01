@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
+import { valuePerShare } from "~~/services/baskets/value";
 import { basketManagement } from "~~/services/packs/management";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
 
@@ -69,8 +70,15 @@ export function BasketsDemo() {
               readonly [Address, number]
             >,
           ]);
+          const { usdg } = await testnetAssets();
           const prices = await Promise.all(parts.map(part => priceOf(part.token)));
-          const perShare = parts.reduce((sum, part, i) => sum + ceilDiv(part.unitsPerShare * prices[i], ONE), 0n);
+          // 0 when a price is missing: shown as "…", and the buy dialog refuses to price it.
+          const perShare =
+            valuePerShare(
+              parts,
+              Object.fromEntries(parts.map((part, i) => [part.token.toLowerCase(), prices[i]])),
+              usdg,
+            ) ?? 0n;
           return { basket, name, symbol, parts, supply, balance, feeBps: BigInt(fee[1]), perShare };
         }),
       );
@@ -261,7 +269,8 @@ export function BasketsDemo() {
               ))}
             </ul>
             <p className="bq-demo-price">
-              {formatToken(row.perShare, 6)} tUSDG a share · {formatToken(row.supply, 18)} shares out
+              {row.perShare ? formatToken(row.perShare, 6) : "…"} tUSDG a share · {formatToken(row.supply, 18)} shares
+              out
               {row.balance > 0n && ` · you hold ${formatToken(row.balance, 18)}`}
             </p>
             <div className="bq-demo-row">
