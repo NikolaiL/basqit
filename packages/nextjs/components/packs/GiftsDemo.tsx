@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { deadlineIn, deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
+import {
+  deadlineIn,
+  demoError,
+  deployment,
+  ensureAllowance,
+  formatToken,
+  usePacksWrite,
+  useTestUsdg,
+  useTokens,
+} from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, erc20Abi, formatUnits, isAddress, parseUnits, zeroAddress } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
-import { getParsedError } from "~~/utils/scaffold-eth";
 
 type Item = { token: Address; amount: bigint };
 
@@ -17,7 +25,7 @@ const MIXES = [
   { name: "Chips & Cars", dollars: { NVDA: 12, TSLA: 7 } },
 ] as const;
 
-export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
+export function GiftsDemo() {
   const { address, chainId } = useAccount();
   const write = usePacksWrite();
   const tokens = useTokens();
@@ -61,17 +69,28 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
     },
   });
 
+  // The last failure and the action it belongs to, shown right under that action.
+  const [failed, setFailed] = useState<{ at: string; message: string }>();
   const act = async (label: string, action: () => Promise<unknown>) => {
     setBusy(label);
-    onError("");
+    setFailed(undefined);
     try {
       await action();
     } catch (failure) {
-      onError(getParsedError(failure));
+      setFailed({ at: label, message: demoError(failure) });
     } finally {
       setBusy("");
     }
   };
+  const errorAt = (label: string) =>
+    failed?.at === label ? (
+      <p className="bq-demo-error" role="alert">
+        {failed.message}
+      </p>
+    ) : null;
+  const usdgBalance = useTestUsdg(address).data;
+  // Checked before the wallet opens; the contract still enforces it if the balance changes in between.
+  const cannotPay = (total: bigint) => !!address && usdgBalance !== undefined && usdgBalance < total;
   const recipient = (friend.trim() || address) as Address;
   // The gift contracts can never pass a gift on, so a gift sent there is lost.
   const friendInvalid =
@@ -238,7 +257,7 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
         {mode === "buy" && fee > 0n && <p className="bq-demo-note">Includes a {formatToken(fee, 6)} tUSDG fee.</p>}
         <button
           className="btn btn-primary btn-sm"
-          disabled={!canBuild}
+          disabled={!canBuild || (mode === "buy" && cannotPay(total))}
           onClick={() =>
             act("custom", async () => {
               const items = picked.map(({ token, amount }) => ({ token, amount }));
@@ -255,12 +274,20 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
         >
           {busy === "custom"
             ? "Sealing…"
-            : mode === "buy"
-              ? `${friend.trim() ? "Send" : "Buy"} for ${formatToken(total, 6)} tUSDG`
-              : friend.trim()
-                ? "Wrap and send"
-                : "Wrap for yourself"}
+            : mode === "buy" && picked.length && cannotPay(total)
+              ? "Not enough tUSDG"
+              : mode === "buy"
+                ? `${friend.trim() ? "Send" : "Buy"} for ${formatToken(total, 6)} tUSDG`
+                : friend.trim()
+                  ? "Wrap and send"
+                  : "Wrap for yourself"}
         </button>
+        {errorAt("custom")}
+        {mode === "buy" && picked.length > 0 && cannotPay(total) && (
+          <p className="bq-demo-note">
+            You have {formatToken(usdgBalance ?? 0n, 6)} tUSDG. Get free test USDG in step 3 above.
+          </p>
+        )}
         {ready && !friendInvalid && (
           <p id="gift-review" className="bq-demo-note">
             Recipient {recipient === address ? "you" : `${recipient.slice(0, 6)}…${recipient.slice(-4)}`} · Robinhood
@@ -295,12 +322,24 @@ export function GiftsDemo({ onError }: { onError: (message: string) => void }) {
               <button
                 className="btn btn-primary btn-sm"
                 disabled={
-                  !ready || friendInvalid || !!busy || !items.length || items.some(item => item.over || item.invalid)
+                  !ready ||
+                  friendInvalid ||
+                  !!busy ||
+                  !items.length ||
+                  items.some(item => item.over || item.invalid) ||
+                  cannotPay(price)
                 }
                 onClick={() => act(`mix-${mix.name}`, () => buy(items.map(({ token, amount }) => ({ token, amount }))))}
               >
-                {busy === `mix-${mix.name}` ? "Buying…" : friend.trim() ? "Send as a gift" : "Buy for yourself"}
+                {busy === `mix-${mix.name}`
+                  ? "Buying…"
+                  : cannotPay(price)
+                    ? "Not enough tUSDG"
+                    : friend.trim()
+                      ? "Send as a gift"
+                      : "Buy for yourself"}
               </button>
+              {errorAt(`mix-${mix.name}`)}
             </article>
           );
         })}

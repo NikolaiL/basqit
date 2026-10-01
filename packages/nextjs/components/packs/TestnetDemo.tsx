@@ -152,9 +152,9 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
         </p>
       )}
 
-      {kind === "baskets" && <BasketsDemo onError={setError} />}
-      {kind === "gifts" && <GiftsDemo onError={setError} />}
-      {kind === "packs" && <PackRoundDemo onError={setError} />}
+      {kind === "baskets" && <BasketsDemo />}
+      {kind === "gifts" && <GiftsDemo />}
+      {kind === "packs" && <PackRoundDemo />}
 
       {kind === "packs" && (
         <aside className="bq-demo-dice">

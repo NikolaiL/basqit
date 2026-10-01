@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { deadlineIn, deployment, ensureAllowance, formatToken, usePacksWrite, useTokens } from "./usePacks";
+import {
+  deadlineIn,
+  demoError,
+  deployment,
+  ensureAllowance,
+  formatToken,
+  usePacksWrite,
+  useTestUsdg,
+  useTokens,
+} from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
-import { getParsedError } from "~~/utils/scaffold-eth";
 
 type Part = { token: Address; unitsPerShare: bigint };
 
 const ONE = 10n ** 18n;
 const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
 
-export function BasketsDemo({ onError }: { onError: (message: string) => void }) {
+export function BasketsDemo() {
   const { address, chainId } = useAccount();
   const write = usePacksWrite();
   const tokens = useTokens();
@@ -74,13 +82,22 @@ export function BasketsDemo({ onError }: { onError: (message: string) => void })
     },
   });
 
+  // The last failure and the action it belongs to, shown right under that action.
+  const [failed, setFailed] = useState<{ at: string; message: string }>();
+  const usdgBalance = useTestUsdg(address).data;
+  const errorAt = (label: string) =>
+    failed?.at === label ? (
+      <p className="bq-demo-error" role="alert">
+        {failed.message}
+      </p>
+    ) : null;
   const act = async (label: string, action: () => Promise<unknown>) => {
     setBusy(label);
-    onError("");
+    setFailed(undefined);
     try {
       await action();
     } catch (failure) {
-      onError(getParsedError(failure));
+      setFailed({ at: label, message: demoError(failure) });
     } finally {
       setBusy("");
     }
@@ -184,6 +201,9 @@ export function BasketsDemo({ onError }: { onError: (message: string) => void })
       <div className="bq-demo-grid">
         {baskets.data?.rows.map(row => {
           const amount = sharesOf(row.basket);
+          // Estimated cost, checked before the wallet opens; the router still enforces the exact budget.
+          const shortOfUsdg =
+            !!address && amount > 0n && usdgBalance !== undefined && usdgBalance < ceilDiv(row.perShare * amount, ONE);
           return (
             <article key={row.basket} className="bq-demo-card">
               <strong>
@@ -214,14 +234,16 @@ export function BasketsDemo({ onError }: { onError: (message: string) => void })
                 />
                 <button
                   className="btn btn-primary btn-sm"
-                  disabled={!ready || !!busy || amount === 0n}
+                  disabled={!ready || !!busy || amount === 0n || shortOfUsdg}
                   onClick={() => act(`buy-${row.basket}`, () => buy(row.basket, amount, row.feeBps))}
                 >
                   {busy === `buy-${row.basket}`
                     ? "Buying…"
-                    : amount > 0n
-                      ? `Buy ≈ ${formatToken(ceilDiv(row.perShare * amount, ONE), 6)} tUSDG`
-                      : "Buy"}
+                    : shortOfUsdg
+                      ? "Not enough tUSDG"
+                      : amount > 0n
+                        ? `Buy ≈ ${formatToken(ceilDiv(row.perShare * amount, ONE), 6)} tUSDG`
+                        : "Buy"}
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
@@ -231,6 +253,13 @@ export function BasketsDemo({ onError }: { onError: (message: string) => void })
                   {busy === `sell-${row.basket}` ? "Selling…" : "Sell"}
                 </button>
               </div>
+              {shortOfUsdg && (
+                <p className="bq-demo-note">
+                  You have {formatToken(usdgBalance ?? 0n, 6)} tUSDG. Get free test USDG in step 3 above.
+                </p>
+              )}
+              {errorAt(`buy-${row.basket}`)}
+              {errorAt(`sell-${row.basket}`)}
             </article>
           );
         })}
@@ -314,6 +343,7 @@ export function BasketsDemo({ onError }: { onError: (message: string) => void })
               ? `Publish · one share ≈ ${formatToken(draftPrice, 6)} tUSDG today`
               : "Publish"}
         </button>
+        {errorAt("create")}
       </article>
     </section>
   );

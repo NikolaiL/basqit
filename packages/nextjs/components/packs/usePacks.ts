@@ -11,6 +11,7 @@ import {
   robinhoodTestnet,
   testnetAssets,
 } from "~~/services/packs/testnet";
+import { getParsedError } from "~~/utils/scaffold-eth";
 
 export const deployment = packsTestnet as PacksDeployment;
 
@@ -50,7 +51,8 @@ export function useTokens() {
  * Test tokens have no value; this shows what the same amount of the real Stock Token is worth.
  */
 export function useUsdPrices(tickers: string[]) {
-  const unique = [...new Set(tickers.filter(Boolean))].sort();
+  // USDG is the dollar itself, not a Stock Token with a market price.
+  const unique = [...new Set(tickers.filter(ticker => ticker && ticker !== "USDG"))].sort();
   return useQuery({
     queryKey: ["packs-usd", unique.join(",")],
     enabled: unique.length > 0,
@@ -133,4 +135,28 @@ export async function ensureAllowance(
   });
   if (allowance < amount)
     await write({ address: token, abi: erc20Abi, functionName: "approve", args: [spender, amount] });
+}
+
+/** The wallet's test USDG, so spending buttons can say "not enough" before a wallet prompt (refreshed by every write). */
+export function useTestUsdg(owner?: Address) {
+  return useQuery({
+    queryKey: ["packs-usdg", owner],
+    enabled: !!owner,
+    refetchInterval: 15_000,
+    queryFn: async () =>
+      packsClient.readContract({
+        address: (await testnetAssets()).usdg,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [owner!],
+      }),
+  });
+}
+
+/** A failed action in plain words. A bare revert here almost always means the wallet cannot cover it. */
+export function demoError(failure: unknown) {
+  const message = getParsedError(failure);
+  return /^execution reverted\.?$/i.test(message.trim())
+    ? "This transaction would fail. Check that you have enough tUSDG and test ETH, then try again."
+    : message;
 }

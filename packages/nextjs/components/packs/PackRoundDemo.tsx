@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import {
+  demoError,
   deployment,
   ensureAllowance,
   formatToken,
   formatUsd,
   usePacksWrite,
+  useTestUsdg,
   useTokens,
   useUsdPrices,
 } from "./usePacks";
@@ -16,7 +18,6 @@ import { useAccount } from "wagmi";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet } from "~~/services/packs/testnet";
-import { getParsedError } from "~~/utils/scaffold-eth";
 
 const STATUS = ["None", "Selling", "Sold out", "Drawing", "Seeded", "Finalized", "Cancelled"] as const;
 
@@ -38,7 +39,7 @@ type Round = {
 };
 type Prize = { token: Address; amount: bigint };
 
-export function PackRoundDemo({ onError }: { onError: (message: string) => void }) {
+export function PackRoundDemo() {
   const { address, chainId } = useAccount();
   const write = usePacksWrite();
   const tokens = useTokens();
@@ -47,6 +48,14 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
   // Latest round by default; earlier rounds stay reachable so their buyers can still claim or get refunds.
   const [picked, setPicked] = useState<bigint>();
   const [busy, setBusy] = useState("");
+  // The last failure and the action it belongs to, shown right under that action.
+  const [failed, setFailed] = useState<{ at: string; message: string }>();
+  const usdgBalance = useTestUsdg(address).data;
+  const ethBalance = useQuery({
+    queryKey: ["packs-eth", address],
+    enabled: !!address,
+    queryFn: () => packsClient.getBalance({ address: address! }),
+  }).data;
   const ready = !!address && chainId === robinhoodTestnet.id;
   const packs = { address: deployment.packs, abi: deployment.abis.packs } as const;
 
@@ -92,21 +101,30 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
 
   const act = async (label: string, action: () => Promise<unknown>) => {
     setBusy(label);
-    onError("");
+    setFailed(undefined);
     try {
       await action();
     } catch (failure) {
-      onError(getParsedError(failure));
+      setFailed({ at: label, message: demoError(failure) });
     } finally {
       setBusy("");
     }
   };
+  const errorAt = (prefix: string) =>
+    failed?.at.startsWith(prefix) ? (
+      <p className="bq-demo-error" role="alert">
+        {failed.message}
+      </p>
+    ) : null;
 
   const data = state.data;
   if (!data || data.roundId === 0n) return null;
   const { round, prizes, sold, mine, fee, now, roundId, latest, canStartNext } = data;
   const left = round.size - sold;
   const qty = Number(count);
+  // Checked before the wallet opens; the contract still enforces it if balances change in between.
+  const shortOfUsdg = !!address && !!qty && usdgBalance !== undefined && usdgBalance < round.price * BigInt(qty);
+  const shortOfEth = !!address && ethBalance !== undefined && ethBalance < fee;
   const pending = mine.filter(pack => !pack.settled);
   const status = STATUS[round.status];
   const expired =
@@ -188,7 +206,7 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
           />
           <button
             className="btn btn-primary btn-sm"
-            disabled={!ready || !!busy || left === 0 || !qty}
+            disabled={!ready || !!busy || left === 0 || !qty || shortOfUsdg}
             onClick={() =>
               act("buy", async () => {
                 const cost = round.price * BigInt(qty);
@@ -199,23 +217,36 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
           >
             {busy === "buy"
               ? "Buying…"
-              : qty
-                ? `Buy ${qty} for ${formatToken(round.price * BigInt(qty), 6)} tUSDG`
-                : "Buy"}
+              : shortOfUsdg
+                ? "Not enough tUSDG"
+                : qty
+                  ? `Buy ${qty} for ${formatToken(round.price * BigInt(qty), 6)} tUSDG`
+                  : "Buy"}
           </button>
         </div>
       )}
+      {round.status === 1 && !expired && shortOfUsdg && (
+        <p className="bq-demo-note">
+          You have {formatToken(usdgBalance ?? 0n, 6)} tUSDG. Get free test USDG in step 3 above, then buy.
+        </p>
+      )}
+      {errorAt("buy")}
       {round.status === 2 && !expired && (
         <button
           className="btn btn-primary btn-sm"
-          disabled={!ready || !!busy}
+          disabled={!ready || !!busy || shortOfEth}
           onClick={() =>
             act("draw", () => write({ ...packs, functionName: "requestDraw", args: [roundId], value: fee }))
           }
         >
-          {busy === "draw" ? "Requesting…" : `Start the draw (Dice fee ${formatToken(fee, 18)} ETH)`}
+          {busy === "draw"
+            ? "Requesting…"
+            : shortOfEth
+              ? "Not enough test ETH for the Dice fee"
+              : `Start the draw (Dice fee ${formatToken(fee, 18)} ETH)`}
         </button>
       )}
+      {errorAt("draw")}
       {round.status === 3 && !expired && (
         <p className="bq-demo-wait">
           <LoadingBars small /> Waiting for Dice to reveal request #{String(round.sequence)}. Usually a few seconds.
@@ -262,6 +293,10 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
           Reclaim the Dice fee
         </button>
       )}
+      {errorAt("finalize")}
+      {errorAt("cancel")}
+      {errorAt("next")}
+      {errorAt("fee")}
 
       {mine.length > 0 && (
         <div className="bq-demo-mine">
@@ -319,6 +354,9 @@ export function PackRoundDemo({ onError }: { onError: (message: string) => void 
               </li>
             ))}
           </ul>
+          {errorAt("all")}
+          {errorAt("claim-")}
+          {errorAt("refund-")}
         </div>
       )}
       {round.seed !== "0x0000000000000000000000000000000000000000000000000000000000000000" && (
