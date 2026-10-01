@@ -1013,6 +1013,45 @@
   }
 }
 
+/* Wide brand caret drawn by StockDiscovery in place of the native one; fades rather than blinks. */
+.bq-discover-input.has-caret {
+  position: relative;
+}
+.bq-discover-input.has-caret input {
+  caret-color: transparent;
+}
+.bq-discover-caret {
+  position: absolute;
+  width: max(3px, 0.06em);
+  height: 0.8em;
+  border-radius: 999px;
+  background: var(--bq-brand);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: bq-caret-fade 1.1s ease-in-out infinite;
+}
+.bq-discover-caret[hidden] {
+  display: none;
+}
+@keyframes bq-caret-fade {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  60%,
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bq-discover-caret {
+    animation: none;
+  }
+}
+
 /* The idea headline is borderless: no focus frame, the caret shows focus. */
 .bq-discover-shell .bq-discover-input input:focus-visible {
   outline: none;

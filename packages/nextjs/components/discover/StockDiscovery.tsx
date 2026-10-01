@@ -69,6 +69,8 @@ export function StockDiscovery({
   const shareVariant = useRef<number | null>(null);
   const scene = useRef<HTMLDivElement>(null);
   const themeInput = useRef<HTMLInputElement>(null);
+  const caret = useRef<HTMLSpanElement>(null);
+  const placeCaret = useRef(() => {});
   // Fit the typed idea on one line: measure a hidden twin and scale to the input's width. The font's optical
   // size changes glyph widths with the size, so converge over a few passes instead of measuring once.
   useLayoutEffect(() => {
@@ -95,6 +97,7 @@ export function StockDiscovery({
         size = Math.floor((size * input.clientWidth * 0.97) / Math.max(twin.offsetWidth, 1));
       }
       input.style.setProperty("--fit-size", `${size}px`);
+      placeCaret.current();
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -105,6 +108,65 @@ export function StockDiscovery({
       twin.remove();
     };
   }, [theme]);
+  // A wide brand caret drawn over the input (native carets cannot be widened): measured from the text before the
+  // selection, since the idea is centred. Desktop focuses the input on load; phones wait for a tap, so the keyboard
+  // does not cover the page.
+  useEffect(() => {
+    const input = themeInput.current;
+    const bar = caret.current;
+    if (!input?.parentElement || !bar) return;
+    const twin = document.createElement("span");
+    twin.setAttribute("aria-hidden", "true");
+    input.parentElement.append(twin);
+    const width = (text: string) => {
+      twin.textContent = text;
+      return twin.getBoundingClientRect().width;
+    };
+    placeCaret.current = () => {
+      const start = input.selectionStart ?? input.value.length;
+      bar.hidden = document.activeElement !== input || start !== input.selectionEnd;
+      if (bar.hidden) return;
+      const style = getComputedStyle(input);
+      Object.assign(twin.style, {
+        position: "absolute",
+        visibility: "hidden",
+        whiteSpace: "pre",
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontVariationSettings: style.fontVariationSettings,
+        letterSpacing: style.letterSpacing,
+      });
+      const padding = parseFloat(style.paddingLeft);
+      const room = input.clientWidth - padding - parseFloat(style.paddingRight);
+      // Centred text; an empty field puts the caret right after the placeholder, as if it were typed.
+      const text = input.value || input.placeholder;
+      const before = input.value ? width(input.value.slice(0, start)) : width(text);
+      const left = input.offsetLeft + padding + (room - width(text)) / 2 + before;
+      Object.assign(bar.style, {
+        left: `${left}px`,
+        top: `${input.offsetTop + input.offsetHeight / 2}px`,
+        fontSize: style.fontSize,
+      });
+      // Restart the fade on every move, so the caret is solid while typing.
+      bar.getAnimations().forEach(animation => (animation.currentTime = 0));
+    };
+    const place = () => placeCaret.current();
+    const events = ["focus", "blur", "input", "keyup", "click", "select"] as const;
+    events.forEach(name => input.addEventListener(name, place));
+    document.addEventListener("selectionchange", place);
+    if (window.matchMedia("(pointer: fine)").matches) {
+      input.focus({ preventScroll: true });
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    place();
+    return () => {
+      events.forEach(name => input.removeEventListener(name, place));
+      document.removeEventListener("selectionchange", place);
+      placeCaret.current = () => {};
+      twin.remove();
+    };
+  }, []);
   const query = normalizeTheme(theme);
   // One action for the pile and the keyboard list, so both open the same asset details.
   const openAsset = (symbol: string, matched: boolean) => {
@@ -240,7 +302,8 @@ export function StockDiscovery({
         <h1 className="bq-discover-heading">
           <label htmlFor="bq-discover-theme">I&apos;m in the mood for</label>
         </h1>
-        <div className="bq-discover-input">
+        <div className="bq-discover-input has-caret">
+          <span ref={caret} className="bq-discover-caret" aria-hidden="true" hidden />
           <input
             id="bq-discover-theme"
             autoComplete="off"
