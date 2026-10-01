@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   46630: {
     TestnetToken: {
-      address: "0xe3dd0683d1df8ae757c615a52875b39c33867eb4",
+      address: "0x787bfab9ecbca2b52a8afef2156fe92bee512818",
       abi: [
         {
           type: "constructor",
@@ -503,10 +503,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126655827,
+      deployedOnBlock: 126973607,
     },
     BasqitTestnetFaucet: {
-      address: "0x651cbf57313e1965ad47d6de85038f0743462a72",
+      address: "0x4023e542ac15f0e806532bd6e5935e8236753365",
       abi: [
         {
           type: "constructor",
@@ -678,10 +678,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656038,
+      deployedOnBlock: 126973813,
     },
     BasqitFactory: {
-      address: "0x207d48ca51a7539fe362e0eb74d053a04bbb84e4",
+      address: "0xda934b1737a23fd3a523bb079d22cd313ba0a458",
       abi: [
         {
           type: "constructor",
@@ -1311,10 +1311,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656069,
+      deployedOnBlock: 126973844,
     },
     TestnetSwapAdapter: {
-      address: "0x6f182d2c0b5fdad6a18dc344c40bd5ceb9416d6b",
+      address: "0xbe82bbb604db56d19ad846f4803f25fed8c3e771",
       abi: [
         {
           type: "constructor",
@@ -1715,10 +1715,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656093,
+      deployedOnBlock: 126973856,
     },
     BasqitPurchaseRouter: {
-      address: "0x6572f357244f17b0068428f5a11e86c206512ca0",
+      address: "0x29b71c2ee442a16e75dabdfc4f0179ce40e155ad",
       abi: [
         {
           type: "constructor",
@@ -2376,10 +2376,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656314,
+      deployedOnBlock: 126974071,
     },
     BasqitSellRouter: {
-      address: "0x2f89c1f1d9c896cf2222880a9b66a1d8e1bc8dcb",
+      address: "0x4cda3fdb386f4aaeea7cbc198911ae00ad5dccbc",
       abi: [
         {
           type: "constructor",
@@ -3036,10 +3036,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656333,
+      deployedOnBlock: 126974093,
     },
     BasqitGifts: {
-      address: "0x7f023746437a68dc5def93b9f520a75113634e99",
+      address: "0xc98afa702fb1239f88db0dae7618ea3e02cc226d",
       abi: [
         {
           type: "constructor",
@@ -4209,10 +4209,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656382,
+      deployedOnBlock: 126974150,
     },
     BasqitGiftRouter: {
-      address: "0x6ad77e91195f3f11ce98ff25975b6b8646524c18",
+      address: "0xdb04901db12278455b4d5b6e345d2aec108f6dde",
       abi: [
         {
           type: "constructor",
@@ -5138,10 +5138,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656398,
+      deployedOnBlock: 126974169,
     },
     BasqitPacks: {
-      address: "0x44e21187e7be16cf4ace97cc035f6b0541209756",
+      address: "0xc9f1571681ba21ce5801e8d23531880c8d1a16f9",
       abi: [
         {
           type: "constructor",
@@ -5649,6 +5649,24 @@ const deployedContracts = {
               name: "roundId",
               type: "uint256",
               internalType: "uint256",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "refundDiceFeeTo",
+          inputs: [
+            {
+              name: "roundId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "to",
+              type: "address",
+              internalType: "address",
             },
           ],
           outputs: [],
@@ -6438,6 +6456,11 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "NotFeePayer",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "NotPackOwner",
           inputs: [
             {
@@ -6586,7 +6609,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126656412,
+      deployedOnBlock: 126974177,
     },
   },
 } as const;
