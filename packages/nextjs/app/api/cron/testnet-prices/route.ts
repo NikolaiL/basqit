@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createWalletClient, erc20Abi, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { currentPrices, readBasketState } from "~~/services/baskets/chain";
+import { hasDatabase, insertSnapshots } from "~~/services/baskets/db";
+import { valuePerShare } from "~~/services/baskets/value";
 import { midPriceUsdG } from "~~/services/packs/prices";
 import { packsClient, packsTestnet, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
 import { readQuoteDetails } from "~~/services/portfolio/quote-details";
@@ -43,6 +46,27 @@ export async function GET(request: NextRequest) {
       results[symbol] = `${current} -> ${price}`;
     } catch (failure) {
       results[symbol] = `failed: ${failure instanceof Error ? failure.message.split("\n")[0] : "unknown"}`;
+    }
+  }
+  // Value-per-share snapshots for the basket charts. Never blocks the price update above.
+  if (hasDatabase()) {
+    try {
+      const { usdg } = await testnetAssets();
+      const baskets = (await packsClient.readContract({
+        address: packsTestnet.factory,
+        abi: packsTestnet.abis.factory,
+        functionName: "allBaskets",
+      })) as `0x${string}`[];
+      const at = Math.floor(Date.now() / 1000);
+      for (const basket of baskets) {
+        const state = await readBasketState(basket);
+        const prices = await currentPrices(state.components.map(c => c.token as `0x${string}`));
+        const value = valuePerShare(state.components, prices, usdg);
+        if (value !== null) await insertSnapshots(basket, [{ at, value, supply: state.supply, source: "cron" }]);
+      }
+      results.snapshots = `${baskets.length} baskets`;
+    } catch (failure) {
+      results.snapshots = `failed: ${failure instanceof Error ? failure.message.split("\n")[0] : "unknown"}`;
     }
   }
   return NextResponse.json(results, { headers: { "Cache-Control": "no-store" } });

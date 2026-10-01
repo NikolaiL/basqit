@@ -2772,6 +2772,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@neondatabase/serverless@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@neondatabase/serverless@npm:1.1.0"
+  checksum: 10/4874f7c0b80f0cd670eb276da8877284778ca816a7b3f25bc495348336db0e020ac96a001b15fcf6e9438219d2dd80563e354bcf3330b09c03759a106b71b454
+  languageName: node
+  linkType: hard
+
 "@next/env@npm:16.3.6":
   version: 16.3.6
   resolution: "@next/env@npm:16.3.6"
@@ -3961,6 +3968,7 @@ __metadata:
     "@farcaster/miniapp-sdk": "npm:^0.3.0"
     "@farcaster/miniapp-wagmi-connector": "npm:^2.0.0"
     "@heroicons/react": "npm:~2.2.0"
+    "@neondatabase/serverless": "npm:^1.1.0"
     "@rainbow-me/rainbowkit": "npm:2.2.11"
     "@react-native-async-storage/async-storage": "npm:~2.2.0"
     "@scaffold-ui/components": "npm:^0.1.12"

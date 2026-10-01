@@ -59,3 +59,6 @@ export const routerEvents = parseAbi([
 ]);
 
 export const adapterEvents = parseAbi(["event PriceSet(address indexed token, uint256 price)"]);
+
+/** The testnet swap adapter's price, which is also the managed baskets' price reference on testnet. */
+export const priceAbi = parseAbi(["function priceUsdG(address token) view returns (uint256)"]);
