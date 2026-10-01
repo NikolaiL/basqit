@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BasketTradeDialog } from "./BasketTradeDialog";
 import {
   deadlineIn,
   demoError,
@@ -12,7 +13,7 @@ import {
   useTokens,
 } from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
-import { type Address, parseUnits } from "viem";
+import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
@@ -27,13 +28,15 @@ export function BasketsDemo() {
   const write = usePacksWrite();
   const tokens = useTokens();
   const [busy, setBusy] = useState("");
-  const [shares, setShares] = useState<Record<string, string>>({});
-  const [draft, setDraft] = useState<{ name: string; symbol: string; fee: string; dollars: Record<string, string> }>({
+  const [trading, setTrading] = useState<{ basket: Address; side: "buy" | "sell" }>();
+  // Stock amounts are what the basket stores; dollars are only a way to type them at today's price.
+  const [draft, setDraft] = useState<{ name: string; symbol: string; fee: string; units: Record<string, string> }>({
     name: "",
     symbol: "",
     fee: "0.5",
-    dollars: {},
+    units: {},
   });
+  const [typingUsd, setTypingUsd] = useState<{ token: Address; text: string }>();
   const ready = !!address && chainId === robinhoodTestnet.id;
   const factory = { address: deployment.factory, abi: deployment.abis.factory } as const;
   const shop = { address: deployment.swapAdapter, abi: deployment.abis.swapAdapter } as const;
@@ -103,16 +106,9 @@ export function BasketsDemo() {
     }
   };
   const label = (token: Address) => tokens.data?.[token.toLowerCase()];
-  const sharesOf = (basket: Address) => {
-    try {
-      return parseUnits((shares[basket] ?? "").trim() || "0", 18);
-    } catch {
-      return 0n;
-    }
-  };
 
-  /** Buys `amount` shares: each component bought exactly through the adapter, the creator fee within the budget. */
-  const buy = async (basket: Address, amount: bigint, feeBps: bigint) => {
+  /** The swap legs that buy `amount` shares, and what they cost with the creator fee. */
+  const buyLegs = async (basket: Address, amount: bigint, feeBps: bigint) => {
     const b = { address: basket, abi: deployment.abis.basket } as const;
     const [parts, needed] = (await Promise.all([
       packsClient.readContract({ ...b, functionName: "components" }),
@@ -130,7 +126,24 @@ export function BasketsDemo() {
       })),
     );
     const spent = legs.reduce((sum, leg) => sum + leg.maxAmountIn, 0n);
-    const budget = spent + ceilDiv(spent * feeBps, 10_000n);
+    return { legs, cost: spent + ceilDiv(spent * feeBps, 10_000n) };
+  };
+
+  /**
+   * Spends up to `budget` tUSDG on as many shares as it buys, to 6 decimals. Each component is bought exactly
+   * through the adapter; the router refunds whatever the purchase does not use.
+   */
+  const buy = async (basket: Address, budget: bigint, perShare: bigint, feeBps: bigint) => {
+    const step = 10n ** 12n;
+    let amount = ((budget * 10_000n * ONE) / ((10_000n + feeBps) * perShare) / step) * step;
+    let quote = await buyLegs(basket, amount, feeBps);
+    // Per-component rounding can cost a little more than the estimate; shrink to fit, at most a few times.
+    for (let tries = 0; quote.cost > budget && tries < 3; tries++) {
+      amount = ((amount * budget) / quote.cost / step) * step;
+      quote = await buyLegs(basket, amount, feeBps);
+    }
+    if (amount === 0n || quote.cost > budget) throw new Error("That amount buys less than 0.000001 of a share.");
+    const { legs } = quote;
     const { usdg } = await testnetAssets();
     await ensureAllowance(write, address!, usdg, deployment.purchaseRouter, budget);
     await write({
@@ -166,15 +179,33 @@ export function BasketsDemo() {
     });
   };
 
-  // The create form: dollars of each company in one share become units at today's price.
-  const draftParts = (listed.data ?? []).flatMap(({ token, price }) => {
+  // The create form: the stock amount per share is the source of truth; its dollar value follows today's price.
+  const unitsOf = (token: Address) => {
     try {
-      const dollars = parseUnits((draft.dollars[token] ?? "").trim() || "0", 6);
-      return dollars > 0n && price > 0n ? [{ token, unitsPerShare: (dollars * ONE) / price }] : [];
+      return parseUnits((draft.units[token] ?? "").trim() || "0", 18);
     } catch {
-      return [];
+      return 0n;
     }
-  });
+  };
+  const draftParts = (listed.data ?? []).flatMap(({ token }) =>
+    unitsOf(token) > 0n ? [{ token, unitsPerShare: unitsOf(token) }] : [],
+  );
+  /** Dollars typed for one stock become its amount, rounded to 6 decimals so the amount stays readable. */
+  const setDollars = (token: Address, price: bigint, text: string) => {
+    setTypingUsd({ token, text });
+    let dollars: bigint;
+    try {
+      dollars = parseUnits(text.trim() || "0", 6);
+    } catch {
+      return;
+    }
+    const step = 10n ** 12n;
+    const units = price > 0n ? ((dollars * ONE) / price / step) * step : 0n;
+    setDraft(current => ({
+      ...current,
+      units: { ...current.units, [token]: units > 0n ? formatUnits(units, 18) : "" },
+    }));
+  };
   const draftPrice = draftParts.reduce(
     (sum, part) =>
       sum + ceilDiv(part.unitsPerShare * (listed.data?.find(l => l.token === part.token)?.price ?? 0n), ONE),
@@ -199,73 +230,46 @@ export function BasketsDemo() {
         {baskets.data && !baskets.data.feesOn && " Creator fees are switched off on testnet."}
       </p>
       <div className="bq-demo-grid">
-        {baskets.data?.rows.map(row => {
-          const amount = sharesOf(row.basket);
-          // Estimated cost, checked before the wallet opens; the router still enforces the exact budget.
-          const shortOfUsdg =
-            !!address && amount > 0n && usdgBalance !== undefined && usdgBalance < ceilDiv(row.perShare * amount, ONE);
-          return (
-            <article key={row.basket} className="bq-demo-card">
-              <strong>
-                {row.name} <small>{row.symbol}</small>
-              </strong>
-              <ul className="bq-demo-items">
-                {row.parts.map(part => (
-                  <li key={part.token}>
-                    <StockLogo symbol={label(part.token)?.ticker ?? ""} size={24} />
-                    {label(part.token)
-                      ? `${formatToken(part.unitsPerShare, label(part.token)!.decimals)} ${label(part.token)!.symbol}`
-                      : "…"}
-                  </li>
-                ))}
-              </ul>
-              <p className="bq-demo-price">
-                {formatToken(row.perShare, 6)} tUSDG a share · {formatToken(row.supply, 18)} shares out
-                {row.balance > 0n && ` · you hold ${formatToken(row.balance, 18)}`}
-              </p>
-              <div className="bq-demo-row">
-                <input
-                  className="input input-sm"
-                  inputMode="decimal"
-                  placeholder="Shares, e.g. 1"
-                  aria-label={`Shares of ${row.symbol}`}
-                  value={shares[row.basket] ?? ""}
-                  onChange={event => setShares(current => ({ ...current, [row.basket]: event.target.value }))}
-                />
-                <button
-                  className="btn btn-primary btn-sm"
-                  disabled={!ready || !!busy || amount === 0n || shortOfUsdg}
-                  onClick={() => act(`buy-${row.basket}`, () => buy(row.basket, amount, row.feeBps))}
-                >
-                  {busy === `buy-${row.basket}`
-                    ? "Buying…"
-                    : shortOfUsdg
-                      ? "Not enough tUSDG"
-                      : amount > 0n
-                        ? `Buy ≈ ${formatToken(ceilDiv(row.perShare * amount, ONE), 6)} tUSDG`
-                        : "Buy"}
-                </button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  disabled={!ready || !!busy || amount === 0n || amount > row.balance}
-                  onClick={() => act(`sell-${row.basket}`, () => sell(row.basket, amount, row.feeBps))}
-                >
-                  {busy === `sell-${row.basket}` ? "Selling…" : "Sell"}
-                </button>
-              </div>
-              {shortOfUsdg && (
-                <p className="bq-demo-note">
-                  You have {formatToken(usdgBalance ?? 0n, 6)} tUSDG. Get free test USDG in step 3 above.
-                </p>
-              )}
-              {errorAt(`buy-${row.basket}`)}
-              {errorAt(`sell-${row.basket}`)}
-            </article>
-          );
-        })}
+        {baskets.data?.rows.map(row => (
+          <article key={row.basket} className="bq-demo-card bq-basket-card">
+            <strong>
+              {row.name} <small>{row.symbol}</small>
+            </strong>
+            <ul className="bq-demo-items">
+              {row.parts.map(part => (
+                <li key={part.token}>
+                  <StockLogo symbol={label(part.token)?.ticker ?? ""} size={24} />
+                  {label(part.token)
+                    ? `${formatToken(part.unitsPerShare, label(part.token)!.decimals)} ${label(part.token)!.symbol}`
+                    : "…"}
+                </li>
+              ))}
+            </ul>
+            <p className="bq-demo-price">
+              {formatToken(row.perShare, 6)} tUSDG a share · {formatToken(row.supply, 18)} shares out
+              {row.balance > 0n && ` · you hold ${formatToken(row.balance, 18)}`}
+            </p>
+            <div className="bq-demo-row">
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={!!busy}
+                onClick={() => setTrading({ basket: row.basket, side: "buy" })}
+              >
+                Buy
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={!!busy || row.balance === 0n}
+                onClick={() => setTrading({ basket: row.basket, side: "sell" })}
+              >
+                Sell
+              </button>
+            </div>
+          </article>
+        ))}
       </div>
 
-      <article className="bq-demo-card bq-demo-builder">
+      <article className="bq-demo-card bq-demo-builder bq-basket-builder">
         <strong>Create a basket</strong>
         <div className="bq-demo-row">
           <input
@@ -285,34 +289,57 @@ export function BasketsDemo() {
             onChange={event => setDraft(current => ({ ...current, symbol: event.target.value.toUpperCase() }))}
           />
         </div>
-        <ul className="bq-demo-builder-rows">
+        <div className="bq-basket-cols" aria-hidden>
+          <span>Stock in one share</span>
+          <span>Value today</span>
+        </div>
+        <ul className="bq-demo-builder-rows bq-basket-rows">
           {listed.data?.map(({ token, price }) => {
             const info = label(token);
-            const part = draftParts.find(entry => entry.token === token);
+            const value = ceilDiv(unitsOf(token) * price, ONE);
             return (
               <li key={token}>
                 <StockLogo symbol={info?.ticker ?? ""} size={28} />
-                <span>
+                <span className="bq-basket-name">
                   <b>{info?.symbol ?? "…"}</b>
-                  <small>
-                    {`$${formatToken(price, 6)} each`}
-                    {part && info && <em> · {`${formatToken(part.unitsPerShare, info.decimals)} a share`}</em>}
-                  </small>
+                  <small>{`$${formatToken(price, 6)} each`}</small>
                 </span>
                 <input
-                  className="input input-sm"
+                  className="input input-sm bq-basket-qty"
                   inputMode="decimal"
-                  placeholder="$0"
-                  aria-label={`Dollars of ${info?.symbol} in one share`}
-                  value={draft.dollars[token] ?? ""}
-                  onChange={event =>
-                    setDraft(current => ({ ...current, dollars: { ...current.dollars, [token]: event.target.value } }))
-                  }
+                  placeholder="0"
+                  aria-label={`${info?.symbol ?? "Stock"} in one share`}
+                  value={draft.units[token] ?? ""}
+                  onChange={event => {
+                    setTypingUsd(undefined);
+                    setDraft(current => ({ ...current, units: { ...current.units, [token]: event.target.value } }));
+                  }}
                 />
+                <label className="bq-basket-usd">
+                  <span aria-hidden>≈ $</span>
+                  <input
+                    className="input input-sm"
+                    inputMode="decimal"
+                    placeholder="0"
+                    aria-label={`Value of ${info?.symbol ?? "the stock"} in one share today, in dollars`}
+                    value={
+                      typingUsd?.token === token
+                        ? typingUsd.text
+                        : value > 0n
+                          ? Number(formatUnits(value, 6)).toFixed(2)
+                          : ""
+                    }
+                    onChange={event => setDollars(token, price, event.target.value)}
+                    onBlur={() => setTypingUsd(undefined)}
+                  />
+                </label>
               </li>
             );
           })}
         </ul>
+        <p className="bq-demo-note">
+          Type either column. The basket stores the stock amounts; the dollar value moves with the price.
+        </p>
         <label className="bq-demo-friend">
           Your creator fee on every buy and sell, in % (up to 1)
           <input
@@ -333,7 +360,7 @@ export function BasketsDemo() {
                 functionName: "createBasket",
                 args: [draft.name.trim(), draft.symbol.trim(), draftParts, feeBps],
               });
-              setDraft({ name: "", symbol: "", fee: "0.5", dollars: {} });
+              setDraft({ name: "", symbol: "", fee: "0.5", units: {} });
             })
           }
         >
@@ -345,6 +372,23 @@ export function BasketsDemo() {
         </button>
         {errorAt("create")}
       </article>
+      {(() => {
+        const row = baskets.data?.rows.find(entry => entry.basket === trading?.basket);
+        if (!row || !trading) return null;
+        // Fees switched off on testnet are not charged, so they are not estimated either.
+        const feeBps = baskets.data?.feesOn ? row.feeBps : 0n;
+        return (
+          <BasketTradeDialog
+            key={`${row.basket}-${trading.side}`}
+            basket={{ symbol: row.symbol, name: row.name, perShare: row.perShare, feeBps, shares: row.balance }}
+            initialSide={trading.side}
+            usdg={usdgBalance}
+            onBuy={budget => buy(row.basket, budget, row.perShare, feeBps)}
+            onSell={amount => sell(row.basket, amount, feeBps)}
+            onClose={() => setTrading(undefined)}
+          />
+        );
+      })()}
     </section>
   );
 }

@@ -3599,6 +3599,83 @@ html [data-rk] {
   color: var(--bq-danger);
 }
 
+/* Basket cards: list fills the card so price and actions line up across a row of cards. */
+.bq-basket-card {
+  grid-template-rows: auto 1fr;
+}
+.bq-basket-card .bq-demo-items {
+  align-content: start;
+}
+/* The builder sits below the cards; without this its border meets theirs. */
+.bq-demo-grid + .bq-basket-builder {
+  margin-top: 24px;
+}
+/* One column that never grows past the card, so the inputs shrink on phones instead of overflowing. */
+.bq-basket-builder,
+.bq-basket-rows {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* Basket builder: stock amount is the stored value (solid, bold); dollars are derived (dashed, muted). */
+.bq-basket-cols,
+.bq-basket-rows li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 140px 120px;
+  align-items: center;
+  gap: 4px 12px;
+}
+.bq-basket-cols {
+  margin-top: 4px;
+  color: var(--bq-muted);
+  font-size: 13px;
+}
+.bq-basket-cols span:first-child {
+  grid-column: 3;
+  color: var(--bq-ink);
+  font-weight: 700;
+}
+.bq-basket-qty.input {
+  width: 100%;
+  min-width: 0;
+  border: 2px solid var(--bq-brand);
+  font-family: var(--bq-mono), monospace;
+  font-weight: 700;
+}
+.bq-basket-usd {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--bq-muted);
+  white-space: nowrap;
+}
+.bq-demo-builder-rows .bq-basket-usd span {
+  display: inline;
+}
+.bq-basket-usd .input {
+  width: 100%;
+  min-width: 0;
+  border-style: dashed;
+  background: transparent;
+  color: var(--bq-muted);
+}
+.bq-basket-usd .input:focus {
+  color: var(--bq-ink);
+}
+@media (max-width: 560px) {
+  .bq-basket-cols,
+  .bq-basket-rows li {
+    grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .bq-basket-rows .bq-basket-name {
+    grid-column: 2 / -1;
+  }
+  .bq-basket-rows .bq-basket-qty {
+    grid-column: 2;
+  }
+  .bq-basket-cols span:first-child {
+    grid-column: 2;
+  }
+}
+
 /* Sealed gifts waiting for this wallet: the first thing a recipient sees, in the gift's own purple. */
 .bq-sealed {
   margin: 0 0 32px;
