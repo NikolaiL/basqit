@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { type ActivityRow, ActivityTable, HoldersTable } from "./ActivityTables";
 import { ManagePanel } from "./ManagePanel";
+import { PendingPlan, when } from "./PendingPlan";
 import { ValueChart } from "./ValueChart";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, erc20Abi } from "viem";
@@ -114,6 +115,13 @@ export function BasketDetails({ basket }: { basket: Address }) {
     },
   });
 
+  // An announced rebalance, shown to everyone: holders get its notice period to sell first if they disagree.
+  const pending = useQuery({
+    queryKey: ["packs-basket-pending", basket, detail.data?.readyAt],
+    enabled: !!detail.data?.readyAt,
+    queryFn: () => packsClient.readContract({ address: basket, abi: basketAbi, functionName: "pendingRebalance" }),
+  });
+
   const history = useQuery({
     queryKey: ["packs-basket-history", basket, range],
     staleTime: 60_000,
@@ -159,6 +167,7 @@ export function BasketDetails({ basket }: { basket: Address }) {
   const d = detail.data;
   const label = (token: string) => tokens.data?.[token.toLowerCase()];
   const creator = activity.data?.activity.find(r => r.kind === "created")?.who;
+  const isManager = !!d && !!address && d.rules.manager.toLowerCase() === address.toLowerCase();
 
   return (
     <>
@@ -236,7 +245,23 @@ export function BasketDetails({ basket }: { basket: Address }) {
         )}
       </section>
 
-      {d && address && d.rules.manager.toLowerCase() === address.toLowerCase() && (
+      {d && pending.data && !isManager && d.now <= d.readyAt + 86_400 && (
+        <section className="bq-demo-card bq-upcoming" aria-labelledby="bq-upcoming-title">
+          <h2 id="bq-upcoming-title">Upcoming rebalance</h2>
+          <p className="bq-manage-window">
+            {d.now < d.readyAt
+              ? `Announced by the manager. It can run from ${when(d.readyAt)} until ${when(d.readyAt + 86_400)}.`
+              : `Ready to run now, until ${when(d.readyAt + 86_400)}.`}
+          </p>
+          <PendingPlan sells={pending.data[0]} buys={pending.data[1]} components={d.components} />
+          <p className="bq-demo-note">
+            Every share changes the same way. If you disagree, you can sell before it runs; it may lose at most{" "}
+            {d.rules.maxSlippageBps / 100}% of the value it trades.
+          </p>
+        </section>
+      )}
+
+      {d && isManager && (
         <ManagePanel
           basket={basket}
           state={d}

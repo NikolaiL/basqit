@@ -3887,6 +3887,11 @@ html [data-rk] {
   margin: 0;
   font-weight: 700;
 }
+/* An announced rebalance for everyone: amber, like the pending banner on the cards. */
+.bq-upcoming {
+  border-color: var(--bq-amber);
+  background: color-mix(in srgb, var(--bq-amber) 14%, var(--bq-paper));
+}
 .bq-manage-go {
   width: 100%;
 }

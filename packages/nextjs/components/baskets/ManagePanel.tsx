@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { PendingPlan, when } from "./PendingPlan";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
@@ -48,9 +49,6 @@ const legs = (count: number) =>
     minAmountOut: 0n,
     routeData: "0x" as const,
   }));
-
-const when = (at: number) =>
-  new Date(at * 1000).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
 /** The manager's controls: plan, announce or rebalance now, then execute or cancel an announced plan. */
 export function ManagePanel({ basket, state, onDone }: { basket: Address; state: ManagedState; onDone: () => void }) {
@@ -150,22 +148,7 @@ export function ManagePanel({ basket, state, onDone }: { basket: Address; state:
       <section className="bq-demo-card bq-manage">
         <h2>Manage</h2>
         {plan ? (
-          <ul className="bq-manage-plan">
-            {plan[0].map(s => {
-              const before = state.components.find(c => c.token.toLowerCase() === s.token.toLowerCase());
-              return (
-                <li key={s.token}>
-                  {label(s.token)?.symbol ?? "…"} {before ? formatToken(before.unitsPerShare, decimals(s.token)) : "…"}{" "}
-                  → {formatToken(s.unitsPerShare, decimals(s.token))} per share
-                </li>
-              );
-            })}
-            {plan[1].map(b => (
-              <li key={b.token}>
-                {label(b.token)?.symbol ?? "…"} gets {b.bps / 100}% of the proceeds
-              </li>
-            ))}
-          </ul>
+          <PendingPlan sells={plan[0]} buys={plan[1]} components={state.components} />
         ) : (
           <p role="status">Loading the announced plan…</p>
         )}
