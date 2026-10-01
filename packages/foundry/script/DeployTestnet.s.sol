@@ -97,8 +97,8 @@ contract DeployTestnet is ScaffoldETHDeploy {
         adapters[0] = address(shop);
     }
 
-    /// Routers plus two sample baskets (about $15 and $12 a share); creator fees stay switched off. AI Builders is
-    /// managed by the deployer with 24 hours' notice and at most 1% slippage.
+    /// Routers plus three sample baskets, one share each held by the deployer; creator fees stay switched off. AI
+    /// Builders is managed with 24 hours' notice, Quick Shift with none; both by the deployer, at most 1% slippage.
     function _baskets() internal {
         new BasqitPurchaseRouter(address(usdg), address(factory), deployer, _adapters());
         new BasqitSellRouter(address(usdg), address(factory), deployer, _adapters());
@@ -114,6 +114,23 @@ contract DeployTestnet is ScaffoldETHDeploy {
         ai[0] = BasqitToken.Component(address(stocks[0]), 0.03e18); // NVDA
         ai[1] = BasqitToken.Component(address(stocks[4]), 0.007e18); // META
         factory.createBasket("AI Builders", "AIB", ai, 50, BasqitFactory.Management(true, 24, 100));
+        // Managed with no notice, so a rebalance can be tried end to end straight away.
+        BasqitToken.Component[] memory quick = new BasqitToken.Component[](2);
+        quick[0] = BasqitToken.Component(address(stocks[1]), 0.02e18); // AAPL
+        quick[1] = BasqitToken.Component(address(stocks[3]), 0.02e18); // AMZN
+        factory.createBasket("Quick Shift", "QUICK", quick, 50, BasqitFactory.Management(true, 0, 100));
+
+        // One share of each to the deployer, so every sample can be charted and rebalanced from the start.
+        address[] memory made = factory.allBaskets();
+        for (uint256 i = 0; i < made.length; i++) {
+            BasqitToken basket = BasqitToken(made[i]);
+            BasqitToken.Component[] memory parts = basket.components();
+            uint256[] memory amounts = basket.quoteMint(1e18);
+            for (uint256 j = 0; j < parts.length; j++) {
+                TestnetToken(parts[j].token).approve(address(basket), amounts[j]);
+            }
+            basket.mint(1e18, deployer);
+        }
     }
 
     function _packs(address dice) internal {
