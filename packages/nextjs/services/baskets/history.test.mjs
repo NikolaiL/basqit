@@ -1,4 +1,4 @@
-import { rebuildHistory, thin } from "./history.ts";
+import { chartStep, rebuildHistory, thin } from "./history.ts";
 import assert from "node:assert/strict";
 
 const usdg = "0xusdg";
@@ -49,3 +49,8 @@ assert.deepEqual(
   thin(many, 60, new Set([10])).map(p => p.at),
   [10, 20, 80, 130],
 );
+
+// The thinning step shrinks for short histories, so a young basket still draws a line (about 150 points at most).
+assert.equal(chartStep([], 3600), 3600);
+assert.equal(chartStep([{ at: 0 }, { at: 420 }], 3600), 2);
+assert.equal(chartStep([{ at: 0 }, { at: 30 * 86_400 }], 3600), 3600);

@@ -1,4 +1,5 @@
 import { adapterEvents, basketAbi, basketEvent, factoryEvents, priceAbi } from "./abi";
+import { blockTimes } from "./blockTime";
 import type { HistoryEvents } from "./history";
 import type { Component } from "./value";
 import type { Address } from "viem";
@@ -42,11 +43,8 @@ export async function currentPrices(tokens: Address[]) {
   return Object.fromEntries(tokens.map((token, i) => [token.toLowerCase(), prices[i]])) as Record<string, bigint>;
 }
 
-/** A log's block time: the testnet RPC includes it on every log; older nodes need the block. */
-export const timeOf = async (log: { blockTimestamp?: bigint | null; blockNumber: bigint | null }) =>
-  log.blockTimestamp != null
-    ? Number(log.blockTimestamp)
-    : Number((await packsClient.getBlock({ blockNumber: log.blockNumber! })).timestamp);
+/** A log's block time; the block cache lives as long as the server instance. */
+export const timeOf = blockTimes(blockNumber => packsClient.getBlock({ blockNumber }));
 
 /** Creation, rebalances, prices and supply changes since the factory's deploy, for one basket; `null` when the
  * address is not a basket of this factory. The testnet RPC returns every log of this deployment in one call; chunk by

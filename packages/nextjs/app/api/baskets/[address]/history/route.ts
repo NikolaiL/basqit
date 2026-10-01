@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "viem";
 import { readHistoryEvents } from "~~/services/baskets/chain";
 import { earliestSnapshot, hasDatabase, insertSnapshots, readSnapshots } from "~~/services/baskets/db";
-import { type Point, rebuildHistory, thin } from "~~/services/baskets/history";
+import { type Point, chartStep, rebuildHistory, thin } from "~~/services/baskets/history";
 import { testnetAssets } from "~~/services/packs/testnet";
 
 export const runtime = "nodejs";
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     points = rebuildHistory(events, usdg).filter(p => p.at >= from);
   }
 
-  const shown = thin(points, step, new Set(rebalances));
+  const shown = thin(points, chartStep(points, step), new Set(rebalances));
   return NextResponse.json({
     points: shown.map(p => ({ at: p.at, value: p.value.toString(), supply: p.supply.toString(), source: p.source })),
     rebalances,

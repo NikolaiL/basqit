@@ -54,3 +54,11 @@ export function thin(points: Point[], step: number, keep: Set<number> = new Set(
   }
   return out;
 }
+
+/** The thinning step for a chart: the range's step, smaller when the history is short, so about 150 points at most
+ * and a young basket still draws a line. */
+export function chartStep(points: { at: number }[], maxStep: number) {
+  if (points.length < 2) return maxStep;
+  const span = points[points.length - 1].at - points[0].at;
+  return Math.min(maxStep, Math.max(1, Math.floor(span / 150)));
+}
