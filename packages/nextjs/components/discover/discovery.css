@@ -187,6 +187,21 @@
   color: var(--bq-muted);
   font-size: 12px;
 }
+/* Wraps the X share button so "More info" sits centred under it without shifting the row. */
+.bq-discover-share {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.bq-discover-share > .link {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+}
 .bq-discover-share-status {
   display: block;
   height: 24px;

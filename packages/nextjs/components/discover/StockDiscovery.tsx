@@ -6,6 +6,7 @@ import "./discovery.css";
 import { useAccount } from "wagmi";
 import { ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
+import { DialogClose } from "~~/components/DialogClose";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { useMiniapp } from "~~/components/MiniappProvider";
 import { StockLogo } from "~~/components/StockLogo";
@@ -53,6 +54,7 @@ export function StockDiscovery({
 }) {
   const { isMiniApp, composeCast, openLink } = useMiniapp();
   const { address } = useAccount();
+  const feeInfo = useRef<HTMLDialogElement>(null);
   const [theme, setTheme] = useState(initialTheme);
   const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>(() => ({
     theme: normalizeTheme(initialTheme) ?? "",
@@ -442,13 +444,20 @@ export function StockDiscovery({
                 >
                   Buy these
                 </button>
-                <button
-                  className="btn btn-secondary"
-                  disabled={!query || loading || !!error || !matches.length}
-                  onClick={() => void share("x")}
-                >
-                  Share My Stock Mood on X
-                </button>
+                <div className="bq-discover-share">
+                  <button
+                    className="btn btn-secondary"
+                    disabled={!query || loading || !!error || !matches.length}
+                    onClick={() => void share("x")}
+                  >
+                    {address ? "Share and earn when friends trade" : "Share My Stock Mood on X"}
+                  </button>
+                  {address && !shareStatus && (
+                    <button type="button" className="link" onClick={() => feeInfo.current?.showModal()}>
+                      More info
+                    </button>
+                  )}
+                </div>
                 <button
                   className={`btn btn-secondary${isMiniApp ? "" : " btn-square"}`}
                   disabled={!query || loading || !!error || !matches.length}
@@ -462,6 +471,31 @@ export function StockDiscovery({
               <span className="bq-discover-share-status" role="status">
                 {shareStatus}
               </span>
+              <dialog ref={feeInfo} className="modal" aria-labelledby="bq-fee-split-title">
+                <div className="modal-box">
+                  <DialogClose label="Close" onClick={() => feeInfo.current?.close()} />
+                  <h2 id="bq-fee-split-title" className="text-lg font-bold">
+                    Share the link, we share the fees
+                  </h2>
+                  <ul className="list-disc space-y-2 pl-5 py-3">
+                    <li>Your link carries your wallet address.</li>
+                    <li>
+                      When someone opens it and buys or sells stocks on Basqit, you get half of the Basqit fee on that
+                      trade. The fee is shown before every trade.
+                    </li>
+                    <li>They pay the same fee either way.</li>
+                    <li>Your share goes to your wallet in the same onchain transaction. Nothing to claim.</li>
+                    <li>The last link they opened counts. Your own trades don&apos;t.</li>
+                    <li>For now this covers stock trades only.</li>
+                  </ul>
+                  <button className="btn btn-primary btn-sm" onClick={() => feeInfo.current?.close()}>
+                    Got it
+                  </button>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                  <button>Close</button>
+                </form>
+              </dialog>
             </div>
           )}
         </div>
