@@ -26,7 +26,7 @@ export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster
         // Omitting the URL launches the shared page with its full query intact.
         ...(launchUrl && launchUrl.length <= 1024 ? { url: launchUrl } : {}),
         splashImageUrl: `${origin}/farcaster/splash.png`,
-        splashBackgroundColor: "#efebff",
+        splashBackgroundColor: "#dbeeff",
       },
     },
   });
@@ -58,7 +58,7 @@ export function farcasterManifest() {
       iconUrl: `${origin}/farcaster/icon.png`,
       homeUrl: `${origin}/discover`,
       splashImageUrl: `${origin}/farcaster/splash.png`,
-      splashBackgroundColor: "#efebff",
+      splashBackgroundColor: "#dbeeff",
       primaryCategory: "finance",
       tags: ["stocks", "discovery", "portfolio"],
       heroImageUrl: `${origin}/thumbnail.jpg`,

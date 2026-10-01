@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   46630: {
     TestnetToken: {
-      address: "0x787bfab9ecbca2b52a8afef2156fe92bee512818",
+      address: "0xa28b268b8b827184019971791208fb804baaf093",
       abi: [
         {
           type: "constructor",
@@ -503,10 +503,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126973607,
+      deployedOnBlock: 127081607,
     },
     BasqitTestnetFaucet: {
-      address: "0x4023e542ac15f0e806532bd6e5935e8236753365",
+      address: "0xdf4fc787c827539586a99a54b156c1cf035d8a2e",
       abi: [
         {
           type: "constructor",
@@ -678,10 +678,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126973813,
+      deployedOnBlock: 127081845,
     },
     BasqitFactory: {
-      address: "0xda934b1737a23fd3a523bb079d22cd313ba0a458",
+      address: "0x35f1960b89bd4fa5d6b301079b254d633317f843",
       abi: [
         {
           type: "constructor",
@@ -692,9 +692,19 @@ const deployedContracts = {
               internalType: "address",
             },
             {
-              name: "stockTokens_",
+              name: "usdG_",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "allowed",
               type: "address[]",
               internalType: "address[]",
+            },
+            {
+              name: "reference_",
+              type: "address",
+              internalType: "address",
             },
           ],
           stateMutability: "nonpayable",
@@ -702,6 +712,19 @@ const deployedContracts = {
         {
           type: "function",
           name: "FEE_CHANGE_DELAY",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "LISTING_DELAY",
           inputs: [],
           outputs: [
             {
@@ -727,6 +750,58 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "MAX_NOTICE_HOURS",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint8",
+              internalType: "uint8",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "MAX_SLIPPAGE_BPS",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint16",
+              internalType: "uint16",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "MIN_SLIPPAGE_BPS",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint16",
+              internalType: "uint16",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "SETTINGS_CHANGE_DELAY",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
           name: "acceptOwnership",
           inputs: [],
           outputs: [],
@@ -735,6 +810,64 @@ const deployedContracts = {
         {
           type: "function",
           name: "allBaskets",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address[]",
+              internalType: "address[]",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "allowTokens",
+          inputs: [
+            {
+              name: "tokens",
+              type: "address[]",
+              internalType: "address[]",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "allowedAt",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "uint64",
+              internalType: "uint64",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "allowedTokenCount",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "allowedTokens",
           inputs: [],
           outputs: [
             {
@@ -813,6 +946,28 @@ const deployedContracts = {
               type: "uint16",
               internalType: "uint16",
             },
+            {
+              name: "management",
+              type: "tuple",
+              internalType: "struct BasqitFactory.Management",
+              components: [
+                {
+                  name: "managed",
+                  type: "bool",
+                  internalType: "bool",
+                },
+                {
+                  name: "noticeHours",
+                  type: "uint8",
+                  internalType: "uint8",
+                },
+                {
+                  name: "maxSlippageBps",
+                  type: "uint16",
+                  internalType: "uint16",
+                },
+              ],
+            },
           ],
           outputs: [
             {
@@ -868,7 +1023,7 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "delistStockTokens",
+          name: "disallowTokens",
           inputs: [
             {
               name: "tokens",
@@ -936,6 +1091,25 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "isAllowedToken",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "bool",
+              internalType: "bool",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
           name: "isBasket",
           inputs: [
             {
@@ -955,38 +1129,6 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "isStockToken",
-          inputs: [
-            {
-              name: "token",
-              type: "address",
-              internalType: "address",
-            },
-          ],
-          outputs: [
-            {
-              name: "",
-              type: "bool",
-              internalType: "bool",
-            },
-          ],
-          stateMutability: "view",
-        },
-        {
-          type: "function",
-          name: "listStockTokens",
-          inputs: [
-            {
-              name: "tokens",
-              type: "address[]",
-              internalType: "address[]",
-            },
-          ],
-          outputs: [],
-          stateMutability: "nonpayable",
-        },
-        {
-          type: "function",
           name: "owner",
           inputs: [],
           outputs: [
@@ -1001,6 +1143,84 @@ const deployedContracts = {
         {
           type: "function",
           name: "pendingOwner",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingReference",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "contract IPriceReference",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingReferenceAt",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint64",
+              internalType: "uint64",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingRouter",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingRouterAt",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint64",
+              internalType: "uint64",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "priceReference",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "contract IPriceReference",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "rebalanceRouter",
           inputs: [],
           outputs: [
             {
@@ -1038,6 +1258,32 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "schedulePriceReference",
+          inputs: [
+            {
+              name: "reference_",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "scheduleRebalanceRouter",
+          inputs: [
+            {
+              name: "router",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
           name: "setFeesEnabled",
           inputs: [
             {
@@ -1051,32 +1297,6 @@ const deployedContracts = {
         },
         {
           type: "function",
-          name: "stockTokenCount",
-          inputs: [],
-          outputs: [
-            {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
-          stateMutability: "view",
-        },
-        {
-          type: "function",
-          name: "stockTokens",
-          inputs: [],
-          outputs: [
-            {
-              name: "",
-              type: "address[]",
-              internalType: "address[]",
-            },
-          ],
-          stateMutability: "view",
-        },
-        {
-          type: "function",
           name: "transferOwnership",
           inputs: [
             {
@@ -1087,6 +1307,19 @@ const deployedContracts = {
           ],
           outputs: [],
           stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "usdG",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
         },
         {
           type: "event",
@@ -1118,6 +1351,37 @@ const deployedContracts = {
             },
             {
               name: "feeBps",
+              type: "uint16",
+              indexed: false,
+              internalType: "uint16",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "BasketManagement",
+          inputs: [
+            {
+              name: "basket",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "manager",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "noticeHours",
+              type: "uint8",
+              indexed: false,
+              internalType: "uint8",
+            },
+            {
+              name: "maxSlippageBps",
               type: "uint16",
               indexed: false,
               internalType: "uint16",
@@ -1209,7 +1473,45 @@ const deployedContracts = {
         },
         {
           type: "event",
-          name: "StockTokenDelisted",
+          name: "PriceReferenceScheduled",
+          inputs: [
+            {
+              name: "source",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "effectiveAt",
+              type: "uint64",
+              indexed: false,
+              internalType: "uint64",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "RebalanceRouterScheduled",
+          inputs: [
+            {
+              name: "router",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "effectiveAt",
+              type: "uint64",
+              indexed: false,
+              internalType: "uint64",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "TokenAllowed",
           inputs: [
             {
               name: "token",
@@ -1217,12 +1519,18 @@ const deployedContracts = {
               indexed: true,
               internalType: "address",
             },
+            {
+              name: "effectiveAt",
+              type: "uint64",
+              indexed: false,
+              internalType: "uint64",
+            },
           ],
           anonymous: false,
         },
         {
           type: "event",
-          name: "StockTokenListed",
+          name: "TokenDisallowed",
           inputs: [
             {
               name: "token",
@@ -1246,12 +1554,34 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "NotAContract",
+          inputs: [
+            {
+              name: "account",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
           name: "NotCreator",
           inputs: [
             {
               name: "basket",
               type: "address",
               internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "NoticeTooLong",
+          inputs: [
+            {
+              name: "hoursGiven",
+              type: "uint8",
+              internalType: "uint8",
             },
           ],
         },
@@ -1284,6 +1614,17 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "SlippageOutOfRange",
+          inputs: [
+            {
+              name: "bps",
+              type: "uint16",
+              internalType: "uint16",
+            },
+          ],
+        },
+        {
+          type: "error",
           name: "UnknownBasket",
           inputs: [
             {
@@ -1306,15 +1647,20 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "UnmanagedSettings",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "ZeroAddress",
           inputs: [],
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126973844,
+      deployedOnBlock: 127081903,
     },
     TestnetSwapAdapter: {
-      address: "0xbe82bbb604db56d19ad846f4803f25fed8c3e771",
+      address: "0x1c8e0b6dae26b6aabb89877e307d53c7d3670491",
       abi: [
         {
           type: "constructor",
@@ -1715,10 +2061,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126973856,
+      deployedOnBlock: 127081881,
     },
     BasqitPurchaseRouter: {
-      address: "0x29b71c2ee442a16e75dabdfc4f0179ce40e155ad",
+      address: "0x4c56a68ae90e0dd9f3055cf7b09471f91ac1057e",
       abi: [
         {
           type: "constructor",
@@ -2376,10 +2722,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126974071,
+      deployedOnBlock: 127084515,
     },
     BasqitSellRouter: {
-      address: "0x4cda3fdb386f4aaeea7cbc198911ae00ad5dccbc",
+      address: "0x7a2d98c0df2ffd474357452e2bdb5a62774d144b",
       abi: [
         {
           type: "constructor",
@@ -3036,10 +3382,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126974093,
+      deployedOnBlock: 127084534,
     },
     BasqitGifts: {
-      address: "0xc98afa702fb1239f88db0dae7618ea3e02cc226d",
+      address: "0x8566fc6cc15b23884ebbb4d67eb7dae1240b66e4",
       abi: [
         {
           type: "constructor",
@@ -4209,10 +4555,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126974150,
+      deployedOnBlock: 127084710,
     },
     BasqitGiftRouter: {
-      address: "0xdb04901db12278455b4d5b6e345d2aec108f6dde",
+      address: "0x7f9974c9158d7a78e7f7f7c57156a6cb193c216d",
       abi: [
         {
           type: "constructor",
@@ -5138,10 +5484,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126974169,
+      deployedOnBlock: 127084732,
     },
     BasqitPacks: {
-      address: "0xc9f1571681ba21ce5801e8d23531880c8d1a16f9",
+      address: "0x315e426562bc6bbd45245166756db136695eb464",
       abi: [
         {
           type: "constructor",
@@ -6609,7 +6955,611 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 126974177,
+      deployedOnBlock: 127084747,
+    },
+    BasqitRebalanceRouter: {
+      address: "0xdb16a34932284b3d19d92d296f19528943fc66a9",
+      abi: [
+        {
+          type: "constructor",
+          inputs: [
+            {
+              name: "usdG_",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "factory_",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "initialOwner",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "initialAdapters",
+              type: "address[]",
+              internalType: "address[]",
+            },
+          ],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "ADAPTER_DELAY",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "acceptOwnership",
+          inputs: [],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "adapterEnabledAt",
+          inputs: [
+            {
+              name: "adapter",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "uint64",
+              internalType: "uint64",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "allowedAdapters",
+          inputs: [
+            {
+              name: "adapter",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "bool",
+              internalType: "bool",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "claimFees",
+          inputs: [
+            {
+              name: "to",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "amount",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "claimableFees",
+          inputs: [
+            {
+              name: "creator",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "factory",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "contract BasqitFactory",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "owner",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "pendingOwner",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "rebalance",
+          inputs: [
+            {
+              name: "sellTokens",
+              type: "address[]",
+              internalType: "address[]",
+            },
+            {
+              name: "sellAmounts",
+              type: "uint256[]",
+              internalType: "uint256[]",
+            },
+            {
+              name: "buyTokens",
+              type: "address[]",
+              internalType: "address[]",
+            },
+            {
+              name: "buyBps",
+              type: "uint16[]",
+              internalType: "uint16[]",
+            },
+            {
+              name: "sellLegs",
+              type: "tuple[]",
+              internalType: "struct IBasqitRebalanceRouter.Leg[]",
+              components: [
+                {
+                  name: "adapter",
+                  type: "address",
+                  internalType: "address",
+                },
+                {
+                  name: "minAmountOut",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "routeData",
+                  type: "bytes",
+                  internalType: "bytes",
+                },
+              ],
+            },
+            {
+              name: "buyLegs",
+              type: "tuple[]",
+              internalType: "struct IBasqitRebalanceRouter.Leg[]",
+              components: [
+                {
+                  name: "adapter",
+                  type: "address",
+                  internalType: "address",
+                },
+                {
+                  name: "minAmountOut",
+                  type: "uint256",
+                  internalType: "uint256",
+                },
+                {
+                  name: "routeData",
+                  type: "bytes",
+                  internalType: "bytes",
+                },
+              ],
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "renounceOwnership",
+          inputs: [],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "setAdapterAllowed",
+          inputs: [
+            {
+              name: "adapter",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "allowed",
+              type: "bool",
+              internalType: "bool",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "transferOwnership",
+          inputs: [
+            {
+              name: "newOwner",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "usdG",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "contract IERC20",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "event",
+          name: "AdapterScheduled",
+          inputs: [
+            {
+              name: "adapter",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "allowed",
+              type: "bool",
+              indexed: false,
+              internalType: "bool",
+            },
+            {
+              name: "effectiveAt",
+              type: "uint64",
+              indexed: false,
+              internalType: "uint64",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "BasketRebalanced",
+          inputs: [
+            {
+              name: "basket",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "usdGProceeds",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "CreatorFeePaid",
+          inputs: [
+            {
+              name: "basket",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "creator",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "amount",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+            {
+              name: "accrued",
+              type: "bool",
+              indexed: false,
+              internalType: "bool",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "FeesClaimed",
+          inputs: [
+            {
+              name: "creator",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "to",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "amount",
+              type: "uint256",
+              indexed: false,
+              internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "OwnershipTransferStarted",
+          inputs: [
+            {
+              name: "previousOwner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "newOwner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "OwnershipTransferred",
+          inputs: [
+            {
+              name: "previousOwner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "newOwner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "error",
+          name: "AdapterNotAllowed",
+          inputs: [
+            {
+              name: "adapter",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "BasketNotRegistered",
+          inputs: [
+            {
+              name: "basket",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "InvalidRecipient",
+          inputs: [
+            {
+              name: "recipient",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "LengthMismatch",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "OwnableInvalidOwner",
+          inputs: [
+            {
+              name: "owner",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "OwnableUnauthorizedAccount",
+          inputs: [
+            {
+              name: "account",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "ReentrancyGuardReentrantCall",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "RenounceDisabled",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "ResidualTokenBalance",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "expected",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "actual",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "SafeERC20FailedOperation",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "SwapOverspent",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "spent",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "maximum",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "SwapUnderpaid",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "received",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "minimum",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "UnexpectedTokenTransfer",
+          inputs: [
+            {
+              name: "token",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "received",
+              type: "uint256",
+              internalType: "uint256",
+            },
+            {
+              name: "expected",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
+          name: "ZeroAddress",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "ZeroAmount",
+          inputs: [],
+        },
+      ],
+      inheritedFunctions: {},
+      deployedOnBlock: 127084552,
     },
   },
 } as const;

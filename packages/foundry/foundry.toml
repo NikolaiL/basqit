@@ -9,6 +9,8 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 extra_output = ["evm.bytecode.opcodes"]
 optimizer = true
 optimizer_runs = 200
+# Keeps the managed-basket factory below the EVM contract-size limit.
+via_ir = true
 
 
 [fuzz]

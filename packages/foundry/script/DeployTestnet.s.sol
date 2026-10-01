@@ -41,7 +41,7 @@ contract DeployTestnet is ScaffoldETHDeploy {
     BasqitFactory internal factory;
     TestnetSwapAdapter internal shop;
 
-    function run() external ScaffoldEthDeployerRunner {
+    function run() external virtual ScaffoldEthDeployerRunner {
         address dice;
         if (block.chainid == 46630) dice = DICE_TESTNET;
         else if (block.chainid == 31337) dice = address(new MockDiceEntropy());
@@ -77,6 +77,10 @@ contract DeployTestnet is ScaffoldETHDeploy {
         shop = new TestnetSwapAdapter(address(usdg), deployer);
         // One token list for baskets and gifts: the factory's.
         factory = new BasqitFactory(deployer, address(usdg), listed, address(shop));
+        _seedShop();
+    }
+
+    function _seedShop() internal {
         uint256[5] memory usdPrices = [uint256(229.92e6), 337.54e6, 358.32e6, 246.33e6, 716.52e6];
         for (uint256 i = 0; i < 5; i++) {
             shop.setPrice(address(stocks[i]), usdPrices[i]);

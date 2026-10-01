@@ -104,7 +104,7 @@
 
 :root,
 [data-theme] {
-  background: var(--color-base-200);
+  background: var(--bq-page);
 }
 
 .btn {
@@ -122,7 +122,8 @@
 /* Basqit design tokens. DaisyUI primitives inherit the same palette. */
 :root {
   --bq-ink: #141a2e;
-  --bq-muted: #6b7083;
+  /* Dark enough for 4.5:1 on the page colour as well as on cards. */
+  --bq-muted: #4f5468;
   --bq-brand: #5a4fe0;
   --bq-lilac: #eeeefb;
   --bq-line: #e2dcfb;
@@ -130,6 +131,8 @@
   --bq-mist: #efebff;
   --bq-amber: #ffb020;
   --bq-danger: #9f2438;
+  /* Page behind the cards: sky blue, so the white and lilac cards and the purple stand off it. */
+  --bq-page: #dbeeff;
 }
 [data-theme="dark"] {
   --bq-ink: #eeecf7;
@@ -140,6 +143,7 @@
   --bq-paper: #262058;
   --bq-mist: #1d1848;
   --bq-danger: #ff9d99;
+  --bq-page: #1d1848;
 }
 .bq-theme-switch {
   width: 44px;
@@ -2718,7 +2722,7 @@ body:has(.bq-discover-shell) {
 
 /* Sticker style across the app: dotted paper, display headings, buttons with a pressed-edge shadow. */
 :root {
-  background-image: radial-gradient(color-mix(in srgb, var(--bq-brand) 16%, transparent) 1.5px, transparent 1.6px);
+  background-image: radial-gradient(color-mix(in srgb, var(--bq-brand) 24%, transparent) 1.5px, transparent 1.6px);
   background-size: 22px 22px;
 }
 .bq-page-heading h1 {
@@ -3609,6 +3613,88 @@ html [data-rk] {
 /* The builder sits below the cards; without this its border meets theirs. */
 .bq-demo-grid + .bq-basket-builder {
   margin-top: 24px;
+}
+/* Basket rules: type, fee and (managed) notice and slippage share one row on desktop, two columns on phones. */
+.bq-basket-rules {
+  display: grid;
+  /* Fixed tracks, so a fixed basket's two settings stay as compact as a managed basket's four. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+  margin-top: 6px;
+}
+.bq-basket-rule {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.bq-segment {
+  display: flex;
+  height: 2rem;
+  padding: 3px;
+  border: 1px solid var(--bq-line);
+  border-radius: 999px;
+  background: var(--bq-paper);
+}
+.bq-segment label {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--bq-muted);
+  cursor: pointer;
+}
+.bq-segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.bq-segment label:has(input:checked) {
+  background: var(--bq-brand);
+  color: #fff;
+}
+.bq-segment label:has(input:focus-visible) {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: 2px;
+}
+.bq-basket-unit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bq-basket-unit .input {
+  width: 100%;
+  min-width: 0;
+  font-family: var(--bq-mono), monospace;
+}
+.bq-basket-unit em {
+  font-style: normal;
+  color: var(--bq-muted);
+}
+.bq-basket-rules-help {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.bq-basket-rules-help.is-alert {
+  color: var(--bq-danger);
+}
+/* Phones give dashboard inputs a 44px touch target; the type switch matches them. */
+@media (max-width: 640px) {
+  .bq-basket-rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bq-segment {
+    height: 44px;
+  }
+}
+.bq-basket-publish-note {
+  margin: -2px 0 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+  text-align: center;
 }
 /* One column that never grows past the card, so the inputs shrink on phones instead of overflowing. */
 .bq-basket-builder,

@@ -122,29 +122,26 @@ export const packsTestnet: PacksDeployment | null = Object.values(NAMES).every(p
     }
   : null;
 
-/** tUSDG and the listed test stocks, read on chain: several are the same contract, so they have no names above. */
-let assets: Promise<{ usdg: Address; stocks: Address[] }> | undefined;
-export const testnetAssets = () =>
-  (assets ??= Promise.all([
+/** Current tradable test assets. Query callers own caching so failures and registry changes can be retried. */
+export async function testnetAssets() {
+  if (!packsTestnet) throw new Error("Testnet contracts are not configured.");
+  const factory = deployedContracts[robinhoodTestnet.id].BasqitFactory;
+  const [usdg, listed] = await Promise.all([
     packsClient.readContract({
-      address: packsTestnet!.faucet,
+      address: packsTestnet.faucet,
       abi: [{ type: "function", name: "token", inputs: [], outputs: [{ type: "address" }], stateMutability: "view" }],
       functionName: "token",
     }),
-    packsClient.readContract({
-      address: packsTestnet!.factory,
-      abi: [
-        {
-          type: "function",
-          name: "stockTokens",
-          inputs: [],
-          outputs: [{ type: "address[]" }],
-          stateMutability: "view",
-        },
-      ],
-      functionName: "stockTokens",
-    }),
-  ]).then(([usdg, stocks]) => ({ usdg: usdg as Address, stocks: [...stocks] as Address[] })));
+    packsClient.readContract({ ...factory, functionName: "allowedTokens" }),
+  ]);
+  const allowed = await packsClient.multicall({
+    contracts: listed.map(token => ({ ...factory, functionName: "isAllowedToken", args: [token] }) as const),
+    allowFailure: false,
+  });
+  // USDG is the payment token, not a swap-adapter purchase. tWETH trades like the 18-decimal test stocks.
+  const stocks = listed.filter((token, i) => allowed[i] && token.toLowerCase() !== usdg.toLowerCase());
+  return { usdg, stocks };
+}
 
 export const explorerTx = (hash: string) => `${robinhoodTestnet.blockExplorers.default.url}/tx/${hash}`;
 export const explorerAddress = (address: string) => `${robinhoodTestnet.blockExplorers.default.url}/address/${address}`;

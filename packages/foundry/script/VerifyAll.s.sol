@@ -27,6 +27,7 @@ contract VerifyAll is Script {
         string memory root = vm.projectRoot();
         string memory path =
             string.concat(root, "/broadcast/Deploy.s.sol/", vm.toString(block.chainid), "/run-latest.json");
+        path = vm.envOr("DEPLOYMENT_BROADCAST", path);
         string memory content = vm.readFile(path);
 
         while (nextTransaction(content)) {
@@ -36,6 +37,12 @@ contract VerifyAll is Script {
     }
 
     function _verifyIfContractDeployment(string memory content) internal {
+        // An interrupted broadcast also contains planned transactions that were never sent.
+        try vm.parseJsonString(content, searchStr(currTransactionIdx, "hash")) returns (string memory hash) {
+            if (bytes(hash).length != 66) return;
+        } catch {
+            return;
+        }
         string memory txType =
             abi.decode(vm.parseJson(content, searchStr(currTransactionIdx, "transactionType")), (string));
         if (keccak256(bytes(txType)) == keccak256(bytes("CREATE"))) {

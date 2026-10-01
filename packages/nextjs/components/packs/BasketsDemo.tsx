@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
+import { basketManagement } from "~~/services/packs/management";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
 
 type Part = { token: Address; unitsPerShare: bigint };
@@ -36,6 +37,8 @@ export function BasketsDemo() {
     fee: "0.5",
     units: {},
   });
+  const [managementDraft, setManagementDraft] = useState({ managed: false, notice: "24", slippage: "1" });
+  const management = basketManagement(managementDraft.managed, managementDraft.notice, managementDraft.slippage);
   const [typingUsd, setTypingUsd] = useState<{ token: Address; text: string }>();
   const ready = !!address && chainId === robinhoodTestnet.id;
   const factory = { address: deployment.factory, abi: deployment.abis.factory } as const;
@@ -44,7 +47,7 @@ export function BasketsDemo() {
     packsClient.readContract({ ...shop, functionName: "priceUsdG", args: [token] }) as Promise<bigint>;
 
   const baskets = useQuery({
-    queryKey: ["packs-baskets", address],
+    queryKey: ["packs-baskets", deployment.factory, address],
     refetchInterval: 15_000,
     queryFn: async () => {
       const [list, feesOn] = (await Promise.all([
@@ -77,7 +80,7 @@ export function BasketsDemo() {
 
   // Every stock the factory lists, with its current price, for the create form.
   const listed = useQuery({
-    queryKey: ["packs-basket-listed"],
+    queryKey: ["packs-basket-listed", deployment.factory],
     refetchInterval: 60_000,
     queryFn: async () => {
       const { stocks } = await testnetAssets();
@@ -215,6 +218,9 @@ export function BasketsDemo() {
   const canCreate =
     ready &&
     !busy &&
+    !listed.isError &&
+    !tokens.isError &&
+    management !== null &&
     draft.name.trim().length > 0 &&
     draft.symbol.trim().length > 0 &&
     draftParts.length > 0 &&
@@ -225,10 +231,19 @@ export function BasketsDemo() {
     <section className="bq-demo-block">
       <h3>Baskets</h3>
       <p className="bq-demo-note">
-        Each share holds fixed amounts of test Stock Tokens. Buying purchases every component at today&apos;s price and
-        mints the share; selling redeems it and sells the components.
+        Each share holds test tokens. Fixed baskets keep the same token amounts per share; managed baskets let their
+        creator rebalance under rules set at creation. Buying purchases the components; selling redeems and sells them.
         {baskets.data && !baskets.data.feesOn && " Creator fees are switched off on testnet."}
       </p>
+      {baskets.isPending && <p role="status">Loading baskets…</p>}
+      {baskets.isError && (
+        <p className="bq-demo-error" role="alert">
+          Could not load baskets.{" "}
+          <button className="btn btn-sm" onClick={() => baskets.refetch()}>
+            Retry
+          </button>
+        </p>
+      )}
       <div className="bq-demo-grid">
         {baskets.data?.rows.map(row => (
           <article key={row.basket} className="bq-demo-card bq-basket-card">
@@ -271,6 +286,22 @@ export function BasketsDemo() {
 
       <article className="bq-demo-card bq-demo-builder bq-basket-builder">
         <strong>Create a basket</strong>
+        {(listed.isPending || tokens.isPending) && <p role="status">Loading available tokens…</p>}
+        {(listed.isError || tokens.isError) && (
+          <p className="bq-demo-error" role="alert">
+            Could not load available tokens.{" "}
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                void listed.refetch();
+                void tokens.refetch();
+              }}
+            >
+              Retry
+            </button>
+          </p>
+        )}
+        {listed.isSuccess && listed.data.length === 0 && <p>No tokens are currently available for new baskets.</p>}
         <div className="bq-demo-row">
           <input
             className="input input-sm"
@@ -340,27 +371,104 @@ export function BasketsDemo() {
         <p className="bq-demo-note">
           Type either column. The basket stores the stock amounts; the dollar value moves with the price.
         </p>
-        <label className="bq-demo-friend">
-          Your creator fee on every buy and sell, in % (up to 1)
-          <input
-            className="input input-sm"
-            inputMode="decimal"
-            aria-label="Creator fee in percent"
-            value={draft.fee}
-            onChange={event => setDraft(current => ({ ...current, fee: event.target.value }))}
-          />
-        </label>
+        <div className="bq-basket-rules">
+          <div className="bq-basket-rule" role="radiogroup" aria-labelledby="basket-type-label">
+            <span id="basket-type-label">Type</span>
+            <div className="bq-segment">
+              {(
+                [
+                  ["Fixed", false],
+                  ["Managed", true],
+                ] as const
+              ).map(([name, managed]) => (
+                <label key={name}>
+                  <input
+                    type="radio"
+                    name="basket-type"
+                    checked={managementDraft.managed === managed}
+                    onChange={() => setManagementDraft(current => ({ ...current, managed }))}
+                  />
+                  {name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="bq-basket-rule">
+            Creator fee
+            <span className="bq-basket-unit">
+              <input
+                className="input input-sm"
+                inputMode="decimal"
+                aria-describedby="basket-rules-help"
+                value={draft.fee}
+                onChange={event => setDraft(current => ({ ...current, fee: event.target.value }))}
+              />
+              <em>%</em>
+            </span>
+          </label>
+          {managementDraft.managed && (
+            <>
+              <label className="bq-basket-rule">
+                Notice
+                <span className="bq-basket-unit">
+                  <input
+                    className="input input-sm"
+                    inputMode="numeric"
+                    aria-describedby="basket-rules-help"
+                    value={managementDraft.notice}
+                    onChange={event => setManagementDraft(current => ({ ...current, notice: event.target.value }))}
+                  />
+                  <em>h</em>
+                </span>
+              </label>
+              <label className="bq-basket-rule">
+                Max slippage
+                <span className="bq-basket-unit">
+                  <input
+                    className="input input-sm"
+                    inputMode="decimal"
+                    aria-describedby="basket-rules-help"
+                    value={managementDraft.slippage}
+                    onChange={event => setManagementDraft(current => ({ ...current, slippage: event.target.value }))}
+                  />
+                  <em>%</em>
+                </span>
+              </label>
+            </>
+          )}
+        </div>
+        <p
+          className={`bq-demo-note bq-basket-rules-help${
+            managementDraft.managed && (!management || management.noticeHours === 0) ? " is-alert" : ""
+          }`}
+          id="basket-rules-help"
+          aria-live="polite"
+        >
+          {!managementDraft.managed
+            ? "Fixed: the amounts per share never change. Your fee, up to 1%, is charged on every buy and sell."
+            : management
+              ? `Managed: you announce each rebalance ${
+                  management.noticeHours === 0
+                    ? "with no notice, so holders get no warning"
+                    : `${management.noticeHours} h ahead, so holders can exit first`
+                }. Each one may lose at most ${management.maxSlippageBps / 100}% of what it trades at reference prices, ${
+                  management.maxSlippageBps / 50
+                }% within 7 days, and runs at most every 4 h. Your fee, up to 1%, is charged on every buy and sell. Type, notice and limit are fixed once published.`
+              : "Notice is whole hours from 0 to 72; max slippage is 0.1% to 2%."}
+        </p>
         <button
           className="btn btn-primary btn-sm"
           disabled={!canCreate}
           onClick={() =>
             act("create", async () => {
+              if (!management) throw new Error("Check the managed-basket settings before publishing.");
               await write({
                 ...factory,
                 functionName: "createBasket",
-                args: [draft.name.trim(), draft.symbol.trim(), draftParts, feeBps],
+                args: [draft.name.trim(), draft.symbol.trim(), draftParts, feeBps, management],
               });
               setDraft({ name: "", symbol: "", fee: "0.5", units: {} });
+              setManagementDraft({ managed: false, notice: "24", slippage: "1" });
             })
           }
         >
@@ -370,6 +478,7 @@ export function BasketsDemo() {
               ? `Publish · one share ≈ ${formatToken(draftPrice, 6)} tUSDG today`
               : "Publish"}
         </button>
+        {!ready && <p className="bq-basket-publish-note">Connect your wallet on Robinhood Chain testnet to publish.</p>}
         {errorAt("create")}
       </article>
       {(() => {

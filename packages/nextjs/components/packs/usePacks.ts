@@ -52,7 +52,7 @@ export function useTokens() {
  */
 export function useUsdPrices(tickers: string[]) {
   // USDG is the dollar itself, not a Stock Token with a market price.
-  const unique = [...new Set(tickers.filter(ticker => ticker && ticker !== "USDG"))].sort();
+  const unique = [...new Set(tickers.filter(ticker => ticker && ticker !== "USDG" && ticker !== "WETH"))].sort();
   return useQuery({
     queryKey: ["packs-usd", unique.join(",")],
     enabled: unique.length > 0,

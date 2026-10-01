@@ -798,13 +798,13 @@
 
 /* Sticker style: the idea is typed as a poster headline, matches are stuck on in a row under it. */
 .bq-discover-shell {
-  --bq-sticker-bg: #efebff;
-  --bq-sticker-dot: #d9d2ff;
+  /* Same page colour and dots as every other page. */
+  --bq-sticker-bg: var(--bq-page);
+  --bq-sticker-dot: color-mix(in srgb, var(--bq-brand) 24%, transparent);
   --bq-sticker-shadow: 0 2px 0 #1b16501a, 0 8px 18px #2a1f8a24;
   background: var(--bq-sticker-bg) radial-gradient(var(--bq-sticker-dot) 1.5px, transparent 1.6px) 0 0 / 22px 22px;
 }
 [data-theme="dark"] .bq-discover-shell {
-  --bq-sticker-bg: #1d1848;
   --bq-sticker-dot: #2c2665;
   --bq-sticker-shadow: 0 2px 0 #00000040, 0 10px 22px #00000059;
 }

@@ -471,10 +471,10 @@ contract ManagedBasketTest is Test {
         BasqitToken basket = _managed(0, 100);
         _referenceWith(248e6); // the venue sells NVDA at 250: each TSLA→NVDA rebalance loses 0.8%
         _now(basket, _sell(address(tsla), 0.8e18), _buy(address(nvda)));
-        vm.warp(block.timestamp + 4 hours);
+        skip(4 hours);
         _now(basket, _sell(address(tsla), 0.6e18), _buy(address(nvda)));
         assertEq(basket.lossBpsInWindow(), 160);
-        vm.warp(block.timestamp + 4 hours);
+        skip(4 hours);
         vm.expectRevert(abi.encodeWithSelector(BasqitToken.LossBudgetExceeded.selector, 240, 200));
         _now(basket, _sell(address(tsla), 0.4e18), _buy(address(nvda)));
         vm.warp(basket.lossWindowStart() + basket.LOSS_WINDOW());

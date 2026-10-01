@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
   // Sequential so each transaction gets the next nonce.
   for (const token of [...new Set(stocks)]) {
     const symbol = await packsClient.readContract({ address: token, abi: erc20Abi, functionName: "symbol" });
+    // tWETH has a fixed testnet price and no Stock Token quote feed.
+    if (symbol === "tWETH") continue;
     try {
       const price = midPriceUsdG((await readQuoteDetails(symbol.replace(/^t/, ""))) as Record<string, unknown>);
       if (!price) throw new Error("no usable quote");

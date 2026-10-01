@@ -8,7 +8,12 @@ import logos from "~~/services/discover/logos.json";
 import { shareLayout, shareSelection } from "~~/services/discover/share";
 
 const INK = "#141a2e";
-const MUTED = "#5d5a7a";
+const MUTED = "#4f5468";
+// The light theme's page colour (--bq-page), so shared cards match the site.
+const PAGE = "#dbeeff";
+// The page's dot grid: brand purple at 24%, 1.5px dots every 22px. The OG renderer ignores pixel stops, so the dot
+// radius is a share of the tile's half-diagonal (1.5 / 15.6 px).
+const DOTS = "radial-gradient(circle at center, rgba(90, 79, 224, 0.24) 9.6%, transparent 10.3%)";
 // Same hand-stuck tilt and lift as the Discover page, so a shared card looks like the screen.
 const JITTER = [
   [-8, -7],
@@ -67,7 +72,9 @@ export async function renderShareImage(request: NextRequest, farcaster = false) 
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        backgroundColor: "#efebff",
+        backgroundColor: PAGE,
+        backgroundImage: DOTS,
+        backgroundSize: "22px 22px",
         color: INK,
         fontFamily: "Bricolage",
         overflow: "hidden",
