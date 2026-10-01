@@ -49,6 +49,10 @@ export const basketEvents = parseAbi([
   "event Rebalanced((address token, uint256 unitsPerShare)[] before, (address token, uint256 unitsPerShare)[] after_, uint256 valueSold, uint256 valueReceived)",
 ]);
 
+/** One basket event by name, keeping its exact type so log arguments stay typed. */
+export const basketEvent = <N extends (typeof basketEvents)[number]["name"]>(name: N) =>
+  basketEvents.find((e): e is Extract<(typeof basketEvents)[number], { name: N }> => e.name === name)!;
+
 export const factoryEvents = parseAbi([
   "event BasketCreated(address indexed basket, address indexed creator, string name, string symbol, uint16 feeBps, (address token, uint256 unitsPerShare)[] components, (bool managed, uint8 noticeHours, uint16 maxSlippageBps) management)",
 ]);
@@ -57,6 +61,9 @@ export const routerEvents = parseAbi([
   "event BasketPurchased(address indexed buyer, address indexed recipient, address indexed basket, uint256 shares, uint256 usdGSpent, uint256 creatorFee, uint256 usdGRefunded)",
   "event BasketSold(address indexed seller, address indexed recipient, address indexed basket, uint256 shares, uint256 usdGReceived, uint256 creatorFee)",
 ]);
+
+export const routerEvent = <N extends (typeof routerEvents)[number]["name"]>(name: N) =>
+  routerEvents.find((e): e is Extract<(typeof routerEvents)[number], { name: N }> => e.name === name)!;
 
 export const adapterEvents = parseAbi(["event PriceSet(address indexed token, uint256 price)"]);
 

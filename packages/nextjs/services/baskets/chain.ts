@@ -1,4 +1,4 @@
-import { adapterEvents, basketAbi, basketEvents, factoryEvents, priceAbi } from "./abi";
+import { adapterEvents, basketAbi, basketEvent, factoryEvents, priceAbi } from "./abi";
 import type { HistoryEvents } from "./history";
 import type { Component } from "./value";
 import type { Address } from "viem";
@@ -54,10 +54,10 @@ export const timeOf = async (log: { blockTimestamp?: bigint | null; blockNumber:
 export async function readHistoryEvents(basket: Address): Promise<HistoryEvents | null> {
   const fromBlock = BigInt(packsTestnet!.deployBlock);
   const zero = "0x0000000000000000000000000000000000000000";
-  const transfer = basketEvents.find(e => e.name === "Transfer")!;
+  const transfer = basketEvent("Transfer");
   const [created, rebalanced, priced, mints, burns] = await Promise.all([
     packsClient.getLogs({ address: packsTestnet!.factory, event: factoryEvents[0], args: { basket }, fromBlock }),
-    packsClient.getLogs({ address: basket, event: basketEvents.find(e => e.name === "Rebalanced")!, fromBlock }),
+    packsClient.getLogs({ address: basket, event: basketEvent("Rebalanced"), fromBlock }),
     packsClient.getLogs({ address: packsTestnet!.swapAdapter, event: adapterEvents[0], fromBlock }),
     packsClient.getLogs({ address: basket, event: transfer, args: { from: zero }, fromBlock }),
     packsClient.getLogs({ address: basket, event: transfer, args: { to: zero }, fromBlock }),
