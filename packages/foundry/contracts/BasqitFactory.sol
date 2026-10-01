@@ -88,8 +88,17 @@ contract BasqitFactory is Ownable2Step {
 
     event TokenAllowed(address indexed token, uint64 effectiveAt);
     event TokenDisallowed(address indexed token);
-    event BasketCreated(address indexed basket, address indexed creator, string name, string symbol, uint16 feeBps);
-    event BasketManagement(address indexed basket, address indexed manager, uint8 noticeHours, uint16 maxSlippageBps);
+    /// @notice Everything that describes a new basket: its starting holdings and its fixed management rules (a fixed
+    /// basket carries Management(false, 0, 0); when managed, the manager is the creator).
+    event BasketCreated(
+        address indexed basket,
+        address indexed creator,
+        string name,
+        string symbol,
+        uint16 feeBps,
+        BasqitToken.Component[] components,
+        Management management
+    );
     event CreatorFeeScheduled(address indexed basket, uint16 bps, uint64 effectiveAt);
     event FeesEnabledScheduled(bool enabled, uint64 effectiveAt);
     event PriceReferenceScheduled(address indexed source, uint64 effectiveAt);
@@ -180,10 +189,7 @@ contract BasqitFactory is Ownable2Step {
         creatorOf[basket] = msg.sender;
         _fees[basket].bps = feeBps;
         _baskets.push(basket);
-        emit BasketCreated(basket, msg.sender, name, symbol, feeBps);
-        if (manager != address(0)) {
-            emit BasketManagement(basket, manager, management.noticeHours, management.maxSlippageBps);
-        }
+        emit BasketCreated(basket, msg.sender, name, symbol, feeBps, components, management);
     }
 
     function basketCount() external view returns (uint256) {

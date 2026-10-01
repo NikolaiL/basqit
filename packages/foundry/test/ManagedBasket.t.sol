@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { Test } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 import { BasqitFactory } from "../contracts/BasqitFactory.sol";
 import { BasqitPurchaseRouter } from "../contracts/BasqitPurchaseRouter.sol";
 import { BasqitSellRouter } from "../contracts/BasqitSellRouter.sol";
@@ -557,5 +558,38 @@ contract ManagedBasketTest is Test {
         // Buying ISS back first fills alice's claim: 2,000 USDG of NVDA sold, only 400 of it reaches holders.
         vm.expectRevert(abi.encodeWithSelector(BasqitToken.ValueLost.selector, 2000e6, 400e6));
         _now(basket, _sell(address(nvda), 1e18), _buy(address(iss)));
+    }
+
+    function test_factory_basketCreatedDescribesTheBasket() public {
+        BasqitToken.Component[] memory c = new BasqitToken.Component[](2);
+        c[0] = BasqitToken.Component(address(tsla), 1e18);
+        c[1] = BasqitToken.Component(address(nvda), 0.5e18);
+        BasqitFactory.Management memory m = BasqitFactory.Management(true, 24, 100);
+
+        vm.recordLogs();
+        vm.prank(creator);
+        address basket = factory.createBasket("Duo", "DUO", c, 50, m);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        Vm.Log memory created = logs[logs.length - 1];
+        assertEq(created.topics[0], BasqitFactory.BasketCreated.selector);
+        assertEq(address(uint160(uint256(created.topics[1]))), basket);
+        assertEq(address(uint160(uint256(created.topics[2]))), creator);
+        (
+            string memory name,
+            string memory symbol,
+            uint16 fee,
+            BasqitToken.Component[] memory parts,
+            BasqitFactory.Management memory rules
+        ) = abi.decode(created.data, (string, string, uint16, BasqitToken.Component[], BasqitFactory.Management));
+        assertEq(name, "Duo");
+        assertEq(symbol, "DUO");
+        assertEq(fee, 50);
+        assertEq(parts.length, 2);
+        assertEq(parts[1].token, address(nvda));
+        assertEq(parts[1].unitsPerShare, 0.5e18);
+        assertTrue(rules.managed);
+        assertEq(rules.noticeHours, 24);
+        assertEq(rules.maxSlippageBps, 100);
     }
 }
