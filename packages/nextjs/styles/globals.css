@@ -3697,6 +3697,127 @@ html [data-rk] {
 .bq-basket-rules-help.is-alert {
   color: var(--bq-danger);
 }
+/* Basket details page: one column of cards; header actions to the right on desktop, below on phones. */
+.bq-details {
+  display: grid;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.bq-details h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.bq-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+.bq-details-header h1 {
+  margin: 4px 0 6px;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  line-height: 1.05;
+}
+.bq-details-header h1 small {
+  color: var(--bq-muted);
+  font-size: 0.5em;
+}
+.bq-details-meta {
+  margin: 4px 0 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+}
+.bq-details-value {
+  margin-left: auto;
+  color: var(--bq-muted);
+}
+.bq-details-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.bq-details-chart-head .bq-segment {
+  width: 168px;
+}
+.bq-segment button {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bq-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bq-segment button[aria-pressed="true"] {
+  background: var(--bq-brand);
+  color: #fff;
+}
+.bq-details-table td,
+.bq-details-table th {
+  white-space: nowrap;
+}
+.bq-details-table tr.is-you {
+  background: color-mix(in srgb, var(--bq-brand) 10%, transparent);
+}
+.bq-details-you {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bq-brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.bq-details-missing {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.bq-chart {
+  margin: 0;
+}
+.bq-chart svg {
+  display: block;
+  width: 100%;
+  height: 220px;
+}
+.bq-chart polyline {
+  fill: none;
+  stroke: var(--bq-brand);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+.bq-chart circle {
+  fill: var(--bq-amber);
+  stroke: var(--bq-ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.bq-chart figcaption {
+  margin-top: 6px;
+  font-weight: 700;
+}
+.bq-chart figcaption.is-up {
+  color: #16a34a;
+}
+.bq-chart figcaption.is-down {
+  color: var(--bq-danger);
+}
+.bq-chart-empty {
+  margin: 0;
+  color: var(--bq-muted);
+}
+@media (max-width: 640px) {
+  .bq-details-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 /* Phones give dashboard inputs a 44px touch target; the type switch matches them. */
 @media (max-width: 640px) {
   .bq-basket-rules {
