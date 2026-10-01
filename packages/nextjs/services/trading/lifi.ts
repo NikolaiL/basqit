@@ -1,4 +1,4 @@
-import { SLIPPAGE_BPS, type SwapFee, TRADE_CHAIN } from "./quote";
+import { SLIPPAGE_BPS, type SwapFee, TRADE_CHAIN, referrerBps } from "./quote";
 import { type Address, decodeFunctionData, parseAbi } from "viem";
 
 // LiFi Diamond on chain 4663: `diamondAddress` from li.quest/v1/chains, verified to hold code onchain.
@@ -84,9 +84,10 @@ export function validateLifiQuote(
   }
   // LiFi reports one combined fee line; the calldata says who receives what, so our share is read from it.
   let ours = 0n;
+  let referred = 0n;
   let providerTotal = reported;
   if (fee.bps > 0) {
-    const expected = (sellAmount * BigInt(fee.bps)) / 10000n;
+    const split = referrerBps(fee);
     let shares: readonly { recipient: Address; amount: bigint }[] = [];
     try {
       const forwarded = decodeFunctionData({ abi: feeAbi, data: swaps[0].callData });
@@ -95,25 +96,32 @@ export function validateLifiQuote(
     } catch {
       throw new Error("LiFi quote does not include the Basqit fee.");
     }
-    const mine = shares.filter(share => same(share.recipient, fee.recipient!));
+    // Exactly one share per party, each within a unit of its bps of the sell amount.
+    const shareOf = (recipient: Address, bps: number) => {
+      const mine = shares.filter(share => same(share.recipient, recipient));
+      const expected = (sellAmount * BigInt(bps)) / 10000n;
+      if (mine.length !== 1 || mine[0].amount < expected - 1n || mine[0].amount > expected + 1n)
+        throw new Error("LiFi quote does not include the Basqit fee.");
+      return mine[0].amount;
+    };
     const total = shares.reduce((sum, share) => sum + share.amount, 0n);
-    if (
-      integrator !== process.env.LIFI_INTEGRATOR ||
-      mine.length !== 1 ||
-      mine[0].amount < expected - 1n ||
-      mine[0].amount > expected + 1n ||
-      total !== reported
-    )
+    if (integrator !== process.env.LIFI_INTEGRATOR || total !== reported)
       throw new Error("LiFi quote does not include the Basqit fee.");
-    ours = mine[0].amount;
-    providerTotal = total - ours;
+    ours = shareOf(fee.recipient!, fee.bps - split);
+    if (split) referred = shareOf(fee.referrer!, split);
+    providerTotal = total - ours - referred;
   }
   if (providerTotal > (sellAmount * BigInt(MAX_PROVIDER_FEE_BPS)) / 10000n) throw new Error("Unexpected LiFi fee.");
   return {
     route: typeof q.toolDetails?.name === "string" ? (q.toolDetails.name as string).slice(0, 40) : "LiFi",
     buyAmount: estimate.toAmount as string,
     minBuyAmount: estimate.toAmountMin as string,
-    basqitFee: { ...fee, amount: String(ours), token: sellToken },
+    basqitFee: {
+      ...fee,
+      amount: String(ours + referred),
+      token: sellToken,
+      ...(fee.referrer ? { referrerAmount: String(referred) } : {}),
+    },
     providerFee: providerTotal > 0n ? { amount: String(providerTotal), token: sellToken } : undefined,
     transaction: { to: LIFI_DIAMOND, data: tx.data as `0x${string}`, value: "0" },
   };
@@ -143,7 +151,13 @@ export async function quoteLifi(
   });
   if (fee.bps > 0) {
     params.set("integrator", process.env.LIFI_INTEGRATOR!);
-    params.set("fee", String(fee.bps / 10000));
+    const split = referrerBps(fee);
+    params.set("fee", String((fee.bps - split) / 10000));
+    // LiFi pays each distribution entry its own FeeForwarder share, next to the integrator fee.
+    if (split) {
+      params.set("distributionFees[0][receiver]", fee.referrer!);
+      params.set("distributionFees[0][percentage]", String(split / 10000));
+    }
   }
   const response = await fetch(`https://li.quest/v1/quote?${params}`, {
     headers: process.env.LIFI_API_KEY ? { "x-lifi-api-key": process.env.LIFI_API_KEY } : {},

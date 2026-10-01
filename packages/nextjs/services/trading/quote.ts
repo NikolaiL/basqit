@@ -7,7 +7,22 @@ export const SLIPPAGE_BPS = 50;
 // Re-enable only after 0x grants this integrator RWA access.
 export const ZEROX_ENABLED = false;
 
-export type SwapFee = { bps: number; recipient: Address | null };
+/** bps is the whole fee the trader pays; with a referrer, half of it (rounded down) goes to them. */
+export type SwapFee = { bps: number; recipient: Address | null; referrer?: Address | null };
+
+export const referrerBps = (fee: SwapFee) => (fee.referrer ? Math.floor(fee.bps / 2) : 0);
+
+// Untrusted input: no self-referral, no zero address, no referring Basqit's own fee wallet.
+export function withReferrer(fee: SwapFee, referrer: string | undefined, taker: string): SwapFee {
+  const valid =
+    fee.bps >= 2 &&
+    !!referrer &&
+    isAddress(referrer) &&
+    !/^0x0{40}$/i.test(referrer) &&
+    referrer.toLowerCase() !== taker.toLowerCase() &&
+    referrer.toLowerCase() !== fee.recipient?.toLowerCase();
+  return { ...fee, referrer: valid ? (referrer as Address) : null };
+}
 
 export function swapFeeConfig(bps = "10", recipient = ""): SwapFee {
   if (!/^\d+$/.test(bps) || Number(bps) > 100)
@@ -26,7 +41,8 @@ export type TradeQuote = {
   /** Venue LiFi routed through, e.g. an RFQ maker. */
   route?: string;
   impactBps?: number;
-  basqitFee: SwapFee & { amount: string; token: Address };
+  /** amount is the whole fee; referrerAmount is the referrer's part of it. */
+  basqitFee: SwapFee & { amount: string; token: Address; referrerAmount?: string };
   providerFee?: { amount: string; token: Address };
   sellToken: `0x${string}`;
   buyToken: `0x${string}`;
@@ -88,8 +104,14 @@ export function validateQuote(
   if (!same(encodedToken, sellToken) || encodedAmount !== BigInt(sellAmount))
     throw new Error("Quote calldata does not match the requested token and amount.");
   const fees = q.fees?.integratorFees ?? (q.fees?.integratorFee ? [q.fees.integratorFee] : []);
-  if (!Array.isArray(fees) || fees.length > 1) throw new Error("Unexpected swap fee response.");
-  const reportedFee = fees[0];
+  const split = referrerBps(fee);
+  const expected: [Address, number][] = split
+    ? [
+        [fee.recipient!, fee.bps - split],
+        [fee.referrer!, split],
+      ]
+    : [[fee.recipient!, fee.bps]];
+  if (!Array.isArray(fees) || fees.length > expected.length) throw new Error("Unexpected swap fee response.");
   const providerFee = q.fees?.zeroExFee;
   if (
     providerFee &&
@@ -97,24 +119,37 @@ export function validateQuote(
   )
     throw new Error("Unexpected provider fee.");
   const providerBuyFee = providerFee && same(providerFee.token, buyToken) ? BigInt(providerFee.amount) : 0n;
+  let total = 0n;
+  let referred = 0n;
   if (fee.bps > 0) {
-    if (
-      !reportedFee ||
-      !uint(reportedFee.amount) ||
-      !same(reportedFee.token, buyToken) ||
-      (reportedFee.recipient && !same(reportedFee.recipient, fee.recipient!)) ||
-      BigInt(reportedFee.amount) >
-        ((BigInt(q.buyAmount) + BigInt(reportedFee.amount) + providerBuyFee) * BigInt(fee.bps)) / 10000n + 1n
-    )
+    if (fees.some(f => !uint(f?.amount) || !same(f.token, buyToken)) || fees.length !== expected.length)
       throw new Error("Quote fee does not match the configured Basqit fee.");
-  } else if (reportedFee && (!uint(reportedFee.amount) || BigInt(reportedFee.amount) !== 0n)) {
+    const gross = BigInt(q.buyAmount) + fees.reduce((sum, f) => sum + BigInt(f.amount), 0n) + providerBuyFee;
+    for (const [i, [recipient, bps]] of expected.entries()) {
+      // 0x echoes recipients in request order; with two lines the recipient must be named.
+      const line = fees.length > 1 ? fees.find(f => same(f.recipient, recipient)) : fees[i];
+      if (
+        !line ||
+        (line.recipient && !same(line.recipient, recipient)) ||
+        BigInt(line.amount) > (gross * BigInt(bps)) / 10000n + 1n
+      )
+        throw new Error("Quote fee does not match the configured Basqit fee.");
+      total += BigInt(line.amount);
+      if (i === 1) referred = BigInt(line.amount);
+    }
+  } else if (fees[0] && (!uint(fees[0].amount) || BigInt(fees[0].amount) !== 0n)) {
     throw new Error("Unexpected swap fee.");
   }
   return {
     providerFee: providerFee
       ? { amount: providerFee.amount as string, token: providerFee.token as Address }
       : undefined,
-    basqitFee: { ...fee, amount: reportedFee?.amount ?? "0", token: buyToken as Address },
+    basqitFee: {
+      ...fee,
+      amount: String(total),
+      token: buyToken as Address,
+      ...(split ? { referrerAmount: String(referred) } : {}),
+    },
     buyAmount: q.buyAmount as string,
     minBuyAmount: q.minBuyAmount as string,
     transaction: { to: ALLOWANCE_HOLDER, data: q.transaction.data as `0x${string}`, value: "0" },

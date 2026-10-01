@@ -5,6 +5,7 @@ import { atlasClient } from "~~/services/atlas/client";
 import type { RawAsset } from "~~/services/atlas/types";
 import { SESSION_COOKIE, getSession } from "~~/services/auth/session";
 import { readTokenData } from "~~/services/portfolio/token-data";
+import { REFERRAL_COOKIE } from "~~/services/referral";
 import { LIFI_DIAMOND, lifiFee, quoteLifi } from "~~/services/trading/lifi";
 import {
   ALLOWANCE_HOLDER,
@@ -13,8 +14,10 @@ import {
   USDG,
   ZEROX_ENABLED,
   quoteError,
+  referrerBps,
   swapFeeConfig,
   validateQuote,
+  withReferrer,
 } from "~~/services/trading/quote";
 import { V3_ROUTER, quoteDirect } from "~~/services/trading/uniswap";
 
@@ -55,6 +58,7 @@ export async function GET(request: NextRequest) {
     return reply({ error: "Enter a valid wallet, token and positive amount." }, 400);
   if (taker.toLowerCase() !== session.address)
     return reply({ error: "Quotes are only for the signed-in wallet." }, 403);
+  fee = withReferrer(fee, request.cookies.get(REFERRAL_COOKIE)?.value, taker);
   try {
     const payload = await readTokenData("assets");
     const asset = (payload.assets as RawAsset[]).find(
@@ -140,8 +144,9 @@ export async function GET(request: NextRequest) {
       slippageBps: String(SLIPPAGE_BPS),
     });
     if (fee.bps > 0) {
-      params.set("swapFeeBps", String(fee.bps));
-      params.set("swapFeeRecipient", fee.recipient!);
+      const split = referrerBps(fee);
+      params.set("swapFeeBps", split ? `${fee.bps - split},${split}` : String(fee.bps));
+      params.set("swapFeeRecipient", split ? `${fee.recipient},${fee.referrer}` : fee.recipient!);
       params.set("swapFeeToken", buyToken);
     }
     const upstream = await fetch(`https://api.0x.org/swap/allowance-holder/quote?${params}`, {

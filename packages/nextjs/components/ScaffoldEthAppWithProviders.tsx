@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { RainbowKitProvider, darkTheme, lightTheme } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,11 +13,14 @@ import { MiniappProvider } from "~~/components/MiniappProvider";
 import { WalletAuthentication } from "~~/components/WalletAuthentication";
 import { BlockieAvatar } from "~~/components/scaffold-eth";
 import { ScaffoldToaster } from "~~/components/scaffold-eth/ScaffoldToaster";
+import { captureReferral } from "~~/services/referral";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   const discover = usePathname() === "/discover";
   const shell = useRef<HTMLDivElement>(null);
+  // Layout effect: runs before any page effect that rewrites the URL (discover drops unknown params).
+  useLayoutEffect(() => captureReferral(window.location.search), []);
   useEffect(() => {
     if (!discover) return;
     const viewport = window.visualViewport;

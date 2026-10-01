@@ -3,6 +3,7 @@
 import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import "./discovery.css";
+import { useAccount } from "wagmi";
 import { ShareIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
 import { LoadingBars } from "~~/components/LoadingBars";
@@ -16,6 +17,7 @@ import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
 import { surpriseIdeas } from "~~/services/discover/prompts";
 import { discoveryPath } from "~~/services/discover/share";
+import { withRef } from "~~/services/referral";
 
 const noSharedSymbols: string[] = [];
 // Matches sit in a hand-stuck row: a small lift and tilt per position, stable between renders.
@@ -50,6 +52,7 @@ export function StockDiscovery({
   sharedSymbols?: string[];
 }) {
   const { isMiniApp, composeCast, openLink } = useMiniapp();
+  const { address } = useAccount();
   const [theme, setTheme] = useState(initialTheme);
   const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>(() => ({
     theme: normalizeTheme(initialTheme) ?? "",
@@ -264,13 +267,16 @@ export function StockDiscovery({
   async function share(target: "x" | "farcaster" | "system") {
     if (!query) return;
     trackDiscovery("share", query, { method: target, stocks: matchSymbols });
-    const url = new URL(
-      discoveryPath(
-        query,
-        matches.map(match => match.symbol),
-        source,
+    const url = withRef(
+      new URL(
+        discoveryPath(
+          query,
+          matches.map(match => match.symbol),
+          source,
+        ),
+        window.location.origin,
       ),
-      window.location.origin,
+      address,
     );
     shareVariant.current =
       shareVariant.current === null ? Math.floor(Math.random() * 4) : (shareVariant.current + 1) % 4;

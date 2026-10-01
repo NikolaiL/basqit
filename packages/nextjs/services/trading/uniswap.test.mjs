@@ -1,12 +1,21 @@
-import { V3_ROUTER, directCalldata, quoteDirect, v3Abi } from "./uniswap.ts";
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
 import { createPublicClient, createWalletClient, decodeFunctionData, erc20Abi, http, parseEther } from "viem";
+
+registerHooks({
+  resolve(specifier, context, next) {
+    return next(specifier.startsWith("./") && !/\.[a-z]+$/.test(specifier) ? `${specifier}.ts` : specifier, context);
+  },
+});
+const { V3_ROUTER, directCalldata, directFees, quoteDirect, v3Abi } = await import("./uniswap.ts");
 
 const usd = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168";
 const stock = "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9";
 const feeRecipient = "0x1111111111111111111111111111111111111111";
 const feeConfig = { bps: 10, recipient: feeRecipient };
 const account = "0x4b7b07d8baf51975eeab0e1eb4b481a5ac691ed6";
+const referrer = "0x2222222222222222222222222222222222222222";
+const referred = { ...feeConfig, referrer };
 const decoded = decodeFunctionData({
   abi: v3Abi,
   data: directCalldata(usd, stock, account, 5000000n, 100n, 500, 1234n),
@@ -36,6 +45,20 @@ assert.deepEqual(
 assert.throws(() => directCalldata(usd, stock, account, 1n, 1n, 500, 1234n, { bps: 101, recipient: feeRecipient }));
 console.log("Atomic fee calldata recipient, rate and minimum passed.");
 
+// Referral: Basqit's half is swept onto the router, then the referrer's half with the rest to the trader.
+const split = decodeFunctionData({
+  abi: v3Abi,
+  data: directCalldata(usd, stock, account, 5000000n, 1000000n, 500, 1234n, referred),
+});
+assert.equal(split.args[1].length, 3);
+const [ours, theirs] = split.args[1].slice(1).map(call => decodeFunctionData({ abi: v3Abi, data: call }).args);
+const lower = args => args.map(v => (typeof v === "string" ? v.toLowerCase() : v));
+assert.deepEqual(lower(ours), [stock.toLowerCase(), 1000000n, V3_ROUTER, 5n, feeRecipient]);
+assert.deepEqual(lower(theirs), [stock.toLowerCase(), 999500n, account, 5n, referrer]);
+assert.deepEqual(directFees(1000000n, referred), { net: 999001n, total: 999n, referrer: 499n });
+assert.deepEqual(directFees(1000000n, feeConfig), { net: 999000n, total: 1000n, referrer: 0n });
+console.log("Referral fee split calldata passed.");
+
 if (process.argv.includes("--fork")) {
   // Local-only endpoint: impersonation and transactions must never reach a public RPC.
   const client = createPublicClient({ transport: http("http://127.0.0.1:8557") });
@@ -54,6 +77,7 @@ if (process.argv.includes("--fork")) {
   async function execute(tokenIn, tokenOut, amountIn, fee = feeConfig) {
     let quote = await quoteDirect(client, tokenIn, tokenOut, amountIn, account, fee);
     const beforeFee = await balance(tokenOut, feeRecipient);
+    const beforeRef = fee.referrer ? await balance(tokenOut, fee.referrer) : 0n;
     const beforeIn = await balance(tokenIn),
       beforeOut = await balance(tokenOut);
     assert.ok(beforeIn >= amountIn, "Fork wallet needs sufficient input tokens");
@@ -82,8 +106,13 @@ if (process.argv.includes("--fork")) {
     assert.equal(beforeIn - (await balance(tokenIn)), amountIn);
     assert.ok(received >= BigInt(quote.minBuyAmount));
     const feeReceived = (await balance(tokenOut, feeRecipient)) - beforeFee;
-    assert.equal(feeReceived, ((received + feeReceived) * BigInt(fee.bps)) / 10000n);
-    assert.equal(feeReceived, BigInt(quote.basqitFee.amount));
+    const refReceived = fee.referrer ? (await balance(tokenOut, fee.referrer)) - beforeRef : 0n;
+    const half = fee.referrer ? Math.floor(fee.bps / 2) : 0;
+    const gross = received + feeReceived + refReceived;
+    assert.equal(feeReceived, (gross * BigInt(fee.bps - half)) / 10000n);
+    assert.equal(refReceived, ((gross - feeReceived) * BigInt(half)) / 10000n);
+    assert.equal(feeReceived + refReceived, BigInt(quote.basqitFee.amount));
+    assert.equal(refReceived, BigInt(quote.basqitFee.referrerAmount ?? 0));
     assert.equal(received, BigInt(quote.buyAmount));
     assert.equal(await balance(tokenOut, V3_ROUTER), 0n);
     // A failed swap must not pay a fee or spend the input.
@@ -109,6 +138,7 @@ if (process.argv.includes("--fork")) {
         direction: tokenIn === usd ? "buy" : "sell",
         received: String(received),
         feeReceived: String(feeReceived),
+        referrerReceived: String(refReceived),
         feeBps: fee.bps,
         minBuyAmount: quote.minBuyAmount,
         pool: quote.pool,
@@ -122,6 +152,8 @@ if (process.argv.includes("--fork")) {
   await execute(stock, usd, received);
   const withoutFee = await execute(usd, stock, 1000000n, { bps: 0, recipient: null });
   await execute(stock, usd, withoutFee, { bps: 100, recipient: feeRecipient });
+  const viaReferral = await execute(usd, stock, 2000000n, referred);
+  await execute(stock, usd, viaReferral, referred);
   await client.request({ method: "anvil_stopImpersonatingAccount", params: [account] });
   console.log("Local fork buy and sell passed; no public transactions submitted.");
 }

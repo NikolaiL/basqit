@@ -158,4 +158,35 @@ assert.throws(
 const charged = run(quote({ integrator: "basqit", shares: withOurs }), { fee });
 assert.equal(charged.basqitFee.amount, "3000");
 assert.deepEqual(charged.providerFee, { amount: "5000", token: USDG });
+// Referral: Basqit's half via the integrator fee, the referrer's half as its own forwarded share.
+const referrer = "0x4444444444444444444444444444444444444444";
+const referred = { bps: 10, recipient: taker, referrer };
+const split = [
+  [lifiWallet, 5000n],
+  [taker, 1000n],
+  [referrer, 1000n],
+];
+const shared = run(quote({ integrator: "basqit", shares: split }), { fee: referred });
+assert.equal(shared.basqitFee.amount, "2000");
+assert.equal(shared.basqitFee.referrerAmount, "1000");
+assert.deepEqual(shared.providerFee, { amount: "5000", token: USDG });
+assert.throws(
+  () => run(quote({ integrator: "basqit", shares: split.slice(0, 2) }), { fee: referred }),
+  "no referrer share",
+);
+assert.throws(
+  () =>
+    run(
+      quote({
+        integrator: "basqit",
+        shares: [
+          [lifiWallet, 5000n],
+          [taker, 500n],
+          [referrer, 1500n],
+        ],
+      }),
+      { fee: referred },
+    ),
+  "uneven split",
+);
 console.log("LiFi quotes: pair, amount, receiver, minimum, contract and fees are enforced from calldata.");

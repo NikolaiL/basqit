@@ -1,4 +1,4 @@
-import type { SwapFee } from "./quote";
+import { type SwapFee, referrerBps } from "./quote";
 import { type Address, type PublicClient, encodeFunctionData, parseAbi } from "viem";
 
 // Official Uniswap deployments, verified against factory() on chain 4663.
@@ -14,6 +14,16 @@ export const v3Abi = parseAbi([
   "function sweepTokenWithFee(address token,uint256 amountMinimum,address recipient,uint256 feeBips,address feeRecipient) payable",
   "function slot0() view returns (uint160 sqrtPriceX96,int24 tick,uint16 observationIndex,uint16 observationCardinality,uint16 observationCardinalityNext,uint8 feeProtocol,bool unlocked)",
 ]);
+
+/** What a sweep with feeBips leaves for its recipient, rounded as the router rounds. */
+const afterFee = (amount: bigint, bps: number) => amount - (amount * BigInt(bps)) / 10000n;
+/** Trader's output after Basqit's and the referrer's sweeps, in the order directCalldata runs them. */
+export function directFees(amount: bigint, fee: SwapFee) {
+  const split = referrerBps(fee);
+  const afterOurs = afterFee(amount, fee.bps - split);
+  const net = afterFee(afterOurs, split);
+  return { net, total: amount - net, referrer: afterOurs - net };
+}
 
 export function directCalldata(
   tokenIn: Address,
@@ -49,14 +59,20 @@ export function directCalldata(
     ],
   });
   const calls = [swap];
-  if (basqitFee.bps > 0)
+  const split = referrerBps(basqitFee);
+  const sweep = (min: bigint, to: Address, bps: number, feeRecipient: Address) =>
+    encodeFunctionData({
+      abi: v3Abi,
+      functionName: "sweepTokenWithFee",
+      args: [tokenOut, min, to, BigInt(bps), feeRecipient],
+    });
+  // The router sends one fee per sweep, so a referral takes two: Basqit's share stays on the router, then the referrer's.
+  if (split)
     calls.push(
-      encodeFunctionData({
-        abi: v3Abi,
-        functionName: "sweepTokenWithFee",
-        args: [tokenOut, minimum, recipient, BigInt(basqitFee.bps), basqitFee.recipient!],
-      }),
+      sweep(minimum, V3_ROUTER, basqitFee.bps - split, basqitFee.recipient!),
+      sweep(afterFee(minimum, basqitFee.bps - split), recipient, split, basqitFee.referrer!),
     );
+  else if (basqitFee.bps > 0) calls.push(sweep(minimum, recipient, basqitFee.bps, basqitFee.recipient!));
   return encodeFunctionData({ abi: v3Abi, functionName: "multicall", args: [deadline, calls] });
 }
 
@@ -118,10 +134,16 @@ export async function quoteDirect(
       "No usable direct USDG pool was found, or price impact exceeds 5%. Try a smaller amount or retry later.",
     );
   const minimum = (best.amountOut * 9950n) / 10000n;
+  const out = directFees(best.amountOut, basqitFee);
   return {
-    buyAmount: String(best.amountOut - (best.amountOut * BigInt(basqitFee.bps)) / 10000n),
-    minBuyAmount: String(minimum - (minimum * BigInt(basqitFee.bps)) / 10000n),
-    basqitFee: { ...basqitFee, token: tokenOut, amount: String((best.amountOut * BigInt(basqitFee.bps)) / 10000n) },
+    buyAmount: String(out.net),
+    minBuyAmount: String(directFees(minimum, basqitFee).net),
+    basqitFee: {
+      ...basqitFee,
+      token: tokenOut,
+      amount: String(out.total),
+      ...(basqitFee.referrer ? { referrerAmount: String(out.referrer) } : {}),
+    },
     pool: best.pool,
     impactBps: best.impactBps,
     fee: best.fee,

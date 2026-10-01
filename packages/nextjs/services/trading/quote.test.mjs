@@ -98,6 +98,32 @@ assert.equal(
   ).basqitFee.amount,
   "1",
 );
+// Referral: two 0x fee lines, each paid to its own recipient at half the rate.
+const { withReferrer } = await import("./quote.ts");
+const ref = "0x2222222222222222222222222222222222222222";
+const taker = "0x3333333333333333333333333333333333333333";
+assert.equal(withReferrer(feeConfig, ref, taker).referrer, ref);
+for (const bad of [undefined, "nope", taker, token, "0x0000000000000000000000000000000000000000"])
+  assert.equal(withReferrer(feeConfig, bad, taker).referrer, null);
+assert.equal(withReferrer({ bps: 1, recipient: token }, ref, taker).referrer, null);
+const referred = withReferrer(feeConfig, ref, taker);
+const lines = (a, b) => ({
+  ...valid,
+  buyAmount: "998",
+  minBuyAmount: "995",
+  fees: {
+    integratorFees: [
+      { amount: a, token, recipient: token },
+      { amount: b, token, recipient: ref },
+    ],
+  },
+});
+const split = validateQuote(lines("1", "1"), USDG, token, "1000000", referred);
+assert.equal(split.basqitFee.amount, "2");
+assert.equal(split.basqitFee.referrerAmount, "1");
+assert.throws(() => validateQuote(lines("1", "2"), USDG, token, "1000000", referred), "referrer overpaid");
+assert.throws(() => validateQuote(feeQuote, USDG, token, "1000000", referred), "referrer line missing");
+assert.throws(() => validateQuote(lines("1", "1"), USDG, token, "1000000", feeConfig), "unexpected second line");
 console.log("Fee configuration and 0x fee response validation passed.");
 
 const liveFeeShape = {
