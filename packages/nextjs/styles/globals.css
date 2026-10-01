@@ -3773,6 +3773,17 @@ html [data-rk] {
   font-size: 11px;
   font-weight: 700;
 }
+/* Times in the transactions table are buttons that switch between relative and exact. */
+.bq-time-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
 .bq-details-missing {
   display: grid;
   gap: 8px;

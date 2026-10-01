@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { formatToken } from "~~/components/packs/usePacks";
 import { explorerAddress, explorerTx } from "~~/services/packs/testnet";
 
@@ -80,7 +81,13 @@ export function HoldersTable({
   );
 }
 
+const exact = (at: number) =>
+  new Date(at * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
 export function ActivityTable({ rows, now }: { rows: ActivityRow[]; now: number }) {
+  // Clicking any time, or the column title, switches every time between "5 minutes ago" and the exact date.
+  const [absolute, setAbsolute] = useState(false);
+  const toggle = () => setAbsolute(value => !value);
   if (!rows.length) return <p className="bq-demo-note">No transactions yet.</p>;
   return (
     <div className="overflow-x-auto">
@@ -91,7 +98,11 @@ export function ActivityTable({ rows, now }: { rows: ActivityRow[]; now: number 
             <th>Who</th>
             <th>Shares</th>
             <th>tUSDG</th>
-            <th>When</th>
+            <th>
+              <button type="button" className="bq-time-toggle" onClick={toggle} aria-pressed={absolute}>
+                When
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +116,16 @@ export function ActivityTable({ rows, now }: { rows: ActivityRow[]; now: number 
               <td>{short(r.who)}</td>
               <td>{r.shares ? formatToken(BigInt(r.shares), 18) : ""}</td>
               <td>{r.usdg ? formatToken(BigInt(r.usdg), 6) : ""}</td>
-              <td>{ago(r.at, now)}</td>
+              <td>
+                <button
+                  type="button"
+                  className="bq-time-toggle"
+                  onClick={toggle}
+                  title={absolute ? ago(r.at, now) : exact(r.at)}
+                >
+                  {absolute ? exact(r.at) : ago(r.at, now)}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
