@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { BasketTradeDialog } from "./BasketTradeDialog";
 import {
   deadlineIn,
@@ -16,7 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
-import { valuePerShare } from "~~/services/baskets/value";
+import { basketAbi } from "~~/services/baskets/abi";
+import { rulesLine, valuePerShare } from "~~/services/baskets/value";
 import { basketManagement } from "~~/services/packs/management";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
 
@@ -79,10 +81,38 @@ export function BasketsDemo() {
               Object.fromEntries(parts.map((part, i) => [part.token.toLowerCase(), prices[i]])),
               usdg,
             ) ?? 0n;
-          return { basket, name, symbol, parts, supply, balance, feeBps: BigInt(fee[1]), perShare };
+          const rules = { address: basket, abi: basketAbi } as const;
+          const [manager, notice, slippage, readyAt] = await packsClient.multicall({
+            allowFailure: false,
+            contracts: [
+              { ...rules, functionName: "manager" },
+              { ...rules, functionName: "noticePeriod" },
+              { ...rules, functionName: "maxSlippageBps" },
+              { ...rules, functionName: "rebalanceReadyAt" },
+            ],
+          });
+          // What an announced change does, for the banner; only read while one is pending.
+          const pending = readyAt
+            ? await packsClient.readContract({ ...rules, functionName: "pendingRebalance" })
+            : undefined;
+          return {
+            basket,
+            name,
+            symbol,
+            parts,
+            supply,
+            balance,
+            feeBps: BigInt(fee[1]),
+            perShare,
+            rules: { manager, noticeSeconds: Number(notice), maxSlippageBps: Number(slippage) },
+            readyAt: Number(readyAt),
+            change: pending ? { sells: pending[0].map(s => s.token), buys: pending[1].map(b => b.token) } : undefined,
+          };
         }),
       );
-      return { rows, feesOn };
+      // Chain time, as the contract judges the notice window by it; the banner counts down on each refresh.
+      const { timestamp } = await packsClient.getBlock();
+      return { rows, feesOn, checkedAt: Number(timestamp) };
     },
   });
 
@@ -117,6 +147,23 @@ export function BasketsDemo() {
     }
   };
   const label = (token: Address) => tokens.data?.[token.toLowerCase()];
+  /** "Changes in 14 h: less tAAPL, more tNVDA" while a change is announced; nothing once it lapses. */
+  const pendingBanner = (row: {
+    readyAt: number;
+    change?: { sells: readonly Address[]; buys: readonly Address[] };
+  }) => {
+    const now = baskets.data?.checkedAt ?? 0;
+    if (!row.readyAt || !row.change || now > row.readyAt + 86_400) return null;
+    const names = (list: readonly Address[]) => list.map(token => label(token)?.symbol ?? "…").join(", ");
+    const what = `less ${names(row.change.sells)}, more ${names(row.change.buys)}`;
+    return (
+      <p className="bq-basket-pending" role="status">
+        {now < row.readyAt
+          ? `Changes in ${Math.ceil((row.readyAt - now) / 3600)} h: ${what}`
+          : `Change ready to execute: ${what}`}
+      </p>
+    );
+  };
 
   /** The swap legs that buy `amount` shares, and what they cost with the creator fee. */
   const buyLegs = async (basket: Address, amount: bigint, feeBps: bigint) => {
@@ -258,6 +305,8 @@ export function BasketsDemo() {
             <strong>
               {row.name} <small>{row.symbol}</small>
             </strong>
+            <p className="bq-basket-rules-line">{rulesLine(row.rules)}</p>
+            {pendingBanner(row)}
             <ul className="bq-demo-items">
               {row.parts.map(part => (
                 <li key={part.token}>
@@ -288,6 +337,9 @@ export function BasketsDemo() {
               >
                 Sell
               </button>
+              <Link className="btn btn-ghost btn-sm" href={`/baskets/${row.basket}`}>
+                Details
+              </Link>
             </div>
           </article>
         ))}

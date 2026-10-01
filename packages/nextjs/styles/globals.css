@@ -3605,10 +3605,26 @@ html [data-rk] {
 
 /* Basket cards: list fills the card so price and actions line up across a row of cards. */
 .bq-basket-card {
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
 }
 .bq-basket-card .bq-demo-items {
+  flex: 1;
   align-content: start;
+}
+.bq-basket-rules-line {
+  margin: -6px 0 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.bq-basket-pending {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bq-amber) 22%, var(--bq-paper));
+  font-size: 13px;
+  font-weight: 700;
 }
 /* The builder sits below the cards; without this its border meets theirs. */
 .bq-demo-grid + .bq-basket-builder {
