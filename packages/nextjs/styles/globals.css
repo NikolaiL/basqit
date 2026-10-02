@@ -3421,6 +3421,8 @@ html [data-rk] {
   max-width: 66ch;
   color: var(--bq-muted);
   line-height: 1.55;
+  font-style: italic;
+  font-size: 12px;
 }
 .bq-demo-steps {
   display: grid;
@@ -3878,14 +3880,12 @@ html [data-rk] {
   gap: 4px;
   margin: 0;
   padding-left: 18px;
-  font-size: 14px;
 }
 .bq-manage-limits {
   color: var(--bq-muted);
 }
 .bq-manage-window {
   margin: 0;
-  font-weight: 700;
 }
 /* An announced rebalance for everyone: amber, like the pending banner on the cards. */
 .bq-upcoming {

@@ -254,10 +254,11 @@ export function BasketDetails({ basket }: { basket: Address }) {
               : `Ready to run now, until ${when(d.readyAt + 86_400)}.`}
           </p>
           <PendingPlan sells={pending.data[0]} buys={pending.data[1]} components={d.components} />
-          <p className="bq-demo-note">
-            Every share changes the same way. If you disagree, you can sell before it runs; it may lose at most{" "}
-            {d.rules.maxSlippageBps / 100}% of the value it trades.
-          </p>
+          <div className="bq-demo-note mt-4">
+            Every share changes the same way. If you disagree, you can sell before it runs.
+            <br />
+            It may lose at most {d.rules.maxSlippageBps / 100}% of the value it trades.
+          </div>
         </section>
       )}
 
