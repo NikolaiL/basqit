@@ -4448,7 +4448,8 @@ html [data-rk] {
 }
 .bq-basket-card-actions > :first-child {
   background: var(--bq-brand);
-  color: #fff;
+  /* Paper on brand: white on violet in light mode, deep violet on lilac in dark mode. */
+  color: var(--bq-paper);
 }
 .bq-basket-card-actions > :hover:not(:disabled) {
   background: color-mix(in srgb, #5a4fe0 12%, transparent);
@@ -4514,4 +4515,25 @@ a.bq-asset-row-details {
 }
 .bq-basket-mark > * + * {
   margin-left: -10px;
+}
+/* Card holdings: logo and token on the left, the amount per share right-aligned with lined-up digits. */
+.bq-basket-card-holdings .bq-demo-items li {
+  font-family: var(--bq-display), sans-serif;
+}
+.bq-holding-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bq-holding-qty {
+  font-family: var(--bq-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* Stacked sections get the same 30px rhythm as the overview above them. */
+.bq-section + .bq-section {
+  margin-top: 30px;
 }

@@ -1,4 +1,4 @@
-import { actionDate, amount, compactAmount, dividendEstimate, dividendHistory, tokenValue } from "./format.ts";
+import { actionDate, amount, compactAmount, shortAmount, dividendEstimate, dividendHistory, tokenValue } from "./format.ts";
 import assert from "node:assert/strict";
 
 // 2 tokens × 4 shares/token × $100 mid = $800; no double multiplier.
@@ -43,4 +43,13 @@ assert.equal(compactAmount("123456"), "123,500");
 assert.equal(compactAmount("0"), "0");
 assert.equal(compactAmount(null), "Unavailable");
 assert.equal(compactAmount("NaN"), "Unavailable");
+// Short list amounts: two significant digits below 1, two decimals above, subscript zeros where needed.
+assert.equal(shortAmount("0.0604"), "0.06");
+assert.equal(shortAmount("0.0559"), "0.056");
+assert.equal(shortAmount("0.005"), "0.005");
+assert.equal(shortAmount("0.0000123"), "0.0₄12");
+assert.equal(shortAmount("6.070254"), "6.07");
+assert.equal(shortAmount("1"), "1");
+assert.equal(shortAmount("1551.8812"), "1,551.88");
+assert.equal(shortAmount("abc"), "…");
 console.log("Four significant digits, zero subscripts and rounding checks passed.");

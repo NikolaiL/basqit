@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { BasketByline, BasketStats, useBasketSummary } from "./BasketInfo";
 import type { useBasketRows } from "./useBasketRows";
-import type { Address } from "viem";
+import { type Address, formatUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { BasketTradeDialog } from "~~/components/packs/BasketTradeDialog";
@@ -12,6 +12,7 @@ import { useBasketTrades } from "~~/components/packs/useBasketTrades";
 import { formatToken, useTestUsdg, useTokens } from "~~/components/packs/usePacks";
 import { planStatus } from "~~/services/baskets/plan";
 import { totalValue } from "~~/services/baskets/value";
+import { shortAmount } from "~~/services/portfolio/format";
 
 export type BasketRow = NonNullable<ReturnType<typeof useBasketRows>["data"]>["rows"][number];
 
@@ -100,14 +101,21 @@ export function BasketGrid({
                     tabIndex={row.parts.length > 5 ? 0 : undefined}
                     aria-label={`Holdings of ${row.name}`}
                   >
-                    {row.parts.map(part => (
-                      <li key={part.token}>
-                        <StockLogo symbol={label(part.token)?.ticker ?? ""} size={22} />
-                        {label(part.token)
-                          ? `${formatToken(part.unitsPerShare, label(part.token)!.decimals)} ${label(part.token)!.symbol}`
-                          : "…"}
-                      </li>
-                    ))}
+                    {row.parts.map(part => {
+                      const info = label(part.token);
+                      return (
+                        <li key={part.token}>
+                          <StockLogo symbol={info?.ticker ?? ""} size={22} />
+                          <span className="bq-holding-name">{info?.symbol ?? "…"}</span>
+                          <span
+                            className="bq-holding-qty"
+                            title={info ? formatUnits(part.unitsPerShare, info.decimals) : undefined}
+                          >
+                            {info ? shortAmount(formatUnits(part.unitsPerShare, info.decimals)) : "…"}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
                 <div className="bq-basket-card-price">

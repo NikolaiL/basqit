@@ -63,10 +63,25 @@ export function compactAmount(value: string | null) {
   if (value === null || value.trim() === "") return "Unavailable";
   const number = Number(value);
   if (!Number.isFinite(number)) return "Unavailable";
-  const rounded = number.toLocaleString("en-US", { maximumSignificantDigits: 4 });
-  return rounded.replace(
+  return subscriptZeros(number.toLocaleString("en-US", { maximumSignificantDigits: 4 }));
+}
+
+/** Two significant digits below 1, at most two decimals from 1 up: token amounts in a short list. */
+export function shortAmount(value: string) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "…";
+  return subscriptZeros(
+    number.toLocaleString(
+      "en-US",
+      Math.abs(number) < 1 ? { maximumSignificantDigits: 2 } : { maximumFractionDigits: 2 },
+    ),
+  );
+}
+
+/** "0.0000012" becomes "0.0₅12": four or more leading zeros are counted in a subscript. */
+const subscriptZeros = (formatted: string) =>
+  formatted.replace(
     /0\.(0{4,})([1-9]\d*)$/,
     (_, zeros: string, digits: string) =>
       `0.0${String(zeros.length).replace(/\d/g, digit => "₀₁₂₃₄₅₆₇₈₉"[Number(digit)])}${digits}`,
   );
-}
