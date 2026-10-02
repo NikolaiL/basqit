@@ -67,13 +67,16 @@ export function WalletAuthentication({ children }: { children: React.ReactNode }
           }
         },
         signOut: async () => {
+          // RainbowKit also calls this on every wallet "change" event, and mobile wallets send those for the same
+          // account. Only a real disconnect ends the session; a switched account fails the address check and signs.
+          if (getAccount(config).status !== "disconnected") return;
           await sessionRequest("DELETE");
           queryClient.removeQueries({ queryKey: ["funding-balances-v2"] });
           queryClient.removeQueries({ queryKey: ["stock-portfolio"] });
           await queryClient.invalidateQueries({ queryKey: ["wallet-session"] });
         },
       }),
-    [queryClient],
+    [queryClient, config],
   );
   const shouldSign =
     connectionStatus === "connected" &&
