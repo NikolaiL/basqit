@@ -1025,6 +1025,13 @@
 @media (max-width: 650px) {
   .bq-discover-shell .bq-discover-bottom .btn {
     font-size: 13px;
+    white-space: nowrap;
+  }
+  /* Sits over the pile on short screens; a paper backing keeps it readable. */
+  .bq-discover-shell .bq-discover-share > .link {
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--bq-sticker-bg);
   }
 }
 
@@ -1072,35 +1079,4 @@
 /* The idea headline is borderless: no focus frame, the caret shows focus. */
 .bq-discover-shell .bq-discover-input input:focus-visible {
   outline: none;
-}
-
-/* Keyboard and screen-reader way to every stock; the logo pile above stays decorative for sequential focus. */
-.bq-discover-browse {
-  margin-top: 12px;
-  font-size: 14px;
-}
-.bq-discover-browse summary {
-  cursor: pointer;
-  color: var(--bq-muted);
-}
-.bq-discover-browse ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 2px 12px;
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 8px;
-}
-.bq-discover-browse button {
-  width: 100%;
-  text-align: left;
-  padding: 4px 6px;
-  border-radius: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.bq-discover-browse button:hover,
-.bq-discover-browse button:focus-visible {
-  background: var(--bq-line);
 }

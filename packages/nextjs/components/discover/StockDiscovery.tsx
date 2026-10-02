@@ -408,8 +408,8 @@ export function StockDiscovery({
                 key={asset.symbol}
                 data-symbol={asset.symbol}
                 className={`bq-discover-coin ${matched ? "is-match" : ""}`}
-                // Only matches are in the tab order; the rest of the pile stays clickable. Keyboard users browse every
-                // stock through the list below instead of tabbing through the pile.
+                // Only matches are in the tab order; the rest of the pile stays clickable. Keyboard users reach every
+                // stock through the full asset list linked from the info menu.
                 tabIndex={matched ? undefined : -1}
                 style={style}
                 title={`${asset.symbol} · ${asset.name}`}
@@ -450,7 +450,14 @@ export function StockDiscovery({
                     disabled={!query || loading || !!error || !matches.length}
                     onClick={() => void share("x")}
                   >
-                    {address ? "Share and earn when friends trade" : "Share My Stock Mood on X"}
+                    {address ? (
+                      <>
+                        <span className="sm:hidden">Share &amp; earn</span>
+                        <span className="hidden sm:inline">Share and earn when friends trade</span>
+                      </>
+                    ) : (
+                      "Share My Stock Mood on X"
+                    )}
                   </button>
                   {address && !shareStatus && (
                     <button type="button" className="link" onClick={() => feeInfo.current?.showModal()}>
@@ -499,26 +506,6 @@ export function StockDiscovery({
             </div>
           )}
         </div>
-        <details className="bq-discover-browse">
-          <summary>Browse all {assets.length} stocks as a list</summary>
-          <ul>
-            {assets.map(asset => (
-              <li key={asset.symbol}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    openAsset(
-                      asset.symbol,
-                      matches.some(m => m.symbol === asset.symbol),
-                    )
-                  }
-                >
-                  <b>{asset.symbol}</b> {asset.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </details>
       </section>
       {current && (
         <AssetDetails
