@@ -6,6 +6,7 @@ import { GasFundingNotice } from "./GasFundingNotice";
 import { PendingTradeNotice } from "./PendingTradeNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
+import { useHeightTransition } from "./useHeightTransition";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
@@ -106,6 +107,14 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [hash, setHash] = useState<string>();
+  // Every confirmed transaction of this purchase, for the links on the completed view.
+  const [txs, setTxs] = useState<string[]>([]);
+  // The receipt shrinks to the completed view.
+  const { ref: shrinkRef, note: noteHeight } = useHeightTransition<HTMLDivElement>(hash);
+  const complete = (marker: string) => {
+    noteHeight();
+    setHash(marker);
+  };
   const [now, setNow] = useState(Date.now);
   const tokens = selected.map(asset => asset.address).join(",");
   const valid = /^\d{1,40}(\.\d{1,36})?$/.test(amount) && /[1-9]/.test(amount);
@@ -234,7 +243,8 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           );
         }
         setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
-        setHash(result.hash ?? "confirmed");
+        if (result.hash) setTxs([result.hash]);
+        complete(result.hash ?? "confirmed");
         await Promise.all([
           client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
           client.invalidateQueries({ queryKey: ["trade-balance"] }),
@@ -283,12 +293,13 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         );
         const step = await refreshStep(planned, quote.legs);
         confirmed = await trade.swap(step, batchId);
+        if (confirmed) setTxs(previous => [...previous, confirmed!]);
         bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
         setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
       }
       // No clear here: the saved batch goes away only once every saved leg is bought (see the batch query), so
       // finishing a subset keeps the other remaining legs and their allocations.
-      setHash(confirmed);
+      complete(confirmed ?? "confirmed");
       await Promise.all([
         client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
         client.invalidateQueries({ queryKey: ["trade-balance"] }),
@@ -327,203 +338,229 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
       }}
     >
       {/* A paper receipt: white on the light theme, carbon paper on the dark one. */}
-      <div className="modal-box bq-batch-buy">
+      <div className="modal-box bq-batch-buy" ref={shrinkRef}>
         <DialogClose label="Close purchase" disabled={!!busy} onClick={onClose} />
         <div className="bq-discover-detail-heading">
           <h2 id="batch-buy-title">Buy these stocks</h2>
           <small>Robinhood Chain · Uses real funds</small>
         </div>
-        <p>
-          {selected.length
-            ? `One total, split equally across ${selected.length} selected ${selected.length === 1 ? "stock" : "stocks"}.`
-            : "Select at least one stock to continue."}
-        </p>
-        <SwapPayPanel
-          symbol="USDG"
-          balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
-          connected={!!address}
-          balanceError={balance.isError}
-          amount={amount}
-          percentage={sliderPercentage}
-          disabled={!!busy || !!hash || !!savedBatch}
-          percentageDisabled={!balance.data || !!busy || !!hash || !!savedBatch}
-          loading={quotes.isFetching}
-          directionLabel="USDG to selected stocks"
-          onAmountChange={value => {
-            setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
-            setError("");
-          }}
-          onPercentageChange={choosePercentage}
-          onBusy={setBusy}
-          onFundingOpenChange={setFundingOpen}
-          onFunded={!hash ? () => setRetryVersion(value => value + 1) : undefined}
-        />
-        <div className="bq-batch-scroll" role="region" aria-label="Selected stocks and purchase details" tabIndex={0}>
-          <div className="bq-batch-legs">
-            {assets
-              .filter(asset => showUnavailable || !cachedErrors[asset.address.toLowerCase()])
-              .map(asset => {
-                const result = response?.results.find(item => item.token.toLowerCase() === asset.address.toLowerCase());
-                const leg = result?.quote;
-                const failure = result?.error ?? cachedErrors[asset.address.toLowerCase()];
-                if (isBought(asset))
-                  return (
-                    <div className="bq-discover-buy-row bq-buy-done" key={asset.address}>
-                      <span className="bq-buy-check" role="img" aria-label="Bought">
-                        ✓
-                      </span>
-                      <StockLogo symbol={asset.symbol} size={32} />
-                      <strong>{asset.symbol}</strong>
-                      <small className="text-right">Bought</small>
-                    </div>
-                  );
-                return (
-                  <label className={`bq-discover-buy-row ${failure ? "bq-buy-unavailable" : ""}`} key={asset.address}>
-                    {failure ? (
-                      <span aria-hidden="true" />
-                    ) : (
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-primary checkbox-sm"
-                        aria-label={`Include ${asset.symbol}`}
-                        checked={!excluded.includes(asset.address)}
-                        disabled={!!busy || !!hash}
-                        onChange={event => {
-                          setExcluded(previous =>
-                            event.target.checked
-                              ? previous.filter(address => address !== asset.address)
-                              : [...previous, asset.address],
-                          );
-                          setError("");
-                        }}
-                      />
-                    )}
-                    <StockLogo symbol={asset.symbol} size={32} />
-                    <span>
-                      <strong>{asset.symbol}</strong>
-                      <br />
-                      {failure ? (
-                        <small className="bq-buy-error" title={failure} role="status">
-                          Unavailable · excluded
-                        </small>
-                      ) : leg ? (
-                        <>
-                          <TokenAmount value={formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} /> USDG
-                        </>
-                      ) : null}
-                    </span>
-                    {!failure && (
-                      <span className="text-right">
-                        {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
-                        <br />
-                        <small>{excluded.includes(asset.address) ? "Not included" : "After fees"}</small>
-                      </span>
-                    )}
-                  </label>
-                );
-              })}
-          </div>
-          {!!failedAssets.length && (
-            <div className="bq-batch-failures" role="status">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                aria-expanded={showUnavailable}
-                onClick={() => setShowUnavailable(value => !value)}
-              >
-                {failedAssets.length} unavailable · {showUnavailable ? "Hide" : "Show"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost w-full"
-                disabled={!!busy || !!hash || quotes.isFetching}
-                onClick={() => {
-                  setRetryVersion(value => value + 1);
-                  setExcluded(previous =>
-                    previous.filter(token => !failedAssets.some(asset => asset.address === token)),
-                  );
-                  setError("");
-                }}
-              >
-                Retry
-              </button>
-            </div>
-          )}
-          <details>
-            <summary>Purchase details</summary>
-            <p>
-              Slippage 0.5% per stock. ETH is needed for network fees.
-              {quote && quote.steps.length > 1 && !atomic
-                ? " Stocks routed through LiFi are bought one by one; a failed step does not undo the others."
-                : ""}
-            </p>
-            {quote?.legs.map(leg => (
-              <p key={leg.buyToken}>
-                {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}: minimum{" "}
-                <TokenAmount value={formatUnits(BigInt(leg.minBuyAmount), leg.buyDecimals)} /> · Basqit fee{" "}
-                {leg.basqitFee.bps / 100}% (
-                {leg.basqitFee.token.toLowerCase() === leg.buyToken.toLowerCase() ? (
-                  <>
-                    <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)} />{" "}
-                    {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}
-                  </>
-                ) : (
-                  <>
-                    <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.sellDecimals)} /> USDG
-                  </>
-                )}
-                ){leg.provider === "lifi" && ` · via LiFi (${leg.route ?? "RFQ"})`}
-              </p>
-            ))}
-          </details>
-        </div>
-        {quote && (
-          <p className="bq-batch-total">
-            <span>Total</span>
-            <span>
-              <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
-            </span>
-          </p>
-        )}
-        {!hash && <PendingTradeNotice pending={pendingTrade} />}
-        {!hash && savedBatch && (
-          <div className="bq-fine-print" role="status">
-            <p>
-              An earlier purchase from this wallet is incomplete: {savedBatch.bought.length} of {savedBatch.legs.length}{" "}
-              bought. Buy only the rest, at their original amounts, or start over to choose a new amount.
-              {!selected.length && " The remaining stocks are not in this list."}
-            </p>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={!!busy || !!pendingTrade.data}
-              onClick={() => {
-                clearBatch(robinhoodChain.id, savedBatch.taker);
-                void client.invalidateQueries({ queryKey: ["trade-batch"] });
-              }}
-            >
-              Start over
-            </button>
-          </div>
-        )}
         {!hash && (
-          <GasFundingNotice
-            required={gasEstimate.data}
-            showAction={!gasEstimate.insufficient}
-            disabled={!!busy}
-            onOpenChange={setFundingOpen}
-          />
+          <>
+            <p>
+              {selected.length
+                ? `One total, split equally across ${selected.length} selected ${selected.length === 1 ? "stock" : "stocks"}.`
+                : "Select at least one stock to continue."}
+            </p>
+            <SwapPayPanel
+              symbol="USDG"
+              balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
+              connected={!!address}
+              balanceError={balance.isError}
+              amount={amount}
+              percentage={sliderPercentage}
+              disabled={!!busy || !!hash || !!savedBatch}
+              percentageDisabled={!balance.data || !!busy || !!hash || !!savedBatch}
+              loading={quotes.isFetching}
+              directionLabel="USDG to selected stocks"
+              onAmountChange={value => {
+                setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
+                setError("");
+              }}
+              onPercentageChange={choosePercentage}
+              onBusy={setBusy}
+              onFundingOpenChange={setFundingOpen}
+              onFunded={!hash ? () => setRetryVersion(value => value + 1) : undefined}
+            />
+            <div
+              className="bq-batch-scroll"
+              role="region"
+              aria-label="Selected stocks and purchase details"
+              tabIndex={0}
+            >
+              <div className="bq-batch-legs">
+                {assets
+                  .filter(asset => showUnavailable || !cachedErrors[asset.address.toLowerCase()])
+                  .map(asset => {
+                    const result = response?.results.find(
+                      item => item.token.toLowerCase() === asset.address.toLowerCase(),
+                    );
+                    const leg = result?.quote;
+                    const failure = result?.error ?? cachedErrors[asset.address.toLowerCase()];
+                    if (isBought(asset))
+                      return (
+                        <div className="bq-discover-buy-row bq-buy-done" key={asset.address}>
+                          <span className="bq-buy-check" role="img" aria-label="Bought">
+                            ✓
+                          </span>
+                          <StockLogo symbol={asset.symbol} size={32} />
+                          <strong>{asset.symbol}</strong>
+                          <small className="text-right">Bought</small>
+                        </div>
+                      );
+                    return (
+                      <label
+                        className={`bq-discover-buy-row ${failure ? "bq-buy-unavailable" : ""}`}
+                        key={asset.address}
+                      >
+                        {failure ? (
+                          <span aria-hidden="true" />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-primary checkbox-sm"
+                            aria-label={`Include ${asset.symbol}`}
+                            checked={!excluded.includes(asset.address)}
+                            disabled={!!busy || !!hash}
+                            onChange={event => {
+                              setExcluded(previous =>
+                                event.target.checked
+                                  ? previous.filter(address => address !== asset.address)
+                                  : [...previous, asset.address],
+                              );
+                              setError("");
+                            }}
+                          />
+                        )}
+                        <StockLogo symbol={asset.symbol} size={32} />
+                        <span>
+                          <strong>{asset.symbol}</strong>
+                          <br />
+                          {failure ? (
+                            <small className="bq-buy-error" title={failure} role="status">
+                              Unavailable · excluded
+                            </small>
+                          ) : leg ? (
+                            <>
+                              <TokenAmount value={formatUnits(BigInt(leg.sellAmount), leg.sellDecimals)} /> USDG
+                            </>
+                          ) : null}
+                        </span>
+                        {!failure && (
+                          <span className="text-right">
+                            {leg ? <TokenAmount value={formatUnits(BigInt(leg.buyAmount), leg.buyDecimals)} /> : "—"}
+                            <br />
+                            <small>{excluded.includes(asset.address) ? "Not included" : "After fees"}</small>
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+              </div>
+              {!!failedAssets.length && (
+                <div className="bq-batch-failures" role="status">
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    aria-expanded={showUnavailable}
+                    onClick={() => setShowUnavailable(value => !value)}
+                  >
+                    {failedAssets.length} unavailable · {showUnavailable ? "Hide" : "Show"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost w-full"
+                    disabled={!!busy || !!hash || quotes.isFetching}
+                    onClick={() => {
+                      setRetryVersion(value => value + 1);
+                      setExcluded(previous =>
+                        previous.filter(token => !failedAssets.some(asset => asset.address === token)),
+                      );
+                      setError("");
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              <details>
+                <summary>Purchase details</summary>
+                <p>
+                  Slippage 0.5% per stock. ETH is needed for network fees.
+                  {quote && quote.steps.length > 1 && !atomic
+                    ? " Stocks routed through LiFi are bought one by one; a failed step does not undo the others."
+                    : ""}
+                </p>
+                {quote?.legs.map(leg => (
+                  <p key={leg.buyToken}>
+                    {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}: minimum{" "}
+                    <TokenAmount value={formatUnits(BigInt(leg.minBuyAmount), leg.buyDecimals)} /> · Basqit fee{" "}
+                    {leg.basqitFee.bps / 100}% (
+                    {leg.basqitFee.token.toLowerCase() === leg.buyToken.toLowerCase() ? (
+                      <>
+                        <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.buyDecimals)} />{" "}
+                        {assets.find(asset => asset.address.toLowerCase() === leg.buyToken.toLowerCase())?.symbol}
+                      </>
+                    ) : (
+                      <>
+                        <TokenAmount value={formatUnits(BigInt(leg.basqitFee.amount), leg.sellDecimals)} /> USDG
+                      </>
+                    )}
+                    ){leg.provider === "lifi" && ` · via LiFi (${leg.route ?? "RFQ"})`}
+                  </p>
+                ))}
+              </details>
+            </div>
+            {quote && (
+              <p className="bq-batch-total">
+                <span>Total</span>
+                <span>
+                  <TokenAmount value={formatUnits(BigInt(quote.sellAmount), 6)} /> USDG
+                </span>
+              </p>
+            )}
+            {!hash && <PendingTradeNotice pending={pendingTrade} />}
+            {!hash && savedBatch && (
+              <div className="bq-fine-print" role="status">
+                <p>
+                  An earlier purchase from this wallet is incomplete: {savedBatch.bought.length} of{" "}
+                  {savedBatch.legs.length} bought. Buy only the rest, at their original amounts, or start over to choose
+                  a new amount.
+                  {!selected.length && " The remaining stocks are not in this list."}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  disabled={!!busy || !!pendingTrade.data}
+                  onClick={() => {
+                    clearBatch(robinhoodChain.id, savedBatch.taker);
+                    void client.invalidateQueries({ queryKey: ["trade-batch"] });
+                  }}
+                >
+                  Start over
+                </button>
+              </div>
+            )}
+            {!hash && (
+              <GasFundingNotice
+                required={gasEstimate.data}
+                showAction={!gasEstimate.insufficient}
+                disabled={!!busy}
+                onOpenChange={setFundingOpen}
+              />
+            )}
+          </>
         )}
         <p className="bq-batch-status" role="alert">
           {error || quotes.error?.message}
         </p>
         {hash ? (
-          <>
-            <p role="status">Purchase complete.</p>
+          <div className="bq-batch-done">
+            <p role="status">Completed</p>
+            {txs.length > 0 && (
+              <ul>
+                {txs.map((tx, i) => (
+                  <li key={tx}>
+                    <a href={`${robinhoodChain.blockExplorers.default.url}/tx/${tx}`} target="_blank" rel="noreferrer">
+                      {txs.length > 1 ? `Transaction ${i + 1} of ${txs.length}` : "View transaction"}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
             <button className="btn btn-primary w-full" onClick={onClose}>
               Dismiss
             </button>
-          </>
+          </div>
         ) : !selected.length ? (
           <button className="btn btn-primary w-full" disabled>
             Select at least one stock

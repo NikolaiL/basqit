@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Abi, type Address, BaseError, ContractFunctionRevertedError, erc20Abi, formatUnits } from "viem";
 import { useAccount, useWalletClient } from "wagmi";
+import { celebrate } from "~~/components/Celebrations";
 import { useTransactor } from "~~/hooks/scaffold-eth";
 import {
   type PacksDeployment,
@@ -12,6 +13,7 @@ import {
   testnetAssets,
 } from "~~/services/packs/testnet";
 import { getParsedError } from "~~/utils/scaffold-eth";
+import { APPROVAL_CONFIRMED } from "~~/utils/scaffold-eth/contract";
 
 export const deployment = packsTestnet as PacksDeployment;
 
@@ -90,13 +92,20 @@ export function usePacksWrite() {
   const { data: wallet } = useWalletClient({ chainId: robinhoodTestnet.id });
   const transact = useTransactor(wallet);
   const client = useQueryClient();
-  return async (call: {
-    address: Address;
-    abi: Abi | readonly unknown[];
-    functionName: string;
-    args?: unknown[];
-    value?: bigint;
-  }) => {
+  /**
+   * `celebrate`: tickers or image paths for the confetti on success; false for setup steps such as approvals.
+   * `successMessage`: replaces "Transaction confirmed." in the notification.
+   */
+  return async (
+    call: {
+      address: Address;
+      abi: Abi | readonly unknown[];
+      functionName: string;
+      args?: unknown[];
+      value?: bigint;
+    },
+    options: { celebrate?: string[] | false; successMessage?: string } = {},
+  ) => {
     if (!wallet || !address) throw new Error("Connect a wallet on Robinhood Chain testnet.");
     const request = {
       account: address,
@@ -110,10 +119,13 @@ export function usePacksWrite() {
     // just sent otherwise fails its own estimate and shows an absurd gas limit; a call that would revert fails
     // here with a readable error instead.
     const gas = await packsClient.estimateContractGas(request);
-    const hash = await transact(() =>
-      wallet.writeContract({ ...request, chain: robinhoodTestnet, gas: (gas * 13n) / 10n }),
+    const hash = await transact(
+      () => wallet.writeContract({ ...request, chain: robinhoodTestnet, gas: (gas * 13n) / 10n }),
+      { successMessage: options.successMessage },
     );
     if (hash) await packsClient.waitForTransactionReceipt({ hash });
+    // The transactor throws on a reverted receipt, so reaching here means the transaction succeeded.
+    if (hash && options.celebrate !== false) celebrate(options.celebrate);
     await client.invalidateQueries({ predicate: query => String(query.queryKey[0]).startsWith("packs") });
     return hash;
   };
@@ -134,7 +146,10 @@ export async function ensureAllowance(
     args: [owner, spender],
   });
   if (allowance < amount)
-    await write({ address: token, abi: erc20Abi, functionName: "approve", args: [spender, amount] });
+    await write(
+      { address: token, abi: erc20Abi, functionName: "approve", args: [spender, amount] },
+      { celebrate: false, successMessage: APPROVAL_CONFIRMED },
+    );
 }
 
 /** The wallet's test USDG, so spending buttons can say "not enough" before a wallet prompt (refreshed by every write). */

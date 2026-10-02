@@ -21,7 +21,7 @@ const TxnNotification = ({ message, blockExplorerLink }: { message: string; bloc
       <p className="my-0">{message}</p>
       {blockExplorerLink && blockExplorerLink.length > 0 ? (
         <a href={blockExplorerLink} target="_blank" rel="noreferrer" className="block link">
-          check out transaction
+          View transaction
         </a>
       ) : null}
     </div>
@@ -57,7 +57,7 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       // Get full transaction from public client
       const publicClient = getPublicClient(wagmiConfig, { chainId: chainId as AllowedChainIds });
 
-      notificationId = notification.loading(<TxnNotification message="Awaiting for user confirmation" />);
+      notificationId = notification.loading(<TxnNotification message="Confirm in your wallet." />);
       if (typeof tx === "function") {
         // Tx is already prepared by the caller
         const result = await tx();
@@ -72,7 +72,10 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       blockExplorerTxURL = chainId ? getBlockExplorerTxLink(chainId, transactionHash) : "";
 
       notificationId = notification.loading(
-        <TxnNotification message="Waiting for transaction to complete." blockExplorerLink={blockExplorerTxURL} />,
+        <TxnNotification
+          message="Transaction sent. Waiting for it to be confirmed…"
+          blockExplorerLink={blockExplorerTxURL}
+        />,
       );
 
       transactionReceipt = await publicClient.waitForTransactionReceipt({
@@ -84,10 +87,12 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
       if (transactionReceipt.status === "reverted") throw new Error("Transaction reverted");
 
       notification.success(
-        <TxnNotification message="Transaction completed successfully!" blockExplorerLink={blockExplorerTxURL} />,
-        {
-          icon: "🎉",
-        },
+        <TxnNotification
+          message={options?.successMessage ?? "Transaction confirmed."}
+          blockExplorerLink={blockExplorerTxURL}
+        />,
+        // An approval is a step, not the result: no party icon for it.
+        { icon: options?.successMessage ? "✅" : "🎉" },
       );
 
       if (options?.onBlockConfirmation) options.onBlockConfirmation(transactionReceipt);

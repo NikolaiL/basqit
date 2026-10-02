@@ -4,6 +4,7 @@ import { useConfig, useWalletClient } from "wagmi";
 import { getWalletClient, switchChain } from "wagmi/actions";
 import { trackSwap } from "~~/services/analytics/events";
 import { type FundingQuote, NATIVE, assertFundingGasReserve, fundingChains } from "~~/services/funding/shared";
+import { APPROVAL_CONFIRMED } from "~~/utils/scaffold-eth/contract";
 
 export function useFundingTransfer() {
   const config = useConfig();
@@ -41,7 +42,7 @@ export function useFundingTransfer() {
       };
       await rpc.estimateGas(tx);
       await clients(q);
-      await transact(() => signer.sendTransaction(tx));
+      await transact(() => signer.sendTransaction(tx), { successMessage: APPROVAL_CONFIRMED });
     }
   }
   async function send(

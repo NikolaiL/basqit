@@ -1,6 +1,6 @@
 "use client";
 
-import { deadlineIn, deployment, ensureAllowance, usePacksWrite } from "./usePacks";
+import { deadlineIn, deployment, ensureAllowance, usePacksWrite, useTokens } from "./usePacks";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { packsClient, testnetAssets } from "~~/services/packs/testnet";
@@ -14,6 +14,8 @@ const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
 export function useBasketTrades() {
   const { address } = useAccount();
   const write = usePacksWrite();
+  const tokens = useTokens();
+  const tickers = (parts: Part[]) => parts.map(part => tokens.data?.[part.token.toLowerCase()]?.ticker ?? "");
   const shop = { address: deployment.swapAdapter, abi: deployment.abis.swapAdapter } as const;
   const priceOf = (token: Address) =>
     packsClient.readContract({ ...shop, functionName: "priceUsdG", args: [token] }) as Promise<bigint>;
@@ -37,7 +39,7 @@ export function useBasketTrades() {
       })),
     );
     const spent = legs.reduce((sum, leg) => sum + leg.maxAmountIn, 0n);
-    return { legs, cost: spent + ceilDiv(spent * feeBps, 10_000n) };
+    return { legs, parts, cost: spent + ceilDiv(spent * feeBps, 10_000n) };
   };
 
   /**
@@ -54,15 +56,18 @@ export function useBasketTrades() {
       quote = await buyLegs(basket, amount, feeBps);
     }
     if (amount === 0n || quote.cost > budget) throw new Error("That amount buys less than 0.000001 of a share.");
-    const { legs } = quote;
+    const { legs, parts } = quote;
     const { usdg } = await testnetAssets();
     await ensureAllowance(write, address!, usdg, deployment.purchaseRouter, budget);
-    await write({
-      address: deployment.purchaseRouter,
-      abi: deployment.abis.purchaseRouter,
-      functionName: "buyBasket",
-      args: [basket, amount, budget, legs, address, deadlineIn(20)],
-    });
+    return write(
+      {
+        address: deployment.purchaseRouter,
+        abi: deployment.abis.purchaseRouter,
+        functionName: "buyBasket",
+        args: [basket, amount, budget, legs, address, deadlineIn(20)],
+      },
+      { celebrate: tickers(parts) },
+    );
   };
 
   /** Sells `amount` shares: redeems in kind and sells each component, with the fee taken from what comes back. */
@@ -82,7 +87,7 @@ export function useBasketTrades() {
     const received = legs.reduce((sum, leg) => sum + leg.minAmountOut, 0n);
     const minUsdGOut = received - ceilDiv(received * feeBps, 10_000n);
     await ensureAllowance(write, address!, basket, deployment.sellRouter, amount);
-    await write({
+    return write({
       address: deployment.sellRouter,
       abi: deployment.abis.sellRouter,
       functionName: "sellBasket",

@@ -7,8 +7,9 @@ import { useAccount, useSwitchChain } from "wagmi";
 import { DialogClose } from "~~/components/DialogClose";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { SwapPayPanel } from "~~/components/trading/SwapPayPanel";
+import { useHeightTransition } from "~~/components/trading/useHeightTransition";
 import { useWalletConnectModal } from "~~/hooks/scaffold-eth/useWalletConnectModal";
-import { robinhoodTestnet } from "~~/services/packs/testnet";
+import { explorerTx, robinhoodTestnet } from "~~/services/packs/testnet";
 import { balancePercentage } from "~~/services/trading/quote";
 
 const ONE = 10n ** 18n;
@@ -38,8 +39,8 @@ export function BasketTradeDialog({
   basket: BasketTrade;
   initialSide: "buy" | "sell";
   usdg?: bigint;
-  onBuy: (usdgIn: bigint) => Promise<unknown>;
-  onSell: (shares: bigint) => Promise<unknown>;
+  onBuy: (usdgIn: bigint) => Promise<string | undefined>;
+  onSell: (shares: bigint) => Promise<string | undefined>;
   onClose: () => void;
 }) {
   const { address, chainId } = useAccount();
@@ -50,7 +51,9 @@ export function BasketTradeDialog({
   const [input, setInput] = useState<{ percentage: number; manual?: string }>({ percentage: 50 });
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  // The confirmed trade's hash; "confirmed" when the wallet returned none.
   const [done, setDone] = useState("");
+  const { ref: shrinkRef, note: noteHeight } = useHeightTransition<HTMLDivElement>(done);
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -102,7 +105,7 @@ export function BasketTradeDialog({
         else onClose();
       }}
     >
-      <div className="modal-box bq-trade-dialog bq-stock-trade">
+      <div className="modal-box bq-trade-dialog bq-stock-trade" ref={shrinkRef}>
         <DialogClose label="Close trade" disabled={!!busy} onClick={onClose} />
         <div className="bq-trade-heading">
           <div>
@@ -112,65 +115,72 @@ export function BasketTradeDialog({
             <small>Robinhood Chain testnet · Test tokens only</small>
           </div>
         </div>
-        <div className="bq-trade-body">
-          <SwapPayPanel
-            symbol={paySymbol}
-            balance={balance !== undefined ? formatUnits(balance, decimals) : undefined}
-            connected={!!address}
-            balanceError={false}
-            amount={amount}
-            percentage={sliderPercentage}
-            disabled={!!busy || !!done}
-            percentageDisabled={balance === undefined || !!busy || !!done}
-            loading={false}
-            directionLabel={`Switch to ${buying ? "selling" : "buying"} ${basket.symbol}`}
-            onAmountChange={value => {
-              setInput({ percentage: sliderPercentage, manual: value });
-              setError("");
-            }}
-            onPercentageChange={percentage => {
-              setInput({ percentage });
-              setError("");
-            }}
-            onBusy={setBusy}
-            onReverse={() => {
-              setSide(buying ? "sell" : "buy");
-              setInput({ percentage: 50 });
-              setError("");
-              setDone("");
-            }}
-          />
-          <section className="bq-swap-panel" aria-label="You receive">
-            <div className="bq-swap-caption">
-              <span>You receive</span>
-              <span>About, after fees</span>
-            </div>
-            <div className="bq-swap-amount-row">
-              <strong className="bq-swap-token">{receiveSymbol}</strong>
-              <output className="bq-swap-output" aria-live="polite">
-                {receive > 0n ? <TokenAmount value={formatUnits(receive, buying ? 18 : 6)} /> : "—"}
-              </output>
-            </div>
-          </section>
-          <p className="bq-fine-print">
-            One share is {formatToken(basket.perShare, 6)} tUSDG today
-            {basket.feeBps > 0n && `, plus a ${Number(basket.feeBps) / 100}% creator fee`}.{" "}
-            {buying
-              ? "Your tUSDG buys every company in the basket; anything not spent comes back to you."
-              : "Your shares are redeemed and every company in them is sold for tUSDG."}
-          </p>
-          {buying && usdg === 0n && <p className="bq-fine-print">You have no tUSDG yet. Get free test USDG above.</p>}
-          {error && (
-            <p role="alert" className="bq-wallet-error">
-              {error}
+        {!done && (
+          <div className="bq-trade-body">
+            <SwapPayPanel
+              symbol={paySymbol}
+              balance={balance !== undefined ? formatUnits(balance, decimals) : undefined}
+              connected={!!address}
+              balanceError={false}
+              amount={amount}
+              percentage={sliderPercentage}
+              disabled={!!busy || !!done}
+              percentageDisabled={balance === undefined || !!busy || !!done}
+              loading={false}
+              directionLabel={`Switch to ${buying ? "selling" : "buying"} ${basket.symbol}`}
+              onAmountChange={value => {
+                setInput({ percentage: sliderPercentage, manual: value });
+                setError("");
+              }}
+              onPercentageChange={percentage => {
+                setInput({ percentage });
+                setError("");
+              }}
+              onBusy={setBusy}
+              onReverse={() => {
+                setSide(buying ? "sell" : "buy");
+                setInput({ percentage: 50 });
+                setError("");
+                setDone("");
+              }}
+            />
+            <section className="bq-swap-panel" aria-label="You receive">
+              <div className="bq-swap-caption">
+                <span>You receive</span>
+                <span>About, after fees</span>
+              </div>
+              <div className="bq-swap-amount-row">
+                <strong className="bq-swap-token">{receiveSymbol}</strong>
+                <output className="bq-swap-output" aria-live="polite">
+                  {receive > 0n ? <TokenAmount value={formatUnits(receive, buying ? 18 : 6)} /> : "—"}
+                </output>
+              </div>
+            </section>
+            <p className="bq-fine-print">
+              One share is {formatToken(basket.perShare, 6)} tUSDG today
+              {basket.feeBps > 0n && `, plus a ${Number(basket.feeBps) / 100}% creator fee`}.{" "}
+              {buying
+                ? "Your tUSDG buys every company in the basket; anything not spent comes back to you."
+                : "Your shares are redeemed and every company in them is sold for tUSDG."}
             </p>
-          )}
-          {done && (
-            <p role="status" className="bq-demo-ok">
-              {done}
-            </p>
-          )}
-        </div>
+            {buying && usdg === 0n && <p className="bq-fine-print">You have no tUSDG yet. Get free test USDG above.</p>}
+            {error && (
+              <p role="alert" className="bq-wallet-error">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
+        {done && (
+          <div className="bq-batch-done">
+            <p role="status">Completed</p>
+            {done !== "confirmed" && (
+              <a href={explorerTx(done)} target="_blank" rel="noreferrer">
+                View transaction
+              </a>
+            )}
+          </div>
+        )}
         <div className="bq-trade-footer">
           {done ? (
             <button className="btn btn-primary" onClick={onClose}>
@@ -194,12 +204,9 @@ export function BasketTradeDialog({
               disabled={!!busy || pay === 0n || receive === 0n || tooMuch}
               onClick={() =>
                 run(buying ? "Buying…" : "Selling…", async () => {
-                  await (buying ? onBuy(pay) : onSell(pay));
-                  setDone(
-                    buying
-                      ? `Bought about ${formatToken(receive, 18)} ${basket.symbol}.`
-                      : `Sold ${formatToken(pay, 18)} ${basket.symbol}.`,
-                  );
+                  const hash = await (buying ? onBuy(pay) : onSell(pay));
+                  noteHeight();
+                  setDone(hash ?? "confirmed");
                 })
               }
             >

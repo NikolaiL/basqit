@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 import { useTheme } from "next-themes";
 import { WagmiProvider } from "wagmi";
+import { Celebrations } from "~~/components/Celebrations";
 import { Footer } from "~~/components/Footer";
 import { Header } from "~~/components/Header";
 import { MiniappProvider } from "~~/components/MiniappProvider";
@@ -83,6 +84,7 @@ export const ScaffoldEthAppWithProviders = ({ children }: { children: React.Reac
             >
               <ProgressBar height="3px" color="#5A4FE0" />
               <ScaffoldEthApp>{children}</ScaffoldEthApp>
+              <Celebrations />
             </RainbowKitProvider>
           </WalletAuthentication>
         </MiniappProvider>

@@ -214,7 +214,12 @@ type WriteVariables = WriteContractVariables<Abi, string, any[], Config, number>
 export type TransactorFuncOptions = {
   onBlockConfirmation?: (txnReceipt: TransactionReceipt) => void;
   blockConfirmations?: number;
+  /** Replaces "Transaction confirmed." when the step means something more specific, such as an approval. */
+  successMessage?: string;
 };
+
+/** After an approval the wallet asks for the actual transaction next, so the message says what to do. */
+export const APPROVAL_CONFIRMED = "Approval confirmed. Now confirm the transaction in your wallet.";
 
 export type ScaffoldWriteContractOptions = MutateOptions<
   WriteContractReturnType,

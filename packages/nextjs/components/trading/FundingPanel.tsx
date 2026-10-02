@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
 import { Arrow } from "~~/components/Arrow";
+import { celebrate } from "~~/components/Celebrations";
 import { DialogClose } from "~~/components/DialogClose";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { TokenAmount } from "~~/components/TokenAmount";
@@ -234,9 +235,14 @@ function WalletFunding({
     if (pending?.hash && status.data?.status)
       trackFundingResult(pending.hash, destination, pending.chainId, status.data.status);
   }, [pending?.hash, pending?.chainId, destination, status.data?.status]);
+  const lastStatus = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (status.data?.status === "bridge_filled") void queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
-  }, [status.data?.status, queryClient]);
+    const now = status.data?.status;
+    if (now === "bridge_filled") void queryClient.invalidateQueries({ queryKey: ["trade-balance"] });
+    if (now === "bridge_filled" && lastStatus.current && lastStatus.current !== now)
+      celebrate(destination === "ETH" ? ["/token-logos/eth.svg"] : []);
+    lastStatus.current = now;
+  }, [status.data?.status, queryClient, destination]);
   async function run(label: string, action: () => Promise<void>) {
     if (lock.current) return;
     lock.current = true;

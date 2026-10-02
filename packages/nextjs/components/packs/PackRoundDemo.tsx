@@ -211,7 +211,11 @@ export function PackRoundDemo() {
               act("buy", async () => {
                 const cost = round.price * BigInt(qty);
                 await ensureAllowance(write, address!, round.payToken, deployment.packs, cost);
-                await write({ ...packs, functionName: "buy", args: [roundId, BigInt(qty), address] });
+                // Packs are a paid entry with a random payout and stay legally gated: buying in is not celebrated.
+                await write(
+                  { ...packs, functionName: "buy", args: [roundId, BigInt(qty), address] },
+                  { celebrate: false },
+                );
               })
             }
           >
@@ -276,7 +280,7 @@ export function PackRoundDemo() {
           disabled={!ready || !!busy}
           onClick={() =>
             act("next", async () => {
-              await write({ ...packs, functionName: "startNextRound" });
+              await write({ ...packs, functionName: "startNextRound" }, { celebrate: false });
               setPicked(undefined);
             })
           }

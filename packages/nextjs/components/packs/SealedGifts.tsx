@@ -115,7 +115,7 @@ export function SealedGifts() {
                       disabled={!!busy}
                       onClick={() =>
                         run(`open-${gift.id}`, async () => {
-                          await write({ ...gifts, functionName: "open", args: [gift.id] });
+                          await write({ ...gifts, functionName: "open", args: [gift.id] }, { celebrate: false });
                           setOpened(gift);
                         })
                       }

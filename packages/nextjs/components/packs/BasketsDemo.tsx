@@ -377,11 +377,14 @@ export function BasketsDemo() {
           onClick={() =>
             act("create", async () => {
               if (!management) throw new Error("Check the managed-basket settings before publishing.");
-              await write({
-                ...factory,
-                functionName: "createBasket",
-                args: [draft.name.trim(), draft.symbol.trim(), draftParts, feeBps, management],
-              });
+              await write(
+                {
+                  ...factory,
+                  functionName: "createBasket",
+                  args: [draft.name.trim(), draft.symbol.trim(), draftParts, feeBps, management],
+                },
+                { celebrate: draftParts.map(part => label(part.token)?.ticker ?? "") },
+              );
               setDraft({ name: "", symbol: "", fee: "0.5", units: {} });
               setManagementDraft({ managed: false, notice: "24", slippage: "1" });
             })

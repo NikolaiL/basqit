@@ -25,6 +25,7 @@ import {
 } from "~~/services/trading/pending";
 import { ALLOWANCE_HOLDER, type ExecutionQuote, type TradeQuote, USDG, ZEROX_ENABLED } from "~~/services/trading/quote";
 import { V3_ROUTER } from "~~/services/trading/uniswap";
+import { APPROVAL_CONFIRMED } from "~~/utils/scaffold-eth/contract";
 
 export function useStockTrade() {
   const { data: wallet } = useWalletClient();
@@ -63,7 +64,7 @@ export function useStockTrade() {
     await checkWallet(quote);
     if (swap && Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
     if (!swap) {
-      const hash = await transact(() => client.sendTransaction(tx));
+      const hash = await transact(() => client.sendTransaction(tx), { successMessage: APPROVAL_CONFIRMED });
       if (!hash) throw new Error("Transaction was not submitted.");
       return hash;
     }

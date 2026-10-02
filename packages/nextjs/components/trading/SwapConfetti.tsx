@@ -27,15 +27,22 @@ export function SwapConfetti({ symbols }: { symbols: string[] }) {
     const tokens = JSON.parse(symbolKey) as string[];
     const ready = Promise.all([
       import("@tsparticles/confetti"),
-      Promise.all(tokens.map(token => loadLogo((logos as Record<string, string>)[token] ?? STOCK_LOGO_FALLBACK))),
+      // A stock ticker uses its logo; an image path (e.g. the Basqit icon) is used as is.
+      Promise.all(
+        tokens.map(token =>
+          loadLogo(token.startsWith("/") ? token : ((logos as Record<string, string>)[token] ?? STOCK_LOGO_FALLBACK)),
+        ),
+      ),
     ]);
+    // Waits only while the tab is hidden. Not for focus: after confirming in a wallet popup or extension the page is
+    // visible but unfocused, and waiting for focus held the confetti until the user clicked back into the page.
     const start = async () => {
-      if (disposed || started || document.visibilityState !== "visible" || !document.hasFocus()) return;
+      if (disposed || started || document.visibilityState !== "visible") return;
       started = true;
       try {
         const [{ confetti }, loaded] = await ready;
         if (disposed || !canvas.current) return;
-        if (document.visibilityState !== "visible" || !document.hasFocus()) {
+        if (document.visibilityState !== "visible") {
           started = false;
           return;
         }
@@ -64,15 +71,13 @@ export function SwapConfetti({ symbols }: { symbols: string[] }) {
         container?.destroy();
       }
     };
-    const onFocus = () => void start();
-    onFocus();
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onFocus);
+    const onVisible = () => void start();
+    onVisible();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       disposed = true;
       clearTimeout(timer);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
       container?.destroy();
     };
   }, [symbolKey]);

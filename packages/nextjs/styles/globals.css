@@ -4558,3 +4558,25 @@ a.bq-asset-row-details {
 .bq-basket-card-facts b {
   color: var(--bq-ink);
 }
+/* Purchase receipt once it completes: the word, one link per transaction, Dismiss. */
+.bq-batch-done {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+.bq-batch-done p {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.bq-batch-done ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-batch-done a {
+  color: var(--bq-brand);
+  font-weight: 700;
+}
