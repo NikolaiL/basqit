@@ -39,19 +39,11 @@ export function CreatedAt({ at }: { at: number }) {
   );
 }
 
-/** Ticker, then who made the basket and when. */
-export function BasketByline({ symbol, creator, createdAt }: { symbol: string; creator: Address; createdAt?: number }) {
+/** "by Ada", with the creator's picture and a link to their profile. */
+export function BasketByline({ creator }: { creator: Address }) {
   return (
     <p className="bq-basket-byline">
-      <span className="bq-basket-symbol">{symbol}</span>
-      <span>
-        by <CreatorLink address={creator} />
-        {createdAt !== undefined && (
-          <>
-            , <CreatedAt at={createdAt} />
-          </>
-        )}
-      </span>
+      by <CreatorLink address={creator} />
     </p>
   );
 }

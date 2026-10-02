@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BasketByline, BasketStats, useBasketSummary } from "./BasketInfo";
+import { BasketByline, BasketStats, CreatedAt, useBasketSummary } from "./BasketInfo";
 import type { useBasketRows } from "./useBasketRows";
 import { type Address, formatUnits } from "viem";
 import { useAccount } from "wagmi";
@@ -75,13 +75,15 @@ export function BasketGrid({
             >
               <header className="bq-basket-card-head">
                 <div className="bq-basket-card-title">
-                  <h4>{row.name}</h4>
+                  <h4>
+                    {row.name} <span className="bq-basket-symbol">{row.symbol}</span>
+                  </h4>
                   <span className="bq-basket-tags">
                     <span className="bq-basket-type">{managed ? "Managed" : "Fixed"}</span>
                     {mine && <span className="bq-basket-mine">Yours</span>}
                   </span>
                 </div>
-                <BasketByline symbol={row.symbol} creator={row.creator} createdAt={stats?.createdAt} />
+                <BasketByline creator={row.creator} />
                 {managed && (
                   <p className="bq-basket-rules-line">
                     {row.rules.noticeSeconds ? `${row.rules.noticeSeconds / 3600} h notice` : "No notice"}, max{" "}
@@ -123,17 +125,24 @@ export function BasketGrid({
                     <strong>{row.perShare ? formatToken(totalValue(row.perShare, row.supply), 6) : "…"}</strong>
                     <span>tUSDG total value</span>
                   </p>
-                  <p>
-                    {formatToken(row.supply, 18)} {row.supply === 10n ** 18n ? "share" : "shares"} out
-                    <br />
-                    {row.perShare ? formatToken(row.perShare, 6) : "…"} tUSDG a share
-                    {row.balance > 0n && (
-                      <>
-                        <br />
-                        <b>You hold {formatToken(row.balance, 18)}</b>
-                      </>
+                  <ul className="bq-basket-card-facts">
+                    <li>
+                      {formatToken(row.supply, 18)} {row.supply === 10n ** 18n ? "share" : "shares"} out
+                    </li>
+                    <li title={row.perShare ? `${formatToken(row.perShare, 6)} tUSDG a share` : undefined}>
+                      {row.perShare ? formatToken(row.perShare, 6) : "…"} per share
+                    </li>
+                    {stats && (
+                      <li>
+                        Created <CreatedAt at={stats.createdAt} />
+                      </li>
                     )}
-                  </p>
+                    {row.balance > 0n && (
+                      <li>
+                        <b>You hold {formatToken(row.balance, 18)}</b>
+                      </li>
+                    )}
+                  </ul>
                 </div>
               </div>
               <BasketStats perShare={row.perShare} refs={stats?.refs} />
