@@ -1080,3 +1080,23 @@
 .bq-discover-shell .bq-discover-input input:focus-visible {
   outline: none;
 }
+
+/* Fee-split explainer: fits a small phone without scrolling. */
+@media (max-width: 650px) {
+  .bq-fee-info {
+    padding: 18px 18px 26px;
+  }
+  .bq-fee-info h2 {
+    padding-right: 44px;
+    font-size: 21px;
+    line-height: 1.15;
+  }
+  .bq-fee-info ul {
+    font-size: 13px;
+    line-height: 1.45;
+    padding-block: 10px;
+  }
+  .bq-fee-info ul > li {
+    margin-block: 0 6px;
+  }
+}

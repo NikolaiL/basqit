@@ -479,7 +479,7 @@ export function StockDiscovery({
                 {shareStatus}
               </span>
               <dialog ref={feeInfo} className="modal" aria-labelledby="bq-fee-split-title">
-                <div className="modal-box">
+                <div className="modal-box bq-fee-info">
                   <DialogClose label="Close" onClick={() => feeInfo.current?.close()} />
                   <h2 id="bq-fee-split-title" className="text-lg font-bold">
                     Share the link, we share the fees
