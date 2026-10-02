@@ -1,4 +1,4 @@
-import { rulesLine, valuePerShare } from "./value.ts";
+import { percentChange, rulesLine, timeAgo, totalValue, valuePerShare } from "./value.ts";
 import assert from "node:assert/strict";
 
 const usdg = "0xusdg";
@@ -35,3 +35,16 @@ assert.equal(
   rulesLine({ manager: nvda, noticeSeconds: 0, maxSlippageBps: 150 }),
   "Managed · no notice · max 1.5% slippage",
 );
+
+// Card stats: change against a stored reference, total value, and age.
+assert.equal(percentChange(10_240_000n, "10000000"), "+2.40%");
+assert.equal(percentChange(9_000_000n, "10000000"), "−10.0%");
+assert.equal(percentChange(10_000_000n, "10000000"), "0.00%");
+assert.equal(percentChange(10_000_000n, null), null);
+assert.equal(percentChange(0n, "10000000"), null);
+assert.equal(totalValue(12_230_000n, 5_130_000_000_000_000_000n), 62_739_900n);
+const now = 1_790_000_000;
+assert.equal(timeAgo(now - 20, now), "just now");
+assert.equal(timeAgo(now - 3 * 3600, now), "3 hours ago");
+assert.equal(timeAgo(now - 86_400, now), "yesterday");
+assert.equal(timeAgo(now - 9 * 86_400, now), "last week");

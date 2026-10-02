@@ -1,20 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { BasketTradeDialog } from "./BasketTradeDialog";
-import { useBasketTrades } from "./useBasketTrades";
-import { demoError, deployment, formatToken, usePacksWrite, useTestUsdg, useTokens } from "./usePacks";
+import { demoError, deployment, formatToken, usePacksWrite, useTokens } from "./usePacks";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits, parseUnits } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
-import { basketAbi } from "~~/services/baskets/abi";
-import { rulesLine, valuePerShare } from "~~/services/baskets/value";
+import { BasketGrid } from "~~/components/baskets/BasketGrid";
+import { useBasketSummary } from "~~/components/baskets/BasketInfo";
+import { useBasketRows } from "~~/components/baskets/useBasketRows";
+import { FILTERS, type Filter, SORTS, type Sort, listBaskets } from "~~/services/baskets/list";
 import { basketManagement } from "~~/services/packs/management";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
-
-type Part = { token: Address; unitsPerShare: bigint };
 
 const ONE = 10n ** 18n;
 const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
@@ -22,10 +19,8 @@ const ceilDiv = (a: bigint, b: bigint) => (a + b - 1n) / b;
 export function BasketsDemo() {
   const { address, chainId } = useAccount();
   const write = usePacksWrite();
-  const { buy, sell } = useBasketTrades();
   const tokens = useTokens();
   const [busy, setBusy] = useState("");
-  const [trading, setTrading] = useState<{ basket: Address; side: "buy" | "sell" }>();
   // Stock amounts are what the basket stores; dollars are only a way to type them at today's price.
   const [draft, setDraft] = useState<{ name: string; symbol: string; fee: string; units: Record<string, string> }>({
     name: "",
@@ -42,72 +37,11 @@ export function BasketsDemo() {
   const priceOf = (token: Address) =>
     packsClient.readContract({ ...shop, functionName: "priceUsdG", args: [token] }) as Promise<bigint>;
 
-  const baskets = useQuery({
-    queryKey: ["packs-baskets", deployment.factory, address],
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const [list, feesOn] = (await Promise.all([
-        packsClient.readContract({ ...factory, functionName: "allBaskets" }),
-        packsClient.readContract({ ...factory, functionName: "feesEnabled" }),
-      ])) as [Address[], boolean];
-      const rows = await Promise.all(
-        list.map(async basket => {
-          const b = { address: basket, abi: deployment.abis.basket } as const;
-          const [name, symbol, parts, supply, balance, fee] = await Promise.all([
-            packsClient.readContract({ ...b, functionName: "name" }) as Promise<string>,
-            packsClient.readContract({ ...b, functionName: "symbol" }) as Promise<string>,
-            packsClient.readContract({ ...b, functionName: "components" }) as Promise<Part[]>,
-            packsClient.readContract({ ...b, functionName: "totalSupply" }) as Promise<bigint>,
-            address
-              ? (packsClient.readContract({ ...b, functionName: "balanceOf", args: [address] }) as Promise<bigint>)
-              : Promise.resolve(0n),
-            packsClient.readContract({ ...factory, functionName: "creatorFee", args: [basket] }) as Promise<
-              readonly [Address, number]
-            >,
-          ]);
-          const { usdg } = await testnetAssets();
-          const prices = await Promise.all(parts.map(part => priceOf(part.token)));
-          // 0 when a price is missing: shown as "…", and the buy dialog refuses to price it.
-          const perShare =
-            valuePerShare(
-              parts,
-              Object.fromEntries(parts.map((part, i) => [part.token.toLowerCase(), prices[i]])),
-              usdg,
-            ) ?? 0n;
-          const rules = { address: basket, abi: basketAbi } as const;
-          const [manager, notice, slippage, readyAt] = await packsClient.multicall({
-            allowFailure: false,
-            contracts: [
-              { ...rules, functionName: "manager" },
-              { ...rules, functionName: "noticePeriod" },
-              { ...rules, functionName: "maxSlippageBps" },
-              { ...rules, functionName: "rebalanceReadyAt" },
-            ],
-          });
-          // What an announced change does, for the banner; only read while one is pending.
-          const pending = readyAt
-            ? await packsClient.readContract({ ...rules, functionName: "pendingRebalance" })
-            : undefined;
-          return {
-            basket,
-            name,
-            symbol,
-            parts,
-            supply,
-            balance,
-            feeBps: BigInt(fee[1]),
-            perShare,
-            rules: { manager, noticeSeconds: Number(notice), maxSlippageBps: Number(slippage) },
-            readyAt: Number(readyAt),
-            change: pending ? { sells: pending[0].map(s => s.token), buys: pending[1].map(b => b.token) } : undefined,
-          };
-        }),
-      );
-      // Chain time, as the contract judges the notice window by it; the banner counts down on each refresh.
-      const { timestamp } = await packsClient.getBlock();
-      return { rows, feesOn, checkedAt: Number(timestamp) };
-    },
-  });
+  const baskets = useBasketRows(address);
+  const summary = useBasketSummary();
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [sort, setSort] = useState<Sort>("value");
 
   // Every stock the factory lists, with its current price, for the create form.
   const listed = useQuery({
@@ -121,7 +55,6 @@ export function BasketsDemo() {
 
   // The last failure and the action it belongs to, shown right under that action.
   const [failed, setFailed] = useState<{ at: string; message: string }>();
-  const usdgBalance = useTestUsdg(address).data;
   const errorAt = (label: string) =>
     failed?.at === label ? (
       <p className="bq-demo-error" role="alert">
@@ -140,23 +73,21 @@ export function BasketsDemo() {
     }
   };
   const label = (token: Address) => tokens.data?.[token.toLowerCase()];
-  /** "Changes in 14 h: less tAAPL, more tNVDA" while a change is announced; nothing once it lapses. */
-  const pendingBanner = (row: {
-    readyAt: number;
-    change?: { sells: readonly Address[]; buys: readonly Address[] };
-  }) => {
-    const now = baskets.data?.checkedAt ?? 0;
-    if (!row.readyAt || !row.change || now > row.readyAt + 86_400) return null;
-    const names = (list: readonly Address[]) => list.map(token => label(token)?.symbol ?? "…").join(", ");
-    const what = `less ${names(row.change.sells)}, more ${names(row.change.buys)}`;
-    return (
-      <p className="bq-basket-pending" role="status">
-        {now < row.readyAt
-          ? `Changes in ${Math.ceil((row.readyAt - now) / 3600)} h: ${what}`
-          : `Change ready to execute: ${what}`}
-      </p>
-    );
-  };
+  // "I hold" and "Mine" need a wallet; without one they are hidden and the list shows all.
+  const visible = listBaskets(
+    (baskets.data?.rows ?? []).map(row => ({
+      ...row,
+      managed: BigInt(row.rules.manager) !== 0n,
+      tokens: row.parts.map(part => label(part.token)?.symbol ?? ""),
+    })),
+    {
+      query,
+      filter: address || (filter !== "held" && filter !== "mine") ? filter : "all",
+      sort,
+      me: address,
+      stats: summary.data,
+    },
+  );
 
   // The create form: the stock amount per share is the source of truth; its dollar value follows today's price.
   const unitsOf = (token: Address) => {
@@ -220,51 +151,53 @@ export function BasketsDemo() {
           </button>
         </p>
       )}
-      <div className="bq-demo-grid">
-        {baskets.data?.rows.map(row => (
-          <article key={row.basket} className="bq-demo-card bq-basket-card">
-            <strong>
-              {row.name} <small>{row.symbol}</small>
-            </strong>
-            <p className="bq-basket-rules-line">{rulesLine(row.rules)}</p>
-            {pendingBanner(row)}
-            <ul className="bq-demo-items">
-              {row.parts.map(part => (
-                <li key={part.token}>
-                  <StockLogo symbol={label(part.token)?.ticker ?? ""} size={24} />
-                  {label(part.token)
-                    ? `${formatToken(part.unitsPerShare, label(part.token)!.decimals)} ${label(part.token)!.symbol}`
-                    : "…"}
-                </li>
+      {baskets.data && (
+        <div className="bq-basket-toolbar">
+          <input
+            className="input input-sm"
+            type="search"
+            placeholder="Search name, ticker, stock or creator"
+            aria-label="Search baskets"
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+          />
+          <div className="bq-segment" role="radiogroup" aria-label="Show">
+            {FILTERS.filter(([key]) => address || (key !== "held" && key !== "mine")).map(([key, name]) => (
+              <label key={key}>
+                <input type="radio" name="basket-filter" checked={filter === key} onChange={() => setFilter(key)} />
+                {name}
+              </label>
+            ))}
+          </div>
+          <label className="bq-basket-sort">
+            Sort
+            <select className="select select-sm" value={sort} onChange={event => setSort(event.target.value as Sort)}>
+              {SORTS.map(([key, name]) => (
+                <option key={key} value={key}>
+                  {name}
+                </option>
               ))}
-            </ul>
-            <p className="bq-demo-price">
-              {row.perShare ? formatToken(row.perShare, 6) : "…"} tUSDG a share · {formatToken(row.supply, 18)} shares
-              out
-              {row.balance > 0n && ` · you hold ${formatToken(row.balance, 18)}`}
-            </p>
-            <div className="bq-demo-row">
-              <button
-                className="btn btn-primary btn-sm"
-                disabled={!!busy}
-                onClick={() => setTrading({ basket: row.basket, side: "buy" })}
-              >
-                Buy
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={!!busy || row.balance === 0n}
-                onClick={() => setTrading({ basket: row.basket, side: "sell" })}
-              >
-                Sell
-              </button>
-              <Link className="btn btn-ghost btn-sm" href={`/baskets/${row.basket}`}>
-                Details
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+            </select>
+          </label>
+        </div>
+      )}
+      {baskets.data && (
+        <BasketGrid rows={visible} feesOn={baskets.data.feesOn} checkedAt={baskets.data.checkedAt} busy={!!busy} />
+      )}
+      {!!baskets.data?.rows.length && !visible.length && (
+        <p className="bq-demo-note" role="status">
+          No baskets match.{" "}
+          <button
+            className="btn btn-ghost btn-xs"
+            onClick={() => {
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Clear
+          </button>
+        </p>
+      )}
 
       <article className="bq-demo-card bq-demo-builder bq-basket-builder">
         <strong>Create a basket</strong>
@@ -463,23 +396,6 @@ export function BasketsDemo() {
         {!ready && <p className="bq-basket-publish-note">Connect your wallet on Robinhood Chain testnet to publish.</p>}
         {errorAt("create")}
       </article>
-      {(() => {
-        const row = baskets.data?.rows.find(entry => entry.basket === trading?.basket);
-        if (!row || !trading) return null;
-        // Fees switched off on testnet are not charged, so they are not estimated either.
-        const feeBps = baskets.data?.feesOn ? row.feeBps : 0n;
-        return (
-          <BasketTradeDialog
-            key={`${row.basket}-${trading.side}`}
-            basket={{ symbol: row.symbol, name: row.name, perShare: row.perShare, feeBps, shares: row.balance }}
-            initialSide={trading.side}
-            usdg={usdgBalance}
-            onBuy={budget => buy(row.basket, budget, row.perShare, feeBps)}
-            onSell={amount => sell(row.basket, amount, feeBps)}
-            onClose={() => setTrading(undefined)}
-          />
-        );
-      })()}
     </section>
   );
 }

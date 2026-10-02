@@ -15,6 +15,7 @@ import { BasketTradeDialog } from "~~/components/packs/BasketTradeDialog";
 import { useBasketTrades } from "~~/components/packs/useBasketTrades";
 import { deployment, formatToken, useTestUsdg, useTokens } from "~~/components/packs/usePacks";
 import { basketAbi, priceAbi } from "~~/services/baskets/abi";
+import { planStatus } from "~~/services/baskets/plan";
 import { rulesLine, valuePerShare } from "~~/services/baskets/value";
 import { explorerAddress, packsClient, testnetAssets } from "~~/services/packs/testnet";
 
@@ -169,6 +170,16 @@ export function BasketDetails({ basket }: { basket: Address }) {
   const label = (token: string) => tokens.data?.[token.toLowerCase()];
   const creator = activity.data?.activity.find(r => r.kind === "created")?.who;
   const isManager = !!d && !!address && d.rules.manager.toLowerCase() === address.toLowerCase();
+  // The plan opens after its notice and at least 4 hours after the last rebalance, whichever is later.
+  const upcoming =
+    d &&
+    planStatus({
+      now: d.now,
+      readyAt: d.readyAt,
+      window: 86_400,
+      lastRebalanceAt: d.lastRebalanceAt,
+      interval: 14_400,
+    });
 
   return (
     <>
@@ -251,13 +262,13 @@ export function BasketDetails({ basket }: { basket: Address }) {
         )}
       </section>
 
-      {d && pending.data && !isManager && d.now <= d.readyAt + 86_400 && (
+      {d && pending.data && !isManager && (upcoming?.state === "waiting" || upcoming?.state === "ready") && (
         <section className="bq-demo-card bq-upcoming" aria-labelledby="bq-upcoming-title">
           <h2 id="bq-upcoming-title">Upcoming rebalance</h2>
           <p className="bq-manage-window">
-            {d.now < d.readyAt
-              ? `Announced by the manager. It can run from ${when(d.readyAt)} until ${when(d.readyAt + 86_400)}.`
-              : `Ready to run now, until ${when(d.readyAt + 86_400)}.`}
+            {upcoming.state === "waiting"
+              ? `Announced by the manager. It can run from ${when(upcoming.opensAt)} until ${when(upcoming.closesAt)}.`
+              : `Ready to run now, until ${when(upcoming.closesAt)}.`}
           </p>
           <PendingPlan sells={pending.data[0]} buys={pending.data[1]} components={d.components} />
           <div className="bq-demo-note mt-4">

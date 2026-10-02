@@ -17,6 +17,7 @@ import { StockLogo } from "~~/components/StockLogo";
 import { TokenAmount } from "~~/components/TokenAmount";
 import { useWalletSession } from "~~/components/WalletAuthentication";
 import { AssetDetails, type DetailAsset } from "~~/components/atlas/AssetDetails";
+import { OwnedBaskets } from "~~/components/portfolio/OwnedBaskets";
 import { WalletWatchlist } from "~~/components/portfolio/WalletWatchlist";
 import { RobinhoodBalance } from "~~/components/trading/RobinhoodBalance";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
@@ -522,6 +523,7 @@ export function PortfolioDashboard({
               </span>
             </div>
           </section>
+          {address && <OwnedBaskets address={address} />}
         </>
       )}
       {authenticated && !eventsPage && (

@@ -61,7 +61,10 @@ export function planStatus(i: {
   const next = i.lastRebalanceAt ? { nextAllowedAt: i.lastRebalanceAt + i.interval } : {};
   if (!i.readyAt) return { state: "none" as const, ...next };
   const closesAt = i.readyAt + i.window;
-  if (i.now < i.readyAt) return { state: "waiting" as const, opensAt: i.readyAt, closesAt };
-  if (i.now <= closesAt) return { state: "ready" as const, opensAt: i.readyAt, closesAt, ...next };
-  return { state: "lapsed" as const };
+  if (i.now > closesAt) return { state: "lapsed" as const };
+  // The contract also keeps rebalances `interval` apart, so the plan opens at whichever comes later.
+  const opensAt = Math.max(i.readyAt, next.nextAllowedAt ?? 0);
+  if (opensAt > closesAt) return { state: "blocked" as const, opensAt, closesAt };
+  if (i.now < opensAt) return { state: "waiting" as const, opensAt, closesAt };
+  return { state: "ready" as const, opensAt, closesAt, ...next };
 }

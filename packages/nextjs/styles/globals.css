@@ -3606,14 +3606,6 @@ html [data-rk] {
 }
 
 /* Basket cards: list fills the card so price and actions line up across a row of cards. */
-.bq-basket-card {
-  display: flex;
-  flex-direction: column;
-}
-.bq-basket-card .bq-demo-items {
-  flex: 1;
-  align-content: start;
-}
 .bq-basket-rules-line {
   margin: -6px 0 0;
   color: var(--bq-muted);
@@ -4177,16 +4169,6 @@ html [data-rk] {
   align-items: center;
   gap: 10px;
 }
-.bq-creator-baskets {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.bq-creator-baskets small {
-  color: var(--bq-muted);
-}
 .bq-creator-verified {
   display: inline-flex;
   align-items: center;
@@ -4219,4 +4201,317 @@ html [data-rk] {
   padding: 8px;
   border-radius: 12px;
   background: #fff;
+}
+.bq-list-value small.is-up {
+  color: #16a34a;
+}
+.bq-list-value small.is-down {
+  color: var(--bq-danger);
+}
+.bq-list-identity .bq-basket-mine {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+/* Basket list controls: search, filter and sort above the cards. */
+.bq-basket-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.bq-basket-toolbar input[type="search"] {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.bq-basket-toolbar .bq-segment label {
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bq-basket-sort {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--bq-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+/* Basket card. The top band repeats the logo's bars and says the type: light violet fixed, violet managed. Amber
+   sides mark the viewer's own basket. Content sits in two columns, then the change strip, then an action row that
+   runs edge to edge and takes the card's bottom corners. */
+.bq-basket-card {
+  --type: #a9a3f6;
+  --edge: color-mix(in srgb, #5a4fe0 22%, transparent);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, #5a4fe0 40%, transparent);
+  border-top: 8px solid var(--type);
+  border-radius: 16px;
+  background: color-mix(in srgb, #5a4fe0 6%, var(--bq-paper));
+}
+.bq-basket-card.is-managed {
+  --type: var(--bq-brand);
+}
+.bq-basket-card.is-mine {
+  border-right-color: var(--bq-amber);
+  border-bottom-color: var(--bq-amber);
+  border-left-color: var(--bq-amber);
+}
+.bq-basket-card-head {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 6px;
+  padding: 16px 18px 14px;
+}
+.bq-basket-card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.bq-basket-card-title h4 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.bq-basket-tags {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.bq-basket-type,
+.bq-basket-mine {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--bq-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.bq-basket-type {
+  background: color-mix(in srgb, var(--type) 28%, var(--bq-paper));
+}
+.bq-basket-mine {
+  background: var(--bq-amber);
+  color: #141a2e;
+}
+.bq-basket-byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+}
+.bq-basket-symbol {
+  padding: 0 6px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--bq-ink);
+  font-family: var(--bq-mono), monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+.bq-basket-when {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.bq-basket-card .bq-basket-rules-line {
+  margin: 0;
+}
+.bq-basket-card-body {
+  display: grid;
+  /* Fixed height, so cards in a row line up; longer holdings scroll inside it. */
+  height: 204px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 18px 16px;
+  border-top: 1px solid var(--edge);
+}
+.bq-basket-card-label {
+  margin: 0 0 8px;
+  color: var(--bq-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.bq-basket-card-body .bq-demo-items li {
+  font-size: 13px;
+}
+.bq-basket-card-holdings {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.bq-basket-card-holdings .bq-demo-items {
+  flex: 1;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+.bq-basket-card-holdings .bq-demo-items:focus-visible {
+  outline: 2px solid var(--bq-brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.bq-basket-card-price {
+  padding-left: 16px;
+  border-left: 1px solid var(--edge);
+}
+.bq-basket-card-price p {
+  margin: 12px 0 0;
+  color: var(--bq-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.bq-basket-card-price p:first-child {
+  margin: 0;
+}
+.bq-basket-card-price strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--bq-ink);
+  font-size: 34px;
+  font-weight: 800;
+  font-variation-settings: "wdth" 88;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.bq-basket-card-price b {
+  color: var(--bq-ink);
+}
+.bq-basket-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid var(--edge);
+}
+.bq-basket-stats > div {
+  padding: 10px 4px;
+  text-align: center;
+}
+.bq-basket-stats > div + div {
+  border-left: 1px solid var(--edge);
+}
+.bq-basket-stats dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.bq-basket-stats dt {
+  color: var(--bq-muted);
+  font-size: 12px;
+}
+.bq-basket-stats .is-up {
+  color: #16a34a;
+}
+.bq-basket-stats .is-down {
+  color: var(--bq-danger);
+}
+.bq-basket-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 2px solid color-mix(in srgb, #5a4fe0 40%, transparent);
+}
+.bq-basket-card-actions > * {
+  padding: 13px 8px;
+  border: 0;
+  background: none;
+  color: var(--bq-brand);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.bq-basket-card-actions > * + * {
+  border-left: 2px solid color-mix(in srgb, #5a4fe0 40%, transparent);
+}
+.bq-basket-card-actions > :first-child {
+  background: var(--bq-brand);
+  color: #fff;
+}
+.bq-basket-card-actions > :hover:not(:disabled) {
+  background: color-mix(in srgb, #5a4fe0 12%, transparent);
+}
+.bq-basket-card-actions > :first-child:hover:not(:disabled) {
+  background: color-mix(in srgb, #5a4fe0 85%, #141a2e);
+}
+.bq-basket-card-actions > :focus-visible {
+  outline: 3px solid var(--bq-amber);
+  outline-offset: -3px;
+}
+.bq-basket-card-actions > :disabled {
+  color: color-mix(in srgb, var(--bq-muted) 55%, transparent);
+  cursor: not-allowed;
+}
+.bq-basket-card-actions > :first-child:disabled {
+  background: color-mix(in srgb, #5a4fe0 35%, var(--bq-paper));
+  color: #fff;
+}
+.bq-demo-grid.bq-basket-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+.bq-basket-card-actions > a {
+  text-decoration: none;
+}
+/* Narrow cards: holdings above the price. */
+@container (max-width: 300px) {
+  .bq-basket-card-body {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bq-basket-card-holdings .bq-demo-items {
+    max-height: 150px;
+  }
+  .bq-basket-card-price {
+    padding: 14px 0 0;
+    border-top: 1px solid var(--edge);
+    border-left: 0;
+  }
+}
+.bq-creator-section {
+  display: grid;
+  gap: 12px;
+}
+.bq-creator-section h2 {
+  margin: 0;
+}
+/* Basket rows in the portfolio: a link as the row's details area, and three overlapped stock logos as its mark. */
+a.bq-asset-row-details {
+  color: inherit;
+  text-decoration: none;
+}
+.bq-basket-mark {
+  display: flex;
+  flex: none;
+  width: 52px;
+}
+.bq-basket-mark > * {
+  flex: none;
+  border-radius: 50%;
+  background: var(--bq-paper);
+  box-shadow: 0 0 0 2px var(--bq-paper);
+}
+.bq-basket-mark > * + * {
+  margin-left: -10px;
 }

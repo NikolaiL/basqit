@@ -10,6 +10,9 @@ import { useAccount, useSignMessage } from "wagmi";
 import { CheckBadgeIcon } from "@heroicons/react/24/solid";
 import { sdk, useMiniapp } from "~~/components/MiniappProvider";
 import { useWalletSession } from "~~/components/WalletAuthentication";
+import { BasketGrid } from "~~/components/baskets/BasketGrid";
+import { useBasketRows } from "~~/components/baskets/useBasketRows";
+import { totalValue } from "~~/services/baskets/value";
 import { robinhoodTestnet } from "~~/services/packs/testnet";
 import {
   EMPTY_PROFILE,
@@ -298,20 +301,7 @@ export function CreatorProfile({ address }: { address: Address }) {
 
       {isOwner && <LinkedAccounts address={address} socials={creator.data?.socials ?? []} />}
 
-      <section className="bq-demo-card">
-        <h2>Baskets</h2>
-        {creator.isPending && <p role="status">Loading…</p>}
-        {creator.data && !creator.data.baskets.length && <p className="bq-demo-note">No baskets yet.</p>}
-        <ul className="bq-creator-baskets">
-          {creator.data?.baskets.map(b => (
-            <li key={b.address}>
-              <Link href={`/baskets/${b.address}`}>
-                <strong>{b.name}</strong> <small>{b.symbol}</small>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <CreatorBaskets creator={address} />
     </>
   );
 }
@@ -478,6 +468,36 @@ export function BasketDescription({ basket, creator }: { basket: Address; creato
             </button>
           </div>
         </>
+      )}
+    </section>
+  );
+}
+
+/** The creator's baskets, as the same cards as the baskets page, with Buy and Sell for the connected wallet. */
+function CreatorBaskets({ creator }: { creator: Address }) {
+  const { address } = useAccount();
+  const baskets = useBasketRows(address);
+  // Largest total value first, as on the baskets page.
+  const rows = (baskets.data?.rows.filter(row => row.creator.toLowerCase() === creator.toLowerCase()) ?? []).sort(
+    (a, b) => Number(totalValue(b.perShare, b.supply) - totalValue(a.perShare, a.supply)),
+  );
+  return (
+    <section className="bq-creator-section" aria-labelledby="creator-baskets-title">
+      <h2 id="creator-baskets-title">
+        Baskets <span className="bq-count">{baskets.data ? rows.length : "…"}</span>
+      </h2>
+      {baskets.isPending && <p role="status">Loading baskets…</p>}
+      {baskets.isError && (
+        <p className="bq-demo-error" role="alert">
+          Could not load baskets.{" "}
+          <button className="btn btn-sm" onClick={() => baskets.refetch()}>
+            Retry
+          </button>
+        </p>
+      )}
+      {baskets.data && !rows.length && <p className="bq-demo-note">No baskets yet.</p>}
+      {baskets.data && !!rows.length && (
+        <BasketGrid rows={rows} feesOn={baskets.data.feesOn} checkedAt={baskets.data.checkedAt} />
       )}
     </section>
   );

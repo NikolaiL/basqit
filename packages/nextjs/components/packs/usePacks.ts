@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Abi, type Address, erc20Abi, formatUnits } from "viem";
+import { type Abi, type Address, BaseError, ContractFunctionRevertedError, erc20Abi, formatUnits } from "viem";
 import { useAccount, useWalletClient } from "wagmi";
 import { useTransactor } from "~~/hooks/scaffold-eth";
 import {
@@ -155,6 +155,11 @@ export function useTestUsdg(owner?: Address) {
 
 /** A failed action in plain words. A bare revert here almost always means the wallet cannot cover it. */
 export function demoError(failure: unknown) {
+  // A decoded contract error sits mid-chain; the innermost cause only says "execution reverted".
+  const reverted =
+    failure instanceof BaseError ? failure.walk(cause => cause instanceof ContractFunctionRevertedError) : null;
+  if (reverted instanceof ContractFunctionRevertedError && reverted.data?.errorName)
+    return `${reverted.data.errorName}(${(reverted.data.args ?? []).map(String).join(", ")})`;
   const message = getParsedError(failure);
   return /^execution reverted\.?$/i.test(message.trim())
     ? "This transaction would fail. Check that you have enough tUSDG and test ETH, then try again."

@@ -34,7 +34,12 @@ function explain(failure: unknown, slippageBps: number) {
   const known: [string, string][] = [
     ["ValueLost", `The swaps would lose more than your ${slippageBps / 100}% limit.`],
     ["LossBudgetExceeded", "This would use more than this week's loss budget."],
-    ["RebalanceTooSoon", "Too soon: rebalances are at least 4 hours apart."],
+    [
+      "RebalanceTooSoon",
+      `Too soon: rebalances are at least 4 hours apart. You can execute from ${when(
+        Number(message.match(/RebalanceTooSoon\((\d+)\)/)?.[1] ?? 0),
+      )}.`,
+    ],
     ["TokenNotAllowed", "A token you are buying is no longer allowed."],
     ["RebalanceNotReady", "The notice period has not ended yet."],
     ["RebalanceExpired", "This plan lapsed. Announce it again."],
@@ -142,7 +147,7 @@ export function ManagePanel({ basket, state, onDone }: { basket: Address; state:
   ) : null;
 
   // An announced plan: read-only, with its window, Execute when open and Cancel at any time.
-  if (status.state === "waiting" || status.state === "ready") {
+  if (status.state === "waiting" || status.state === "ready" || status.state === "blocked") {
     const plan = pending.data;
     return (
       <section className="bq-demo-card bq-manage">
@@ -153,11 +158,15 @@ export function ManagePanel({ basket, state, onDone }: { basket: Address; state:
           <p role="status">Loading the announced plan…</p>
         )}
         <p className="bq-manage-window">
-          {status.state === "waiting"
-            ? `Can execute from ${when(status.opensAt)} until ${when(status.closesAt)} · opens in ${Math.ceil(
-                (status.opensAt - now) / 60,
-              )} min`
-            : `Execute before ${when(status.closesAt)}`}
+          {status.state === "blocked"
+            ? `This plan cannot run: rebalances are at least 4 hours apart, so the earliest is ${when(
+                status.opensAt,
+              )}, after the plan lapses at ${when(status.closesAt)}. Cancel it and announce a new one.`
+            : status.state === "waiting"
+              ? `Can execute from ${when(status.opensAt)} until ${when(status.closesAt)} · opens in ${Math.ceil(
+                  (status.opensAt - now) / 60,
+                )} min`
+              : `Execute before ${when(status.closesAt)}`}
         </p>
         {actions(
           <div className="bq-demo-row">

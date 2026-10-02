@@ -55,3 +55,11 @@ assert.deepEqual(planStatus({ ...base, now: 100, readyAt: 200 }), { state: "wait
 assert.equal(planStatus({ ...base, now: 300, readyAt: 200 }).state, "ready");
 assert.equal(planStatus({ ...base, now: 86_601, readyAt: 200 }).state, "lapsed");
 assert.equal(planStatus({ ...base, now: 1000, readyAt: 0, lastRebalanceAt: 900 }).nextAllowedAt, 15_300);
+
+// The 4-hour gap since the last rebalance delays an announced plan, even after its notice ends.
+const gap = { ...base, readyAt: 1_000, lastRebalanceAt: 900 };
+assert.deepEqual(planStatus({ ...gap, now: 2_000 }), { state: "waiting", opensAt: 15_300, closesAt: 87_400 });
+assert.equal(planStatus({ ...gap, now: 15_300 }).state, "ready");
+// A gap that ends after the window closes: the plan can never run.
+assert.equal(planStatus({ ...gap, lastRebalanceAt: 80_000, now: 2_000 }).state, "blocked");
+assert.equal(planStatus({ ...gap, now: 87_401 }).state, "lapsed");

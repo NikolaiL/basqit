@@ -46,3 +46,26 @@ export async function hasRebuild(basket: string): Promise<boolean> {
     ) as rebuilt`) as { rebuilt: boolean }[];
   return !!row?.rebuilt;
 }
+
+/** Per basket: the first stored value per share, and the first one inside the last 24 hours and 7 days. */
+export async function readValueRefs() {
+  return (await sql()`
+    select b.basket,
+      extract(epoch from (select min(at) from basket_snapshots s
+        where s.chain_id = b.chain_id and s.basket = b.basket))::float8 as "firstAt",
+      (select value_usdg::text from basket_snapshots s
+        where s.chain_id = b.chain_id and s.basket = b.basket order by at limit 1) as "all",
+      (select value_usdg::text from basket_snapshots s
+        where s.chain_id = b.chain_id and s.basket = b.basket and at >= now() - interval '1 day'
+        order by at limit 1) as "24h",
+      (select value_usdg::text from basket_snapshots s
+        where s.chain_id = b.chain_id and s.basket = b.basket and at >= now() - interval '7 days'
+        order by at limit 1) as "7d"
+    from (select distinct chain_id, basket from basket_snapshots where chain_id = ${CHAIN_ID}) b`) as {
+    basket: string;
+    firstAt: number;
+    all: string;
+    "24h": string | null;
+    "7d": string | null;
+  }[];
+}
