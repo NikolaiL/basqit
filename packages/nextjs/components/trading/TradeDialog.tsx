@@ -6,6 +6,7 @@ import { GasFundingNotice } from "./GasFundingNotice";
 import { PendingTradeNotice } from "./PendingTradeNotice";
 import { SwapConfetti } from "./SwapConfetti";
 import { SwapPayPanel } from "./SwapPayPanel";
+import { useHeightTransition } from "./useHeightTransition";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatUnits, isAddress, parseUnits } from "viem";
 import { useAccount, useSwitchChain } from "wagmi";
@@ -46,9 +47,13 @@ export function TradeDialog({
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [hash, setHash] = useState<string>();
+  // This trade's transactions, approvals included, for the links on the completed view.
+  const [txs, setTxs] = useState<{ label: string; hash: string }[]>([]);
+  const { ref: shrinkRef, note: noteHeight } = useHeightTransition<HTMLDivElement>(hash);
   const [now, setNow] = useState(() => Date.now());
   const asset = selection.asset;
   const sellSymbol = side === "buy" ? "USDG" : asset.symbol;
+  const actionLabel = `${side === "buy" ? "Buy" : "Sell"} ${asset.symbol}`;
   const buySymbol = side === "buy" ? asset.symbol : "USDG";
   const sellToken = side === "buy" ? USDG : asset.address;
   const balance = useTradeBalance(sellToken, address && isAddress(address) ? (address as `0x${string}`) : undefined);
@@ -126,6 +131,7 @@ export function TradeDialog({
     setInput({ key: inputKey, percentage: value });
 
     setHash(undefined);
+    setTxs([]);
     setError("");
   }
 
@@ -139,17 +145,19 @@ export function TradeDialog({
         else onClose();
       }}
     >
-      <div className="modal-box bq-trade-dialog bq-stock-trade">
+      <div className="modal-box bq-trade-dialog bq-stock-trade" ref={shrinkRef}>
         <DialogClose label="Close trade" disabled={!!busy && !hash} onClick={onClose} />
-        <button
-          type="button"
-          className="bq-dialog-refresh"
-          aria-label="Refresh quote"
-          disabled={!!busy || !canQuote || loading}
-          onClick={() => setRefresh(value => value + 1)}
-        >
-          <ArrowPathIcon aria-hidden="true" />
-        </button>
+        {!hash && (
+          <button
+            type="button"
+            className="bq-dialog-refresh"
+            aria-label="Refresh quote"
+            disabled={!!busy || !canQuote || loading}
+            onClick={() => setRefresh(value => value + 1)}
+          >
+            <ArrowPathIcon aria-hidden="true" />
+          </button>
+        )}
         <div className="bq-trade-heading">
           <div>
             <h2 id="trade-title">
@@ -158,213 +166,224 @@ export function TradeDialog({
             <small>Robinhood Chain · Uses real funds</small>
           </div>
         </div>
-        <div className="bq-trade-body">
-          <SwapPayPanel
-            symbol={sellSymbol}
-            balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
-            connected={!!address}
-            balanceError={balance.isError}
-            amount={amount}
-            percentage={sliderPercentage}
-            disabled={!!busy || !!hash}
-            percentageDisabled={!balance.data || !!busy || !!hash}
-            loading={loading}
-            directionLabel={`Switch to ${side === "buy" ? "selling" : "buying"} ${asset.symbol}`}
-            onAmountChange={value => {
-              setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
-              setHash(undefined);
-              setError("");
-            }}
-            onPercentageChange={selectPercentage}
-            onBusy={setBusy}
-            onFundingOpenChange={setFundingOpen}
-            onFunded={
-              side === "buy" && !hash
-                ? () => {
-                    setRefresh(v => v + 1);
+        {!hash && (
+          <div className="bq-trade-body">
+            <SwapPayPanel
+              symbol={sellSymbol}
+              balance={balance.data ? formatUnits(balance.data.balance, balance.data.decimals) : undefined}
+              connected={!!address}
+              balanceError={balance.isError}
+              amount={amount}
+              percentage={sliderPercentage}
+              disabled={!!busy || !!hash}
+              percentageDisabled={!balance.data || !!busy || !!hash}
+              loading={loading}
+              directionLabel={`Switch to ${side === "buy" ? "selling" : "buying"} ${asset.symbol}`}
+              onAmountChange={value => {
+                setInput({ key: inputKey, percentage: sliderPercentage, manual: value });
+                setHash(undefined);
+                setTxs([]);
+                setError("");
+              }}
+              onPercentageChange={selectPercentage}
+              onBusy={setBusy}
+              onFundingOpenChange={setFundingOpen}
+              onFunded={
+                side === "buy" && !hash
+                  ? () => {
+                      setRefresh(v => v + 1);
+                    }
+                  : undefined
+              }
+              onReverse={() => {
+                setSide(side === "buy" ? "sell" : "buy");
+                setInput(undefined);
+                setHash(undefined);
+                setTxs([]);
+                setError("");
+              }}
+            />
+            <section className="bq-swap-panel" aria-label="You receive">
+              <div className="bq-swap-caption">
+                <span>You receive</span>
+                <span>After fees</span>
+              </div>
+              <div className="bq-swap-amount-row">
+                <strong className="bq-swap-token">{buySymbol}</strong>
+                <output
+                  className="bq-swap-output"
+                  aria-live="polite"
+                  aria-busy={loading}
+                  title={
+                    currentQuote ? formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals) : undefined
                   }
-                : undefined
-            }
-            onReverse={() => {
-              setSide(side === "buy" ? "sell" : "buy");
-              setInput(undefined);
-              setHash(undefined);
-              setError("");
-            }}
-          />
-          <section className="bq-swap-panel" aria-label="You receive">
-            <div className="bq-swap-caption">
-              <span>You receive</span>
-              <span>After fees</span>
-            </div>
-            <div className="bq-swap-amount-row">
-              <strong className="bq-swap-token">{buySymbol}</strong>
-              <output
-                className="bq-swap-output"
-                aria-live="polite"
-                aria-busy={loading}
-                title={currentQuote ? formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals) : undefined}
-              >
-                {loading ? (
-                  "…"
-                ) : currentQuote && !expired ? (
-                  <TokenAmount value={formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals)} />
-                ) : (
-                  "—"
-                )}
-              </output>
-            </div>
-          </section>
-          <details className="bq-swap-details">
-            <summary>
-              {currentQuote ? `Fee ${currentQuote.basqitFee.bps / 100}% · Slippage 0.5%` : "Swap details"}
-            </summary>
-            <div className="bq-swap-caption bq-swap-status">
-              <span>
-                {currentQuote?.provider === "lifi"
-                  ? `LiFi · ${currentQuote.route ?? "RFQ"}`
-                  : currentQuote?.provider === "0x"
-                    ? "0x"
-                    : "Uniswap v3"}
-              </span>
-              <span role="status">
-                {loading
-                  ? "Updating quote…"
-                  : currentQuote && !expired
-                    ? `Refresh in ${Math.max(0, Math.ceil((currentQuote.expiresAt - now) / 1000))}s`
-                    : "Automatic quotes"}
-              </span>
-            </div>
-            {ZEROX_ENABLED && (
-              <label className="bq-trade-input">
-                Swap provider
-                <select
-                  className="select select-bordered"
-                  value={provider}
-                  disabled={!!busy || !!hash}
-                  onChange={e => setProvider(e.target.value as "best" | "0x")}
                 >
-                  <option value="best">Best of Uniswap and LiFi</option>
-                  <option value="0x">0x</option>
-                </select>
-              </label>
-            )}
-            {currentQuote && (
-              <dl className="bq-trade-quote">
-                <div>
-                  <dt>Minimum received</dt>
-                  <dd>
-                    <TokenAmount value={formatUnits(BigInt(currentQuote.minBuyAmount), currentQuote.buyDecimals)} />{" "}
-                    {buySymbol}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Basqit fee · {currentQuote.basqitFee.bps / 100}%</dt>
-                  <dd>
-                    {currentQuote.basqitFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase() ? (
-                      <>
-                        <TokenAmount
-                          value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)}
-                        />{" "}
-                        {buySymbol}
-                      </>
-                    ) : (
-                      <>
-                        <TokenAmount
-                          value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.sellDecimals)}
-                        />{" "}
-                        {sellSymbol}
-                      </>
-                    )}
-                  </dd>
-                </div>
-                {currentQuote.providerFee && (
-                  <div>
-                    <dt>{currentQuote.provider === "lifi" ? "LiFi fee" : "0x fee"}</dt>
-                    <dd>
-                      <TokenAmount
-                        value={formatUnits(
-                          BigInt(currentQuote.providerFee.amount),
-                          currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
-                            ? currentQuote.buyDecimals
-                            : currentQuote.sellDecimals,
-                        )}
-                      />{" "}
-                      {currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
-                        ? buySymbol
-                        : sellSymbol}
-                    </dd>
-                  </div>
-                )}
-                {currentQuote.impactBps !== undefined && (
-                  <div>
-                    <dt>Price impact incl. pool fee</dt>
-                    <dd>{(currentQuote.impactBps / 100).toFixed(2)}%</dd>
-                  </div>
-                )}
-                {currentQuote.pool && (
-                  <div>
-                    <dt>Route</dt>
-                    <dd>
-                      <a
-                        className="link"
-                        href={`${robinhoodChain.blockExplorers.default.url}/address/${currentQuote.pool}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Uniswap pool <Arrow out />
-                      </a>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
-            <p className="bq-fine-print">
-              Network fee is paid in ETH and shown in your wallet. Trading uses your connected wallet, not a watched
-              address.
-              {address && (
-                <>
-                  {" "}
-                  Wallet: {address.slice(0, 6)}…{address.slice(-4)}.
-                </>
+                  {loading ? (
+                    "…"
+                  ) : currentQuote && !expired ? (
+                    <TokenAmount value={formatUnits(BigInt(currentQuote.buyAmount), currentQuote.buyDecimals)} />
+                  ) : (
+                    "—"
+                  )}
+                </output>
+              </div>
+            </section>
+            <details className="bq-swap-details">
+              <summary>
+                {currentQuote ? `Fee ${currentQuote.basqitFee.bps / 100}% · Slippage 0.5%` : "Swap details"}
+              </summary>
+              <div className="bq-swap-caption bq-swap-status">
+                <span>
+                  {currentQuote?.provider === "lifi"
+                    ? `LiFi · ${currentQuote.route ?? "RFQ"}`
+                    : currentQuote?.provider === "0x"
+                      ? "0x"
+                      : "Uniswap v3"}
+                </span>
+                <span role="status">
+                  {loading
+                    ? "Updating quote…"
+                    : currentQuote && !expired
+                      ? `Refresh in ${Math.max(0, Math.ceil((currentQuote.expiresAt - now) / 1000))}s`
+                      : "Automatic quotes"}
+                </span>
+              </div>
+              {ZEROX_ENABLED && (
+                <label className="bq-trade-input">
+                  Swap provider
+                  <select
+                    className="select select-bordered"
+                    value={provider}
+                    disabled={!!busy || !!hash}
+                    onChange={e => setProvider(e.target.value as "best" | "0x")}
+                  >
+                    <option value="best">Best of Uniswap and LiFi</option>
+                    <option value="0x">0x</option>
+                  </select>
+                </label>
               )}
-            </p>
-          </details>
-          <div className="bq-swap-errors">
-            {activeState?.error && canQuote && (
-              <p role="alert" className="bq-wallet-error">
-                {activeState.error}
+              {currentQuote && (
+                <dl className="bq-trade-quote">
+                  <div>
+                    <dt>Minimum received</dt>
+                    <dd>
+                      <TokenAmount value={formatUnits(BigInt(currentQuote.minBuyAmount), currentQuote.buyDecimals)} />{" "}
+                      {buySymbol}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Basqit fee · {currentQuote.basqitFee.bps / 100}%</dt>
+                    <dd>
+                      {currentQuote.basqitFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase() ? (
+                        <>
+                          <TokenAmount
+                            value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.buyDecimals)}
+                          />{" "}
+                          {buySymbol}
+                        </>
+                      ) : (
+                        <>
+                          <TokenAmount
+                            value={formatUnits(BigInt(currentQuote.basqitFee.amount), currentQuote.sellDecimals)}
+                          />{" "}
+                          {sellSymbol}
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                  {currentQuote.providerFee && (
+                    <div>
+                      <dt>{currentQuote.provider === "lifi" ? "LiFi fee" : "0x fee"}</dt>
+                      <dd>
+                        <TokenAmount
+                          value={formatUnits(
+                            BigInt(currentQuote.providerFee.amount),
+                            currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
+                              ? currentQuote.buyDecimals
+                              : currentQuote.sellDecimals,
+                          )}
+                        />{" "}
+                        {currentQuote.providerFee.token.toLowerCase() === currentQuote.buyToken.toLowerCase()
+                          ? buySymbol
+                          : sellSymbol}
+                      </dd>
+                    </div>
+                  )}
+                  {currentQuote.impactBps !== undefined && (
+                    <div>
+                      <dt>Price impact incl. pool fee</dt>
+                      <dd>{(currentQuote.impactBps / 100).toFixed(2)}%</dd>
+                    </div>
+                  )}
+                  {currentQuote.pool && (
+                    <div>
+                      <dt>Route</dt>
+                      <dd>
+                        <a
+                          className="link"
+                          href={`${robinhoodChain.blockExplorers.default.url}/address/${currentQuote.pool}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Uniswap pool <Arrow out />
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+              <p className="bq-fine-print">
+                Network fee is paid in ETH and shown in your wallet. Trading uses your connected wallet, not a watched
+                address.
+                {address && (
+                  <>
+                    {" "}
+                    Wallet: {address.slice(0, 6)}…{address.slice(-4)}.
+                  </>
+                )}
               </p>
-            )}
-            {error && (
-              <p role="alert" className="bq-wallet-error">
-                {error}
-              </p>
+            </details>
+            <div className="bq-swap-errors">
+              {activeState?.error && canQuote && (
+                <p role="alert" className="bq-wallet-error">
+                  {activeState.error}
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="bq-wallet-error">
+                  {error}
+                </p>
+              )}
+            </div>
+            {!hash && <PendingTradeNotice pending={pendingTrade} />}
+            {!hash && (
+              <GasFundingNotice
+                required={gasEstimate.data}
+                showAction={!gasEstimate.insufficient}
+                disabled={!!busy}
+                onOpenChange={setFundingOpen}
+              />
             )}
           </div>
-          {hash && (
-            <p role="status">
-              Swap confirmed.{" "}
-              <a
-                className="link"
-                target="_blank"
-                rel="noreferrer"
-                href={`${robinhoodChain.blockExplorers.default.url}/tx/${hash}`}
-              >
-                View transaction <Arrow out />
-              </a>
-            </p>
-          )}
-          {!hash && <PendingTradeNotice pending={pendingTrade} />}
-          {!hash && (
-            <GasFundingNotice
-              required={gasEstimate.data}
-              showAction={!gasEstimate.insufficient}
-              disabled={!!busy}
-              onOpenChange={setFundingOpen}
-            />
-          )}
-        </div>
+        )}
+        {hash && (
+          <div className="bq-batch-done">
+            <p role="status">Completed</p>
+            <ul>
+              {txs.map(tx => (
+                <li key={tx.hash}>
+                  <a
+                    href={`${robinhoodChain.blockExplorers.default.url}/tx/${tx.hash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {tx.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="bq-trade-footer">
           {hash ? (
             <button className="btn btn-primary" onClick={onClose}>
@@ -416,7 +435,15 @@ export function TradeDialog({
               disabled={!!busy || !!hash}
               onClick={() =>
                 void run("Confirming approval…", async () => {
-                  await trade.approve(currentQuote);
+                  // Nothing opens in the wallet after this approval: the user presses the action button again.
+                  const approvals = await trade.approve(
+                    currentQuote,
+                    `Approval confirmed. Now press ${actionLabel} to finish.`,
+                  );
+                  setTxs(previous => [
+                    ...previous,
+                    ...approvals.map(approvalHash => ({ label: `Approve ${sellSymbol}`, hash: approvalHash })),
+                  ]);
                   setRefresh(value => value + 1);
                 })
               }
@@ -430,7 +457,10 @@ export function TradeDialog({
               onClick={() =>
                 void run("Confirming swap…", async () => {
                   try {
-                    await trade.swap(currentQuote).then(setHash);
+                    const swapHash = await trade.swap(currentQuote);
+                    setTxs(previous => [...previous, { label: actionLabel, hash: swapHash }]);
+                    noteHeight();
+                    setHash(swapHash);
                   } finally {
                     // Shows the unresolved record at once if the outcome is unknown.
                     void pendingTrade.refetch();
@@ -444,12 +474,15 @@ export function TradeDialog({
                 })
               }
             >
-              {busy || `${side === "buy" ? "Buy" : "Sell"} ${asset.symbol}`}
+              {busy || actionLabel}
             </button>
           )}
         </div>
         <div className="bq-swap-approval-note" aria-live="polite">
-          {approval && !expired && <>Approve {sellSymbol} first, then confirm the swap after the quote refreshes.</>}
+          {!hash && approval && !expired && (
+            <>Approve {sellSymbol} first, then confirm the swap after the quote refreshes.</>
+          )}
+          {!hash && !approval && txs.length > 0 && <>Approval confirmed. Now press {actionLabel} to finish.</>}
         </div>
       </div>
       {hash && <SwapConfetti key={hash} symbols={[buySymbol]} />}

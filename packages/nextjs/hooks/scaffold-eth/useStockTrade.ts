@@ -54,6 +54,7 @@ export function useStockTrade() {
     data: `0x${string}`,
     swap?: { batch?: string },
     submitted?: () => void,
+    approvalMessage = APPROVAL_CONFIRMED,
   ) {
     const client = await checkWallet(quote);
     const tx = { account: quote.taker, chain: robinhoodChain, to, data, value: 0n };
@@ -64,7 +65,7 @@ export function useStockTrade() {
     await checkWallet(quote);
     if (swap && Date.now() >= quote.expiresAt) throw new Error("Quote expired. Request a new quote.");
     if (!swap) {
-      const hash = await transact(() => client.sendTransaction(tx), { successMessage: APPROVAL_CONFIRMED });
+      const hash = await transact(() => client.sendTransaction(tx), { successMessage: approvalMessage });
       if (!hash) throw new Error("Transaction was not submitted.");
       return hash;
     }
@@ -103,7 +104,11 @@ export function useStockTrade() {
     return hash;
   }
 
-  async function approve(quote: ExecutionQuote) {
+  /**
+   * Approves the quote's spender and returns the approval transaction hashes. `next` tells the user what follows in
+   * the notification; by default the wallet asks for the transaction straight away.
+   */
+  async function approve(quote: ExecutionQuote, next = APPROVAL_CONFIRMED) {
     await checkWallet(quote);
     const allowance = await atlasClient.readContract({
       address: quote.sellToken,
@@ -111,24 +116,36 @@ export function useStockTrade() {
       functionName: "allowance",
       args: [quote.taker, quote.spender],
     });
-    if (allowance >= BigInt(quote.sellAmount)) return;
+    if (allowance >= BigInt(quote.sellAmount)) return [];
+    const hashes: string[] = [];
     // Tokens that require a zero allowance before changing it get a separate confirmed reset.
     // USDG accepts a direct change (verified on a fork of chain 4663), so it skips the extra transaction.
     if (allowance > 0n && quote.sellToken.toLowerCase() !== USDG.toLowerCase())
+      hashes.push(
+        await send(
+          quote,
+          quote.sellToken,
+          encodeFunctionData({ abi: tradeTokenAbi, functionName: "approve", args: [quote.spender, 0n] }),
+          undefined,
+          undefined,
+          "Allowance reset. Now confirm the new approval in your wallet.",
+        ),
+      );
+    hashes.push(
       await send(
         quote,
         quote.sellToken,
-        encodeFunctionData({ abi: tradeTokenAbi, functionName: "approve", args: [quote.spender, 0n] }),
-      );
-    await send(
-      quote,
-      quote.sellToken,
-      encodeFunctionData({
-        abi: tradeTokenAbi,
-        functionName: "approve",
-        args: [quote.spender, BigInt(quote.sellAmount)],
-      }),
+        encodeFunctionData({
+          abi: tradeTokenAbi,
+          functionName: "approve",
+          args: [quote.spender, BigInt(quote.sellAmount)],
+        }),
+        undefined,
+        undefined,
+        next,
+      ),
     );
+    return hashes;
   }
 
   const events = (legs: TradeQuote[], batch: boolean) =>

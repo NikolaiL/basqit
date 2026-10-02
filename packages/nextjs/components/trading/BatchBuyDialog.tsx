@@ -108,7 +108,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
   const [error, setError] = useState("");
   const [hash, setHash] = useState<string>();
   // Every confirmed transaction of this purchase, for the links on the completed view.
-  const [txs, setTxs] = useState<string[]>([]);
+  const [txs, setTxs] = useState<{ label: string; hash: string }[]>([]);
   // The receipt shrinks to the completed view.
   const { ref: shrinkRef, note: noteHeight } = useHeightTransition<HTMLDivElement>(hash);
   const complete = (marker: string) => {
@@ -243,7 +243,7 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
           );
         }
         setPurchased(previous => [...previous, ...quote.legs.map(leg => leg.buyToken.toLowerCase())]);
-        if (result.hash) setTxs([result.hash]);
+        if (result.hash) setTxs([{ label: "Purchase", hash: result.hash }]);
         complete(result.hash ?? "confirmed");
         await Promise.all([
           client.invalidateQueries({ queryKey: ["stock-portfolio"] }),
@@ -259,7 +259,8 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
               ? `Approving USDG (${i + 1} of ${pendingApprovals.length})…`
               : "Approving USDG…",
           );
-          await trade.approve(item);
+          const approvals = await trade.approve(item);
+          setTxs(previous => [...previous, ...approvals.map(hash => ({ label: "Approve USDG", hash }))]);
         }
         setBusy("Refreshing all quotes…");
         const refreshed = await quotes.refetch();
@@ -293,7 +294,12 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
         );
         const step = await refreshStep(planned, quote.legs);
         confirmed = await trade.swap(step, batchId);
-        if (confirmed) setTxs(previous => [...previous, confirmed!]);
+        // Captured per step: React applies the update later, after `confirmed` may hold the next step's hash.
+        const stepTx = {
+          label: executable.steps.length > 1 ? `Purchase ${i + 1} of ${executable.steps.length}` : "Purchase",
+          hash: confirmed,
+        };
+        if (stepTx.hash) setTxs(previous => [...previous, stepTx as { label: string; hash: string }]);
         bought.push(...step.legs.map(leg => leg.buyToken.toLowerCase()));
         setPurchased(previous => [...previous, ...step.legs.map(leg => leg.buyToken.toLowerCase())]);
       }
@@ -548,10 +554,14 @@ export function BatchBuyDialog({ assets, onClose }: { assets: DiscoveryAsset[]; 
             <p role="status">Completed</p>
             {txs.length > 0 && (
               <ul>
-                {txs.map((tx, i) => (
-                  <li key={tx}>
-                    <a href={`${robinhoodChain.blockExplorers.default.url}/tx/${tx}`} target="_blank" rel="noreferrer">
-                      {txs.length > 1 ? `Transaction ${i + 1} of ${txs.length}` : "View transaction"}
+                {txs.map(tx => (
+                  <li key={tx.hash}>
+                    <a
+                      href={`${robinhoodChain.blockExplorers.default.url}/tx/${tx.hash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {tx.label}
                     </a>
                   </li>
                 ))}
