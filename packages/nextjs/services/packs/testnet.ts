@@ -1,4 +1,4 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, custom, http } from "viem";
 import deployedContracts from "~~/contracts/deployedContracts";
 
 /** Robinhood Chain testnet. Multicall3 verified at the canonical address (3,808 bytes of code, 28 Sept 2026). */
@@ -16,7 +16,33 @@ export const TESTNET_ETH_FAUCET = "https://faucet.testnet.chain.robinhood.com";
 export const DICE_SITE = "https://diceprotocol.world";
 export const DICE_DOCS = "https://diceprotocol.world/docs/";
 
-export const packsClient = createPublicClient({ chain: robinhoodTestnet, transport: http() });
+// Server only: the key has no NEXT_PUBLIC_ prefix, so browsers keep the public RPC alone.
+// On the server, point reads go to Alchemy first (https://www.alchemy.com/rpc/robinhood-testnet; chain 46630 confirmed
+// live, 2 Oct 2026), batched: a history rebuild reads ~1,600 block times at once, which the public RPC refuses
+// (measured: 16 of 17 batches failed) and Alchemy serves in ~2.5 s. eth_getLogs stays on the public RPC: Alchemy caps
+// it at 10,000 blocks and our scans start at the factory's deploy block. Errors thrown are the public RPC's, so the
+// Alchemy URL and its key never reach logs.
+type Request = (args: { method: string; params?: unknown }) => Promise<unknown>;
+function serverTransport(key: string) {
+  const publicRpc = http()({ chain: robinhoodTestnet }).request as Request;
+  const alchemy = http(`https://robinhood-testnet.g.alchemy.com/v2/${key}`, { batch: { batchSize: 100 } })({
+    chain: robinhoodTestnet,
+  }).request as Request;
+  const request: Request = async args => {
+    if (args.method === "eth_getLogs") return publicRpc(args);
+    try {
+      return await alchemy(args);
+    } catch {
+      return publicRpc(args);
+    }
+  };
+  return custom({ request }, { retryCount: 0 });
+}
+const alchemyKey = process.env.ALCHEMY_MULTICHAIN_API_KEY;
+export const packsClient = createPublicClient({
+  chain: robinhoodTestnet,
+  transport: alchemyKey ? serverTransport(alchemyKey) : http(),
+});
 
 type Address = `0x${string}`;
 

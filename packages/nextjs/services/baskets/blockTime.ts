@@ -7,11 +7,12 @@ export function blockTimes(getBlock: (blockNumber: bigint) => Promise<{ timestam
   return (log: Log) => {
     if (log.blockTimestamp) return Promise.resolve(Number(log.blockTimestamp));
     const number = log.blockNumber!;
-    if (!blocks.has(number))
-      blocks.set(
-        number,
-        getBlock(number).then(block => Number(block.timestamp)),
-      );
+    if (!blocks.has(number)) {
+      const time = getBlock(number).then(block => Number(block.timestamp));
+      // Forget failures: one RPC timeout must not break this block for the life of the server.
+      time.catch(() => blocks.delete(number));
+      blocks.set(number, time);
+    }
     return blocks.get(number)!;
   };
 }

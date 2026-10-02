@@ -14,3 +14,13 @@ assert.equal(await timeOf({ blockNumber: 7n }), 1_790_000_007);
 assert.equal(await timeOf({ blockNumber: 9n, blockTimestamp: 1_800_000_000n }), 1_800_000_000);
 // Each block is fetched once.
 assert.deepEqual(asked, [5n, 7n]);
+
+// A failed read is not cached: the next request for that block tries again.
+let fail = true;
+const flaky = blockTimes(async number => {
+  if (fail) throw new Error("timeout");
+  return { timestamp: number };
+});
+await assert.rejects(flaky({ blockNumber: 11n }), /timeout/);
+fail = false;
+assert.equal(await flaky({ blockNumber: 11n }), 11);
