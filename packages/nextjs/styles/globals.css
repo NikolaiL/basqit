@@ -4131,3 +4131,92 @@ html [data-rk] {
 .bq-demo-all {
   margin: 4px 0 12px;
 }
+/* Creator profiles: picture, name and links; the same cards as basket details below. */
+.bq-creator-avatar {
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+}
+.bq-creator-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font-weight: 700;
+}
+.bq-creator-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.bq-creator-header > div {
+  flex: 1;
+  min-width: 0;
+}
+.bq-creator-header h1 {
+  margin: 4px 0 6px;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.bq-creator-bio {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.bq-creator-form label {
+  display: grid;
+  gap: 4px;
+}
+.bq-creator-picture {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bq-creator-baskets {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-creator-baskets small {
+  color: var(--bq-muted);
+}
+.bq-creator-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.bq-creator-verified svg {
+  color: #5a4fe0;
+}
+.bq-creator-accounts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bq-creator-accounts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 700;
+}
+.bq-creator-siwf {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.bq-creator-siwf svg {
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+}

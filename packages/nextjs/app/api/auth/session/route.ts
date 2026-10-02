@@ -6,33 +6,16 @@ import {
   CHALLENGE_COOKIE,
   SESSION_COOKIE,
   SESSION_SECONDS,
+  cookieOptions,
   getSession,
   issueChallenge,
+  requestOrigin as origin,
   verifyChallenge,
 } from "~~/services/auth/session";
 
 export const runtime = "nodejs";
 const reply = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
-function origin(request: NextRequest) {
-  const host = request.headers.get("host");
-  const value = request.headers.get("origin");
-  if (!host || !value || new URL(value).host !== host || request.headers.get("sec-fetch-site") === "cross-site")
-    throw new Error("Invalid request origin.");
-  return value;
-}
-function cookieOptions(requestOrigin: string, maxAge: number) {
-  const secure = requestOrigin.startsWith("https:");
-  // Farcaster embeds the app cross-site; partition cookies by the embedding site.
-  return {
-    httpOnly: true,
-    secure,
-    sameSite: secure ? ("none" as const) : ("strict" as const),
-    partitioned: secure,
-    path: "/",
-    maxAge,
-  };
-}
 export async function GET(request: NextRequest) {
   return reply((await getSession(request.cookies.get(SESSION_COOKIE)?.value)) ?? { address: null });
 }

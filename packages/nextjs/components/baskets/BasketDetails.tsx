@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, erc20Abi } from "viem";
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
+import { BasketDescription, CreatorLink } from "~~/components/creators/CreatorProfile";
 import { BasketTradeDialog } from "~~/components/packs/BasketTradeDialog";
 import { useBasketTrades } from "~~/components/packs/useBasketTrades";
 import { deployment, formatToken, useTestUsdg, useTokens } from "~~/components/packs/usePacks";
@@ -179,7 +180,11 @@ export function BasketDetails({ basket }: { basket: Address }) {
           </h1>
           {d && <p className="bq-basket-rules-line">{rulesLine(d.rules)}</p>}
           <p className="bq-details-meta">
-            {creator && <>Created by {`${creator.slice(0, 6)}…${creator.slice(-4)}`} · </>}
+            {creator && (
+              <>
+                Created by <CreatorLink address={creator} /> ·{" "}
+              </>
+            )}
             <a href={explorerAddress(basket)} target="_blank" rel="noreferrer">
               Contract
             </a>
@@ -195,6 +200,7 @@ export function BasketDetails({ basket }: { basket: Address }) {
         </div>
       </header>
       {detail.isError && retry("this basket", detail.refetch)}
+      <BasketDescription basket={basket} creator={creator} />
 
       {d && (
         <section className="bq-demo-card">

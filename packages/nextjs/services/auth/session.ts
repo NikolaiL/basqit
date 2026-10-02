@@ -60,3 +60,31 @@ export async function verifyChallenge(
   const token = await sealData(session, { password: sessionPassword(), ttl: SESSION_SECONDS });
   return { token, ...session };
 }
+
+/** The caller's origin, refusing cross-site requests: cookie-authenticated POSTs must come from this site. */
+export function requestOrigin(request: Request) {
+  const host = request.headers.get("host");
+  const value = request.headers.get("origin");
+  if (!host || !value || new URL(value).host !== host || request.headers.get("sec-fetch-site") === "cross-site")
+    throw new Error("Invalid request origin.");
+  return value;
+}
+export function cookieOptions(requestOrigin: string, maxAge: number) {
+  const secure = requestOrigin.startsWith("https:");
+  // Farcaster embeds the app cross-site; partition cookies by the embedding site.
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? ("none" as const) : ("strict" as const),
+    partitioned: secure,
+    path: "/",
+    maxAge,
+  };
+}
+/** The origin the browser used, also behind a proxy or tunnel (Vercel, ngrok) where the server sees its own host. */
+export function publicOrigin(request: Request) {
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0] ?? url.protocol.replace(":", "");
+  return `${proto}://${host.split(",")[0].trim()}`;
+}
