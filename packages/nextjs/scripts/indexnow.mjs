@@ -1,4 +1,4 @@
-// Submits every URL in the live sitemap to IndexNow (Bing, Yandex and others share submissions).
+// Submits every URL in the live sitemap to IndexNow via Bing, which shares submissions with other IndexNow engines.
 // Run after a deploy that adds or changes pages: `yarn indexnow`. The key is public by design.
 const host = "basqit.app";
 const key = "6f9b4a647d68b0b873b19c58cfba229b";
@@ -7,7 +7,7 @@ const sitemap = await (await fetch(`https://${host}/sitemap.xml`)).text();
 const urlList = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => match[1]);
 if (!urlList.length) throw new Error("Sitemap has no URLs");
 
-const response = await fetch("https://api.indexnow.org/indexnow", {
+const response = await fetch("https://www.bing.com/indexnow", {
   method: "POST",
   headers: { "Content-Type": "application/json; charset=utf-8" },
   body: JSON.stringify({ host, key, keyLocation: `https://${host}/${key}.txt`, urlList }),
