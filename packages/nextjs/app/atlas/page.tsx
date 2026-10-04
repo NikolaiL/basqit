@@ -2,7 +2,12 @@ import Link from "next/link";
 import { AssetCatalog } from "~~/components/atlas/AssetCatalog";
 import { readCatalog } from "~~/services/atlas/catalog";
 
-export const metadata = { title: "Explore assets" };
+export const metadata = {
+  title: "Tokenized Stock Prices on Robinhood Chain",
+  description:
+    "Every Stock Token on Robinhood Chain with live reference prices, multipliers and trading sessions. Search tokenized stocks and ETFs and buy them onchain.",
+  alternates: { canonical: "/atlas" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function AtlasPage() {

@@ -15,10 +15,10 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     process.env.VERCEL_PROJECT_PRODUCTION_URL,
   );
   const { theme, symbols } = shareSelection(params.theme, params.stocks);
-  const title = theme ? `${theme} · My stock mood` : "Find your stock mood";
+  const title = theme ? `${theme} · My stock mood` : "Discover Tokenized Stocks on Robinhood Chain";
   const description = symbols.length
     ? `${symbols.join(" · ")}. Explore this stock selection and find your own mood with Basqit.`
-    : "Type a mood. Get Stock Tokens on Robinhood Chain.";
+    : "Type a mood and get a set of tokenized stocks on Robinhood Chain. Explore 190+ Stock Tokens and buy them onchain from your own wallet.";
   const query = new URLSearchParams({
     theme,
     stocks: symbols.join(","),
@@ -28,6 +28,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   return {
     title,
     description,
+    // Shared selections are variants of one page.
+    alternates: { canonical: "/discover" },
     openGraph: { title, description, type: "website", images: [image] },
     other: { "fc:miniapp": miniappEmbed(origin, `/discover/og/farcaster?v=4&${query}`) },
     twitter: { card: "summary_large_image", title, description, images: [image] },

@@ -230,6 +230,9 @@ export function AssetDetails({
               Company / fund <Arrow out />
             </a>
           )}
+          <Link className="link" href={`/tokenized-stocks/${asset.symbol.toLowerCase()}`}>
+            About {asset.symbol} Stock Token <Arrow />
+          </Link>
           <Link className="link" href={`/discover?similar=${encodeURIComponent(asset.symbol)}`}>
             Find similar stocks <Arrow />
           </Link>
