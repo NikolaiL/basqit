@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], axes: ["wdth", "opsz"], variable: "--bq-display" });
 // Receipt-style purchase summaries.
-const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--bq-mono" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--bq-mono", preload: false });
 
 export const metadata = getMetadata({
   title: "Basqit: Tokenized Stocks on Robinhood Chain",

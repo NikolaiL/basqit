@@ -8,7 +8,7 @@ export function AnalyticsScripts() {
   return (
     <Script
       src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-      strategy="afterInteractive"
+      strategy="lazyOnload"
       onReady={initializeAnalytics}
     />
   );

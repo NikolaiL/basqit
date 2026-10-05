@@ -18,7 +18,6 @@ export function StockLogo({ symbol, size = 44 }: { symbol: string; size?: number
           alt=""
           width={size}
           height={size}
-          unoptimized
           onError={() => setFailed(previous => [...previous, source])}
         />
       ) : (
