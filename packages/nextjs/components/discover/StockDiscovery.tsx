@@ -33,12 +33,12 @@ const stickerJitter = [
   [3, 5],
 ];
 const ideas = [
-  ["AI Companies", "#6d28d9"],
-  ["Tech Giants", "#1d4ed8"],
-  ["Biotech", "#be185d"],
-  ["Semiconductors", "#c2410c"],
-  ["Clean Energy", "#15803d"],
-  ["Space & Satellites", "#0e7490"],
+  ["AI Companies", "#8b5cf6"],
+  ["Tech Giants", "#3b82f6"],
+  ["Biotech", "#ec4899"],
+  ["Semiconductors", "#f97316"],
+  ["Clean Energy", "#16a34a"],
+  ["Space & Satellites", "#0891b2"],
 ];
 
 export function StockDiscovery({
