@@ -54,7 +54,11 @@ export function attachLitePile(scene: HTMLElement) {
         continue;
       }
       const placement = layout.coins[coin.dataset.symbol!];
-      if (!placement) continue;
+      if (!placement) {
+        // No simulated fall in static mode; keep new tokens available in search results.
+        reset(coin);
+        continue;
+      }
       coin.style.left = "0px";
       coin.style.top = "0px";
       coin.style.transformOrigin = `${placement.ox * scale}px ${placement.oy * scale}px`;

@@ -135,8 +135,8 @@ export function pickLogo(bodies: Matter.Body[], point: Matter.Vector, touch: boo
 }
 
 function logoBounds(symbol: string) {
-  const shape = (silhouettes as Record<string, Rect[]>)[symbol];
-  if (!shape?.length) throw new Error(`Missing silhouette: ${symbol}`);
+  // The live catalog can gain tokens before offline logo geometry is rebuilt.
+  const shape = (silhouettes as Record<string, Rect[]>)[symbol] ?? [[0, 0, 1, 1]];
   const left = Math.min(...shape.map(([x]) => x));
   const top = Math.min(...shape.map(([, y]) => y));
   const extent = Math.max(
@@ -201,6 +201,10 @@ export function placeSettledLogo(symbol: string, width: number, height: number) 
   const scale = width / layout.width;
   const placement = layout.coins[symbol];
   const entry = logoBody(symbol, layout.size * scale);
+  if (!placement) {
+    spawnLogo(entry.body, width, layout.size * scale, []);
+    return entry;
+  }
   Body.setPosition(entry.body, { x: placement.x * scale, y: height + placement.y * scale });
   Body.setAngle(entry.body, placement.angle);
   Sleeping.set(entry.body, true);

@@ -43,6 +43,18 @@ const {
 const lite = process.env.PILE_TEST_LITE === "1";
 let activeLite = lite;
 const stepPile = engine => fullStep(engine, activeLite);
+// A newly listed token must not abort startup or returning search results to the pile.
+for (const symbol of ["ZETA", "NEW_LISTING"]) {
+  const entry = exports.placeSettledLogo(symbol, 400, 350);
+  assert.ok(Number.isFinite(entry.body.position.x) && Number.isFinite(entry.body.position.y));
+  assert.equal(entry.body.isSleeping, false, "a token without a saved placement must fall");
+  const engine = createPileEngine();
+  Composite.add(engine.world, entry.body);
+  const before = entry.body.position.y;
+  fullStep(engine);
+  assert.ok(entry.body.position.y > before, "fallback geometry responds to gravity");
+  assert.ok(Number.isFinite(logoBody(symbol, 32).body.mass), "returning search results have valid geometry");
+}
 assert.equal(needsLitePile(Array(24).fill({ frame: 16, work: 3 })), false);
 assert.equal(needsLitePile(Array(24).fill({ frame: 34, work: 15 })), false, "30 Hz devices retain animation");
 assert.equal(

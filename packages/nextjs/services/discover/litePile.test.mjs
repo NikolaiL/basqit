@@ -58,6 +58,17 @@ assert.equal(coins[0].style.transform, undefined, "selected logo uses result lay
 coins[0].matched = false;
 observers[1].callback();
 assert.equal(coins[0].dataset.physics, "active", "cleared selection returns to static pile");
+const newCoin = {
+  ...coins[0],
+  dataset: { symbol: "NEW_LISTING", physics: "active" },
+  style: { ...coins[0].style },
+  classList: { ...coins[0].classList },
+};
+newCoin.classList.coin = newCoin;
+const cleanupNew = exports.attachLitePile({ ...scene, querySelectorAll: () => [newCoin] });
+assert.equal(newCoin.style.transform, undefined, "static fallback clears stale physics positions for new tokens");
+assert.equal(newCoin.dataset.physics, undefined, "tokens without saved layouts cannot remain frozen on screen");
+cleanupNew();
 // Every width offers several piles; one index is picked per page load.
 for (const layout of layouts) assert.ok(layout.variants.length >= 3, "several settled piles per width");
 const first = exports.settledPileLayout(900, 0).coins.AAPL;
