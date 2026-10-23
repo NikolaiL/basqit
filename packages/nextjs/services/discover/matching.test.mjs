@@ -33,13 +33,13 @@ assert.throws(() => choiceCandidates(choice({ A: 2 }), ["A"]));
 assert.throws(() => choiceCandidates({ answers: {} }, ["A"]), /Invalid/);
 const logos = JSON.parse(readFileSync(new URL("./logos.json", import.meta.url)));
 const profiles = JSON.parse(readFileSync(new URL("./profiles.json", import.meta.url)));
-assert.equal(Object.keys(logos).length, 195);
+assert.equal(logos.ZETA, "/stock-logos/ZETA.png");
 assert.deepEqual(Object.keys(logos).sort(), Object.keys(profiles).sort());
 for (const path of Object.values(logos)) {
   assert.match(path, /^\/stock-logos\/[A-Z0-9]+\.(png|svg)$/);
   assert.ok(existsSync(new URL(`../../public${path}`, import.meta.url)), path);
 }
-console.log("Discovery validation, matching bounds and 195 local logos passed");
+console.log("Discovery validation, matching bounds and local logos passed");
 
 const logoColors = JSON.parse(readFileSync(new URL("./logo-colors.json", import.meta.url)));
 assert.deepEqual(Object.keys(logoColors).sort(), Object.keys(logos).sort());

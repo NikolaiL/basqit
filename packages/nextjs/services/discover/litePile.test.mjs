@@ -42,7 +42,7 @@ const coins = layouts[0].symbols.map(symbol => ({
 coins.forEach(coin => (coin.classList.coin = coin));
 const scene = { clientWidth: 320, clientHeight: 350, dataset: {}, querySelectorAll: () => coins };
 const cleanup = exports.attachLitePile(scene);
-assert.equal(coins.length, 195);
+assert.equal(coins.length, Object.keys(JSON.parse(readFileSync(new URL("./logos.json", import.meta.url)))).length);
 assert.equal(scene.dataset.physicsQuality, "static");
 for (const width of [280, 320, 390, 600, 900, 1400]) {
   scene.clientWidth = width;
@@ -79,5 +79,5 @@ cleanup();
 assert.ok(observers.every(o => o.disconnected));
 assert.ok(coins.every(c => !c.dataset.physics));
 console.log(
-  "Static pile: all 195 logos, responsive placement, selection and cleanup; no animation or physics APIs available.",
+  "Static pile: all registered logos, responsive placement, selection and cleanup; no animation or physics APIs available.",
 );

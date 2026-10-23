@@ -778,5 +778,9 @@
   "IBRX": {
     "colors": ["blue"],
     "dominantColor": "blue"
+  },
+  "ZETA": {
+    "colors": ["blue", "pink"],
+    "dominantColor": "blue"
   }
 }

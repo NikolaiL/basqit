@@ -778,5 +778,9 @@
   "IBRX": {
     "website": "https://immunitybio.com",
     "description": "ImmunityBio develops immunotherapies for cancer and infectious diseases."
+  },
+  "ZETA": {
+    "website": "https://www.zetaglobal.com/",
+    "description": "Zeta Global provides AI-powered marketing software and data tools for enterprises."
   }
 }

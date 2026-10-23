@@ -44,7 +44,7 @@ const lite = process.env.PILE_TEST_LITE === "1";
 let activeLite = lite;
 const stepPile = engine => fullStep(engine, activeLite);
 // A newly listed token must not abort startup or returning search results to the pile.
-for (const symbol of ["ZETA", "NEW_LISTING"]) {
+for (const symbol of ["NEW_LISTING", "ANOTHER_NEW_LISTING"]) {
   const entry = exports.placeSettledLogo(symbol, 400, 350);
   assert.ok(Number.isFinite(entry.body.position.x) && Number.isFinite(entry.body.position.y));
   assert.equal(entry.body.isSleeping, false, "a token without a saved placement must fall");
@@ -91,7 +91,14 @@ try {
 } finally {
   Matter.Engine.update = update;
 }
-assert.equal(Object.keys(shapes).length, 195);
+assert.deepEqual(
+  Object.keys(shapes).sort(),
+  Object.keys(JSON.parse(readFileSync(new URL("./logos.json", import.meta.url)))).sort(),
+);
+assert.ok(
+  exports.placeSettledLogo("ZETA", 400, 350).body.isSleeping,
+  "ZETA starts in the pile, without a fallback fall",
+);
 for (const symbol of Object.keys(shapes)) {
   const { body, origin } = logoBody(symbol, 32);
   assert.ok(body.area > 0 && Number.isFinite(body.mass));

@@ -31,7 +31,7 @@ const round = (value, digits) => Number(value.toFixed(digits));
 const layouts = [];
 for (const width of [400, 600, 900, 1400]) {
   const height = 400,
-    size = exports.pileLogoSize(width, 350, 195);
+    size = exports.pileLogoSize(width, 350, Object.keys(shapes).length);
   const symbols = Object.keys(shapes);
   const base = symbols.map(symbol => exports.logoBody(symbol, size));
   const variants = [];
@@ -73,4 +73,6 @@ for (const width of [400, 600, 900, 1400]) {
   });
 }
 writeFileSync("services/discover/lite-pile-layouts.json", JSON.stringify(layouts));
-console.log(`Generated ${VARIANTS} settled layouts for each of ${layouts.length} widths with all 195 logos.`);
+console.log(
+  `Generated ${VARIANTS} settled layouts for each of ${layouts.length} widths with all ${Object.keys(shapes).length} logos.`,
+);

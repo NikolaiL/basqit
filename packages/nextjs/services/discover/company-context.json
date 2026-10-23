@@ -3096,5 +3096,15 @@
     ],
     "checkedAt": "2026-09-21",
     "wikiStatus": "not_verified"
+  },
+  "ZETA": {
+    "name": "Zeta Global",
+    "sources": [
+      "https://investors.zetaglobal.com/overview/"
+    ],
+    "facts": [
+      "Zeta Global provides AI-powered marketing software and data tools for enterprises.",
+      "Founded in 2007 by David A. Steinberg and John Sculley."
+    ]
   }
 }
