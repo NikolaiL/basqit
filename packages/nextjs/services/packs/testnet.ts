@@ -1,3 +1,4 @@
+import { type RpcRequest, withLogRanges } from "./logRanges";
 import { createPublicClient, custom, http } from "viem";
 import deployedContracts from "~~/contracts/deployedContracts";
 
@@ -22,13 +23,13 @@ export const DICE_DOCS = "https://diceprotocol.world/docs/";
 // (measured: 16 of 17 batches failed) and Alchemy serves in ~2.5 s. eth_getLogs stays on the public RPC: Alchemy caps
 // it at 10,000 blocks and our scans start at the factory's deploy block. Errors thrown are the public RPC's, so the
 // Alchemy URL and its key never reach logs.
-type Request = (args: { method: string; params?: unknown }) => Promise<unknown>;
-function serverTransport(key: string) {
-  const publicRpc = http()({ chain: robinhoodTestnet }).request as Request;
+function serverTransport(key?: string) {
+  const publicRpc = withLogRanges(http()({ chain: robinhoodTestnet }).request as RpcRequest);
+  if (!key) return custom({ request: publicRpc }, { retryCount: 0 });
   const alchemy = http(`https://robinhood-testnet.g.alchemy.com/v2/${key}`, { batch: { batchSize: 100 } })({
     chain: robinhoodTestnet,
-  }).request as Request;
-  const request: Request = async args => {
+  }).request as RpcRequest;
+  const request: RpcRequest = async args => {
     if (args.method === "eth_getLogs") return publicRpc(args);
     try {
       return await alchemy(args);
@@ -41,7 +42,7 @@ function serverTransport(key: string) {
 const alchemyKey = process.env.ALCHEMY_MULTICHAIN_API_KEY;
 export const packsClient = createPublicClient({
   chain: robinhoodTestnet,
-  transport: alchemyKey ? serverTransport(alchemyKey) : http(),
+  transport: serverTransport(alchemyKey),
 });
 
 type Address = `0x${string}`;

@@ -16,6 +16,7 @@ registerHooks({
     return next(url, context);
   },
   resolve(specifier, context, next) {
+    if (specifier === "./logRanges") return next(new URL("./logRanges.ts", import.meta.url).href, context);
     if (specifier === "~~/contracts/deployedContracts")
       return next(new URL("../../contracts/deployedContracts.ts", import.meta.url).href, context);
     return next(specifier, context);
