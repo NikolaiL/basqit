@@ -5,6 +5,7 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useConfig, useConnect } from "wagmi";
 import { getAccount } from "wagmi/actions";
 import { detectMiniapp, scheduleAddMiniapp } from "~~/services/miniapp-runtime";
+import { notification } from "~~/utils/scaffold-eth";
 
 export { sdk };
 type MiniappContext = Awaited<typeof sdk.context>;
@@ -117,25 +118,55 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isMiniApp) return;
-    const added = () => setContext(current => current && { ...current, client: { ...current.client, added: true } });
-    const removed = () =>
+    const added = ({
+      notificationDetails,
+    }: {
+      notificationDetails?: MiniappContext["client"]["notificationDetails"];
+    }) => {
+      setContext(current => current && { ...current, client: { ...current.client, added: true, notificationDetails } });
+      notification.success(notificationDetails ? "Basqit added. Notifications enabled." : "Basqit added to your apps.");
+    };
+    const removed = () => {
       setContext(
         current =>
           current && { ...current, client: { ...current.client, added: false, notificationDetails: undefined } },
       );
+      notification.info("Basqit removed from your apps.");
+    };
+    const enabled = ({
+      notificationDetails,
+    }: {
+      notificationDetails: NonNullable<MiniappContext["client"]["notificationDetails"]>;
+    }) => {
+      setContext(current => current && { ...current, client: { ...current.client, notificationDetails } });
+      notification.success("Basqit notifications enabled.");
+    };
+    const disabled = () => {
+      setContext(current => current && { ...current, client: { ...current.client, notificationDetails: undefined } });
+      notification.info("Basqit notifications disabled.");
+    };
+    sdk.on("notificationsEnabled", enabled);
+    sdk.on("notificationsDisabled", disabled);
     sdk.on("miniAppAdded", added);
     sdk.on("miniAppRemoved", removed);
     return () => {
+      sdk.removeListener("notificationsEnabled", enabled);
+      sdk.removeListener("notificationsDisabled", disabled);
       sdk.removeListener("miniAppAdded", added);
       sdk.removeListener("miniAppRemoved", removed);
     };
   }, [isMiniApp]);
 
   useEffect(() => {
-    return scheduleAddMiniapp(context, addPrompted, async () => {
-      await sdk.actions.addMiniApp();
-      setContext(current => current && { ...current, client: { ...current.client, added: true } });
-    });
+    return scheduleAddMiniapp(
+      context,
+      addPrompted,
+      async () => {
+        await sdk.actions.addMiniApp();
+        setContext(current => current && { ...current, client: { ...current.client, added: true } });
+      },
+      () => notification.error("Could not add Basqit. Please try again from Farcaster."),
+    );
   }, [context]);
 
   return (

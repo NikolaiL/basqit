@@ -23,11 +23,14 @@ export function scheduleAddMiniapp(
   context: { client: { added: boolean } } | null,
   prompted: { current: boolean },
   add: () => Promise<void>,
+  onError: () => void,
 ) {
   if (!context || context.client.added || prompted.current) return;
   const timer = setTimeout(() => {
     prompted.current = true;
-    void add().catch(() => {}); // Cancellation and unsupported hosts must not interrupt browsing.
+    void add().catch(error => {
+      if (!(error instanceof Error) || error.name !== "RejectedByUser") onError();
+    });
   }, 5000);
   return () => clearTimeout(timer);
 }
