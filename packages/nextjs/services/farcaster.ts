@@ -34,6 +34,9 @@ export function miniappEmbed(origin: string, imagePath = "/discover/og/farcaster
 
 export function farcasterManifest() {
   const origin = farcasterOrigin();
+  const webhookUrl = process.env.NEYNAR_NOTIFICATION_URL?.trim();
+  if (webhookUrl && !/^https:\/\/api\.neynar\.com\/f\/app\/[a-zA-Z0-9_-]+\/event$/.test(webhookUrl))
+    throw new Error("NEYNAR_NOTIFICATION_URL must be the Neynar miniapp events webhook URL.");
   const header = process.env.FARCASTER_HEADER?.trim();
   const payload = process.env.FARCASTER_PAYLOAD?.trim();
   const signature = process.env.FARCASTER_SIGNATURE?.trim();
@@ -57,6 +60,7 @@ export function farcasterManifest() {
         "Discover stock tokens by idea or theme. Explore your selections and view your portfolio on Robinhood Chain.",
       iconUrl: `${origin}/farcaster/icon.png`,
       homeUrl: `${origin}/discover`,
+      ...(webhookUrl ? { webhookUrl } : {}),
       splashImageUrl: `${origin}/farcaster/splash.png`,
       splashBackgroundColor: "#dbeeff",
       primaryCategory: "finance",

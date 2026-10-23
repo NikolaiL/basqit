@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AddMiniappButton } from "~~/components/AddMiniappButton";
 import { SwitchTheme } from "~~/components/SwitchTheme";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth/RainbowKitCustomConnectButton";
 
@@ -60,6 +61,7 @@ export const Header = () => {
           </div>
         </details>
         <div className="bq-header-wallet">
+          <AddMiniappButton />
           <RainbowKitCustomConnectButton />
         </div>
         <SwitchTheme />

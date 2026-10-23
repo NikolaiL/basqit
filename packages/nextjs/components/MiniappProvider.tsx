@@ -40,6 +40,7 @@ const MiniappContext = createContext<{
   composeCast: (cast: Cast) => ReturnType<typeof composeCast>;
   openProfile: (fid: number) => Promise<void>;
   promptAddMiniApp: () => Promise<boolean>;
+  addError: string | null;
 } | null>(null);
 
 export function useMiniapp() {
@@ -53,12 +54,13 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
   const [context, setContext] = useState<MiniappContext | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const { address, status } = useAccount();
   const { connectAsync } = useConnect();
   const config = useConfig();
   const attempted = useRef(false);
   const connecting = useRef(false);
-  const addPromptDone = useRef(false);
+  const adding = useRef(false);
   const isMiniApp = context !== null;
 
   useEffect(() => {
@@ -116,16 +118,36 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
     if (status === "disconnected") void connectWallet();
   }, [isMiniApp, status, connectWallet]);
 
+  useEffect(() => {
+    if (!isMiniApp) return;
+    const added = () => setContext(current => current && { ...current, client: { ...current.client, added: true } });
+    const removed = () =>
+      setContext(
+        current =>
+          current && { ...current, client: { ...current.client, added: false, notificationDetails: undefined } },
+      );
+    sdk.on("miniAppAdded", added);
+    sdk.on("miniAppRemoved", removed);
+    return () => {
+      sdk.removeListener("miniAppAdded", added);
+      sdk.removeListener("miniAppRemoved", removed);
+    };
+  }, [isMiniApp]);
+
   async function promptAddMiniApp() {
-    if (!isMiniApp || context.client.added || addPromptDone.current) return false;
-    addPromptDone.current = true;
+    if (!isMiniApp || context.client.added || adding.current) return false;
+    adding.current = true;
+    setAddError(null);
     try {
       await sdk.actions.addMiniApp();
       setContext(current => current && { ...current, client: { ...current.client, added: true } });
       return true;
     } catch (error) {
-      if (!(error instanceof Error) || error.name !== "RejectedByUser") addPromptDone.current = false;
+      if (!(error instanceof Error) || error.name !== "RejectedByUser")
+        setAddError("Could not add Basqit. Please try again from Farcaster.");
       return false;
+    } finally {
+      adding.current = false;
     }
   }
 
@@ -142,6 +164,7 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
         composeCast: cast => composeCast(cast, isMiniApp),
         openProfile: fid => openProfile(fid, isMiniApp),
         promptAddMiniApp,
+        addError,
       }}
     >
       {children}
