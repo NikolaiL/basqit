@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { sdk } from "@farcaster/miniapp-sdk";
 import { useAccount, useConfig, useConnect } from "wagmi";
 import { getAccount } from "wagmi/actions";
-import { detectMiniapp } from "~~/services/miniapp-runtime";
+import { detectMiniapp, scheduleAddMiniapp } from "~~/services/miniapp-runtime";
 
 export { sdk };
 type MiniappContext = Awaited<typeof sdk.context>;
@@ -39,8 +39,6 @@ const MiniappContext = createContext<{
   openLink: (url: string) => Promise<void>;
   composeCast: (cast: Cast) => ReturnType<typeof composeCast>;
   openProfile: (fid: number) => Promise<void>;
-  promptAddMiniApp: () => Promise<boolean>;
-  addError: string | null;
 } | null>(null);
 
 export function useMiniapp() {
@@ -54,13 +52,12 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
   const [context, setContext] = useState<MiniappContext | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
   const { address, status } = useAccount();
   const { connectAsync } = useConnect();
   const config = useConfig();
   const attempted = useRef(false);
   const connecting = useRef(false);
-  const adding = useRef(false);
+  const addPrompted = useRef(false);
   const isMiniApp = context !== null;
 
   useEffect(() => {
@@ -134,22 +131,12 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isMiniApp]);
 
-  async function promptAddMiniApp() {
-    if (!isMiniApp || context.client.added || adding.current) return false;
-    adding.current = true;
-    setAddError(null);
-    try {
+  useEffect(() => {
+    return scheduleAddMiniapp(context, addPrompted, async () => {
       await sdk.actions.addMiniApp();
       setContext(current => current && { ...current, client: { ...current.client, added: true } });
-      return true;
-    } catch (error) {
-      if (!(error instanceof Error) || error.name !== "RejectedByUser")
-        setAddError("Could not add Basqit. Please try again from Farcaster.");
-      return false;
-    } finally {
-      adding.current = false;
-    }
-  }
+    });
+  }, [context]);
 
   return (
     <MiniappContext.Provider
@@ -163,8 +150,6 @@ export function MiniappProvider({ children }: { children: React.ReactNode }) {
         openLink: url => openLink(url, isMiniApp),
         composeCast: cast => composeCast(cast, isMiniApp),
         openProfile: fid => openProfile(fid, isMiniApp),
-        promptAddMiniApp,
-        addError,
       }}
     >
       {children}

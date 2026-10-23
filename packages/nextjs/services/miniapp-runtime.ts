@@ -17,3 +17,17 @@ export async function detectMiniapp<T>(
     clearTimeout(timer);
   }
 }
+
+// One prompt per provider session, including when the user declines or the host rejects it.
+export function scheduleAddMiniapp(
+  context: { client: { added: boolean } } | null,
+  prompted: { current: boolean },
+  add: () => Promise<void>,
+) {
+  if (!context || context.client.added || prompted.current) return;
+  const timer = setTimeout(() => {
+    prompted.current = true;
+    void add().catch(() => {}); // Cancellation and unsupported hosts must not interrupt browsing.
+  }, 5000);
+  return () => clearTimeout(timer);
+}
