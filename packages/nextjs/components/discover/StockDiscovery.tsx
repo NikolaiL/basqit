@@ -345,35 +345,37 @@ export function StockDiscovery({
             </button>
           )}
         </div>
-        {!theme.trim() && (
-          <div className="bq-discover-prompts">
-            {ideas.map(([idea, color]) => (
+        <div className="bq-discover-ideas-transition" data-visible={!theme.trim()} inert={!!theme.trim()}>
+          <div className="bq-discover-ideas-clip">
+            <div className="bq-discover-prompts">
+              {ideas.map(([idea, color]) => (
+                <button
+                  key={idea}
+                  style={{ "--chip": color } as CSSProperties}
+                  onClick={() => {
+                    entryMethod.current = "preset";
+                    trackDiscovery("preset", idea);
+                    setTheme(idea);
+                  }}
+                >
+                  {idea}
+                </button>
+              ))}
               <button
-                key={idea}
-                style={{ "--chip": color } as CSSProperties}
+                className="is-surprise"
                 onClick={() => {
-                  entryMethod.current = "preset";
-                  trackDiscovery("preset", idea);
+                  const options = surpriseIdeas.filter(idea => idea !== theme);
+                  const idea = options[Math.floor(Math.random() * options.length)];
+                  entryMethod.current = "surprise";
+                  trackDiscovery("surprise", idea);
                   setTheme(idea);
                 }}
               >
-                {idea}
+                ✦ Surprise me
               </button>
-            ))}
-            <button
-              className="is-surprise"
-              onClick={() => {
-                const options = surpriseIdeas.filter(idea => idea !== theme);
-                const idea = options[Math.floor(Math.random() * options.length)];
-                entryMethod.current = "surprise";
-                trackDiscovery("surprise", idea);
-                setTheme(idea);
-              }}
-            >
-              ✦ Surprise me
-            </button>
+            </div>
           </div>
-        )}
+        </div>
         <div className="bq-discover-status" role="status" aria-live="polite">
           {error ||
             (loading
@@ -429,86 +431,88 @@ export function StockDiscovery({
               </button>
             );
           })}
-          {matches.length > 0 && (
-            <div
-              className="bq-discover-actions"
-              style={{ "--match-rows": Math.ceil(matches.length / 4) } as CSSProperties}
-            >
-              <div className="bq-discover-bottom">
+          <div
+            className="bq-discover-actions"
+            data-visible={matches.length > 0}
+            inert={!matches.length}
+            style={{ "--match-rows": Math.ceil(matches.length / 4) } as CSSProperties}
+          >
+            <div className="bq-discover-bottom bq-discover-trade-row">
+              <button
+                className="bq-action-chip bq-action-primary"
+                style={{ "--chip": "var(--color-primary)" } as CSSProperties}
+                disabled={loading || !!error || !matches.length}
+                onClick={() => {
+                  const selected = matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol));
+                  if (!selected.length) return;
+                  trackDiscovery("buy", query ?? "", {
+                    mode: selected.length === 1 ? "single" : "batch",
+                    stocks: matchSymbols,
+                    token_count: selected.length,
+                  });
+                  if (selected.length === 1) setTrade({ asset: selected[0], side: "buy" });
+                  else setBuyList(selected);
+                }}
+              >
+                Buy these
+              </button>
+              {["Basket", "Gift", "Pack"].map(action => (
                 <button
-                  className="bq-action-chip bq-action-primary"
-                  style={{ "--chip": "var(--color-primary)" } as CSSProperties}
-                  disabled={loading || !!error || !matches.length}
+                  key={action}
+                  className="bq-action-chip"
+                  style={
+                    {
+                      "--chip": action === "Basket" ? "#ec4899" : action === "Gift" ? "#f97316" : "#16a34a",
+                    } as CSSProperties
+                  }
                   onClick={() => {
-                    const selected = matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol));
-                    if (!selected.length) return;
-                    trackDiscovery("buy", query ?? "", {
-                      mode: selected.length === 1 ? "single" : "batch",
-                      stocks: matchSymbols,
-                      token_count: selected.length,
-                    });
-                    if (selected.length === 1) setTrade({ asset: selected[0], side: "buy" });
-                    else setBuyList(selected);
+                    setPreview(action);
+                    actionPreview.current?.showModal();
                   }}
                 >
-                  Buy these
+                  {action} these
                 </button>
-                {["Basket", "Gift", "Pack"].map(action => (
-                  <button
-                    key={action}
-                    className="bq-action-chip"
-                    style={
-                      {
-                        "--chip": action === "Basket" ? "#ec4899" : action === "Gift" ? "#f97316" : "#16a34a",
-                      } as CSSProperties
-                    }
-                    onClick={() => {
-                      setPreview(action);
-                      actionPreview.current?.showModal();
-                    }}
-                  >
-                    {action} it
-                  </button>
-                ))}
-                <button
-                  className="bq-action-chip"
-                  disabled={loading || !!error}
-                  style={{ "--chip": "#141a2e" } as CSSProperties}
-                  onClick={() => void share("x")}
-                >
-                  Share on X
-                </button>
-                <button
-                  className="bq-action-chip"
-                  disabled={loading || !!error}
-                  style={{ "--chip": "#8b5cf6" } as CSSProperties}
-                  onClick={() => void share("farcaster")}
-                >
-                  Share on FC
-                </button>
-                <button
-                  className="bq-action-chip"
-                  style={{ "--chip": "#3b82f6" } as CSSProperties}
-                  disabled={loading || !!error}
-                  aria-label="Share"
-                  onClick={() => void share("system")}
-                >
-                  <ShareIcon className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-              <ShareEarningsInfo />
-              <span className="bq-discover-share-status" role="status">
-                {shareStatus}
-              </span>
+              ))}
             </div>
-          )}
+            <div className="bq-discover-bottom bq-discover-share-row">
+              <button
+                className="bq-action-chip"
+                disabled={loading || !!error}
+                style={{ "--chip": "#141a2e" } as CSSProperties}
+                onClick={() => void share("x")}
+              >
+                Share on X
+              </button>
+              <button
+                className="bq-action-chip"
+                disabled={loading || !!error}
+                style={{ "--chip": "#8b5cf6" } as CSSProperties}
+                onClick={() => void share("farcaster")}
+              >
+                Share on FC
+              </button>
+              <button
+                className="bq-action-chip"
+                style={{ "--chip": "#3b82f6" } as CSSProperties}
+                disabled={loading || !!error}
+                aria-label="Share"
+                onClick={() => void share("system")}
+              >
+                <ShareIcon className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+            <ShareEarningsInfo />
+            <span className="bq-discover-share-status" role="status">
+              {shareStatus}
+            </span>
+          </div>
         </div>
       </section>
       <dialog ref={actionPreview} className="modal" aria-labelledby="discovery-preview-title">
         <div className="modal-box">
           <DialogClose label="Close preview" onClick={() => actionPreview.current?.close()} />
           <h2 id="discovery-preview-title" className="text-lg font-bold">
-            {preview} it · Coming soon
+            {preview} these · Coming soon
           </h2>
           <p>
             Turn “{query}” into {preview === "Basket" ? "a basket" : preview === "Gift" ? "a gift" : "a pack"} featuring

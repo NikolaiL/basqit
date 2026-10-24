@@ -4959,10 +4959,70 @@ a.bq-asset-row-details {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.bq-discover-shell .bq-discover-share-row .bq-action-chip {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+@media (max-width: 650px) {
+  .bq-discover-shell .bq-discover-trade-row {
+    gap: 6px;
+    padding-inline: 4px;
+  }
+  .bq-discover-shell .bq-discover-trade-row .bq-action-chip {
+    padding-inline: 6px;
+    font-size: clamp(10px, 3vw, 12px);
+  }
+  .bq-discover-shell .bq-discover-share-row .bq-action-chip {
+    font-size: 11px;
+  }
+}
 .bq-share-earnings {
   display: block;
   margin: 10px auto 0;
   font-size: 13px;
+}
+.bq-discover-ideas-transition {
+  display: grid;
+  grid-template-rows: 0fr;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+  transition: grid-template-rows 220ms ease;
+}
+.bq-discover-ideas-transition[data-visible="true"] {
+  grid-template-rows: 1fr;
+}
+.bq-discover-ideas-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.bq-discover-ideas-clip .bq-discover-prompts {
+  padding: 6px 12px 8px;
+}
+.bq-discover-ideas-clip,
+.bq-discover-actions {
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 -6px;
+  transition:
+    opacity 180ms ease,
+    translate 220ms ease,
+    visibility 220ms;
+}
+.bq-discover-ideas-transition[data-visible="true"] .bq-discover-ideas-clip,
+.bq-discover-actions[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  translate: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bq-discover-ideas-transition,
+  .bq-discover-ideas-clip,
+  .bq-discover-actions {
+    transition: none;
+    translate: none;
+  }
 }
 @media (max-width: 650px) {
   .bq-discover-shell .bq-discover.has-results {
@@ -4973,12 +5033,7 @@ a.bq-asset-row-details {
   }
   .bq-discover-shell .has-results .bq-discover-scene {
     flex: none;
-    min-height: calc(var(--result-rows) * 88px + 210px);
-  }
-  .bq-discover-shell .has-results .bq-discover-coin:not(.is-match),
-  .bq-discover-shell .has-results .bq-discover-touch-zone {
-    visibility: hidden;
-    pointer-events: none;
+    min-height: calc(var(--result-rows) * 88px + 350px);
   }
   .bq-discover-shell .has-results .bq-discover-actions {
     top: calc(var(--result-rows) * 88px + 4px);
