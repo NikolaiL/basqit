@@ -490,9 +490,10 @@ export function StockDiscovery({
                   className="bq-action-chip"
                   style={{ "--chip": "#3b82f6" } as CSSProperties}
                   disabled={loading || !!error}
+                  aria-label="Share"
                   onClick={() => void share("system")}
                 >
-                  <ShareIcon className="h-4 w-4" aria-hidden="true" /> Share
+                  <ShareIcon className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
               <ShareEarningsInfo />
