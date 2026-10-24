@@ -90,6 +90,7 @@
   border-radius: 20px;
   overflow: hidden;
   background: var(--bq-lilac);
+  align-self: start;
 }
 .bq-packs2-preview-label {
   display: flex;
@@ -100,12 +101,12 @@
   letter-spacing: 0.06em;
 }
 .bq-packs2-stage {
-  flex: 1;
+  flex: none;
   position: relative;
   display: grid;
   place-items: center;
   padding: 40px 24px 50px;
-  min-height: 360px;
+  height: 520px;
   isolation: isolate;
   background: radial-gradient(
     ellipse at center,
@@ -204,16 +205,15 @@
 .bq-packs2-preview-caption strong {
   font-size: 12px;
   font-weight: 500;
+  min-height: 3em;
 }
 .bq-packs2-preview-caption small {
   font-size: 11px;
   color: var(--bq-muted);
 }
 .bq-packs2-control-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  justify-items: start;
   gap: 12px;
 }
 .bq-packs2-eyebrow {
@@ -225,7 +225,7 @@
   margin: 0 0 8px;
 }
 .bq-packs2-control-title h2 {
-  font-size: 36px;
+  font-size: clamp(24px, 3vw, 36px);
   line-height: 1.1;
 }
 .bq-packs2-control-title .badge {
@@ -1098,7 +1098,7 @@
     gap: 18px;
   }
   .bq-packs2-stage {
-    min-height: 310px;
+    height: 420px;
     padding: 26px 20px 38px;
   }
   .bq-packs2-preview-label,

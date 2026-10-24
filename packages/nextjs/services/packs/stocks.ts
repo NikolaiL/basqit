@@ -6,6 +6,7 @@ export const PACK_STOCKS = [
   { contract: "Packs2StockMSFT", faucet: "Packs2FaucetMSFT", ticker: "MSFT", company: "Microsoft" },
   { contract: "Packs2StockAMZN", faucet: "Packs2FaucetAMZN", ticker: "AMZN", company: "Amazon" },
   { contract: "Packs2StockTSLA", faucet: "Packs2FaucetTSLA", ticker: "TSLA", company: "Tesla" },
+  { contract: "Packs2StockMETA", faucet: undefined, ticker: "META", company: "Meta" },
 ] as const;
 
 export type PackStock = { address: Address; ticker: string; company: string };

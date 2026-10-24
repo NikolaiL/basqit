@@ -4,7 +4,7 @@ import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import Link from "next/link";
 import "./packs2.css";
 import { Address } from "@scaffold-ui/components";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Address as EthAddress, type Hex, formatUnits, parseEventLogs, parseUnits } from "viem";
 import { foundry } from "viem/chains";
 import { useAccount, useBalance, useBlock, useSwitchChain } from "wagmi";
@@ -254,6 +254,8 @@ function Packs2Live() {
   const [fundingStock, setFundingStock] = useState(0);
   const fundingAsset = PACK_STOCKS[fundingStock];
   const fundingToken = registered?.[fundingAsset.contract]?.address;
+  const hasStockFaucet = !!fundingAsset.faucet && !!registered?.[fundingAsset.faucet];
+  const stockFaucetName = fundingAsset.faucet ?? "Packs2StockFaucet";
   const [funding, setFunding] = useState("0.01");
   const [offset, setOffset] = useState(0);
   const [activeOpening, setActiveOpening] = useState<bigint>();
@@ -261,7 +263,7 @@ function Packs2Live() {
   const payment = useScaffoldWriteContract({ contractName: "Packs2PaymentToken", chainId: network.id });
   const stock = useScaffoldWriteContract({ contractName: fundingAsset.contract, chainId: network.id });
   const core = useScaffoldWriteContract({ contractName: "BasqitPacks2", chainId: network.id });
-  const stockFaucet = useScaffoldWriteContract({ contractName: fundingAsset.faucet, chainId: network.id });
+  const stockFaucet = useScaffoldWriteContract({ contractName: stockFaucetName, chainId: network.id });
   const query = { enabled: !!deployed, refetchInterval: 5000 };
   const { data: configId } = useScaffoldReadContract({
     ...readOptions,
@@ -270,12 +272,12 @@ function Packs2Live() {
     args: [packType],
     query,
   });
-  const { data: configData } = useScaffoldReadContract({
+  const { data: configData, isPlaceholderData: configPending } = useScaffoldReadContract({
     ...readOptions,
     contractName: "BasqitPacks2",
     functionName: "packConfig",
     args: [configId],
-    query: { enabled: !!deployed && !!configId, refetchInterval: false },
+    query: { enabled: !!deployed && !!configId, refetchInterval: false, placeholderData: keepPreviousData },
   });
   const config = configData as PackConfig | undefined;
   const price = config?.price;
@@ -288,15 +290,16 @@ function Packs2Live() {
     functionName: "opensPaused",
     query,
   });
-  const { data: references } = useScaffoldReadContract({
+  const { data: references, isPlaceholderData: referencesPending } = useScaffoldReadContract({
     ...readOptions,
     contractName: "BasqitPacks2",
     functionName: "packReferencePrices",
     args: [configId],
-    query: { enabled: !!configId, refetchInterval: false },
+    query: { enabled: !!configId, refetchInterval: false, placeholderData: keepPreviousData },
   });
   const {
     data: poolData,
+    isPlaceholderData: poolPending,
     error: poolError,
     refetch: refetchPool,
   } = useScaffoldReadContract({
@@ -304,9 +307,11 @@ function Packs2Live() {
     contractName: "BasqitPacks2",
     functionName: "stockPool",
     args: [configId],
-    query: { enabled: !!configId, refetchInterval: false },
+    query: { enabled: !!configId, refetchInterval: false, placeholderData: keepPreviousData },
   });
   const pool = poolData as readonly StockOption[] | undefined;
+  const tableReady =
+    !!configId && !!config && pool !== undefined && !configPending && !poolPending && !referencesPending;
   const illustrative = !!pool?.length;
   const { data: liabilities } = useScaffoldReadContract({
     ...readOptions,
@@ -320,7 +325,8 @@ function Packs2Live() {
   const msftVault = useStockVault("Packs2StockMSFT");
   const amznVault = useStockVault("Packs2StockAMZN");
   const tslaVault = useStockVault("Packs2StockTSLA");
-  const balances = [nvdaVault, aaplVault, msftVault, amznVault, tslaVault];
+  const metaVault = useStockVault("Packs2StockMETA");
+  const balances = [nvdaVault, aaplVault, msftVault, amznVault, tslaVault, metaVault];
   const vaults: Vaults = Object.fromEntries(
     PACK_STOCKS.flatMap((stock, i) =>
       registered?.[stock.contract] ? [[registered[stock.contract].address.toLowerCase(), balances[i]]] : [],
@@ -329,9 +335,9 @@ function Packs2Live() {
   const vault = fundingToken ? vaults[fundingToken.toLowerCase()] : undefined;
   const { data: faucetAmount } = useScaffoldReadContract({
     ...readOptions,
-    contractName: fundingAsset.faucet,
+    contractName: stockFaucetName,
     functionName: "amount",
-    query: { enabled: !!fundingToken, refetchInterval: false },
+    query: { enabled: hasStockFaucet, refetchInterval: false },
   });
   const walletQuery = { enabled: !!deployed && !!address, refetchInterval: 5000 };
   const { data: balance } = useScaffoldReadContract({
@@ -508,7 +514,7 @@ function Packs2Live() {
             </small>
             <button
               className="btn btn-secondary btn-sm"
-              disabled={!tiers?.length || pool === undefined}
+              disabled={!tiers?.length || !tableReady}
               onClick={() => setPreviewOpen(true)}
             >
               Try the opening animation ↗
@@ -644,7 +650,7 @@ function Packs2Live() {
               <TxButton pending="Switching…" action={() => switchChainAsync({ chainId: network.id })}>
                 Switch to {network.name}
               </TxButton>
-            ) : pool === undefined ? (
+            ) : !tableReady ? (
               <button className="btn btn-primary" disabled>
                 Checking payout table…
               </button>
@@ -878,13 +884,18 @@ function Packs2Live() {
           Unrevealed openings are additional liabilities whose amounts are not known yet. No maximum payout reserve is
           held. Funding can come from anyone.
         </p>
-        <TxButton
-          pending="Getting test stock…"
-          disabled={!ready}
-          action={() => stockFaucet.writeContractAsync({ functionName: "drip" })}
-        >
-          Get {faucetAmount === undefined ? "…" : formatToken(faucetAmount, 18)} test {fundingAsset.ticker}
-        </TxButton>
+        {hasStockFaucet && (
+          <TxButton
+            pending="Getting test stock…"
+            disabled={!ready}
+            action={() => stockFaucet.writeContractAsync({ functionName: "drip" })}
+          >
+            Get {faucetAmount === undefined ? "…" : formatToken(faucetAmount, 18)} test {fundingAsset.ticker}
+          </TxButton>
+        )}
+        {network.id === robinhoodTestnet.id && registered?.Packs2StockMETA && (
+          <p className="bq-demo-note">Packs use the same test USDG and Stock Tokens as Gifts and Baskets.</p>
+        )}
         <p>Your stock: {stockBalance === undefined ? "—" : amountLabel(stockBalance)}</p>
         <label className="bq-packs2-input">
           Test {fundingAsset.ticker} to deposit

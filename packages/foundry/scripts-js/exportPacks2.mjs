@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
-import { utils } from "ethers";
+import { Contract, providers, utils } from "ethers";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = (path) => JSON.parse(readFileSync(root + path, "utf8"));
@@ -20,6 +20,120 @@ const names = {
 };
 const networks = [];
 for (const chain of [31337, 46630]) {
+  const sharedPath = `broadcast/DeployPacks2SharedAssets.s.sol/${chain}/run-latest.json`;
+  if (chain === 46630 && existsSync(root + sharedPath)) {
+    const shared = read(sharedPath);
+    assert(
+      shared.transactions.every((tx) =>
+        shared.receipts.some(
+          (receipt) =>
+            receipt.transactionHash === tx.hash && receipt.status === "0x1"
+        )
+      ),
+      "Incomplete shared-assets deployment"
+    );
+    const created = shared.transactions.filter(
+      (tx) => tx.transactionType === "CREATE"
+    );
+    assert.equal(
+      created.length,
+      1,
+      "Shared deployment must create only the proxy"
+    );
+    const proxy = created[0];
+    assert.equal(proxy.contractName, "ERC1967Proxy");
+    const labels = read(`deployments/packs2/${chain}.json`);
+    const addresses = Object.fromEntries(
+      Object.entries(labels).map(([address, name]) => [name, address])
+    );
+    assert.equal(
+      proxy.contractAddress.toLowerCase(),
+      addresses.BasqitPacks2.toLowerCase()
+    );
+    assert.equal(
+      proxy.arguments[0].toLowerCase(),
+      addresses.Packs2Implementation.toLowerCase()
+    );
+    const config = new utils.Interface(packsAbi).decodeFunctionData(
+      "initialize",
+      proxy.arguments[1]
+    );
+    const rpc = new providers.JsonRpcProvider(
+      "https://rpc.testnet.chain.robinhood.com"
+    );
+    assert.equal((await rpc.getNetwork()).chainId, chain);
+    const factory = new Contract(
+      addresses.Packs2AssetFactory,
+      [
+        "function usdG() view returns(address)",
+        "function isAllowedToken(address) view returns(bool)",
+      ],
+      rpc
+    );
+    const payment = await factory.usdG();
+    assert.equal(
+      payment.toLowerCase(),
+      addresses.Packs2PaymentToken.toLowerCase()
+    );
+    assert.equal(config.payment.toLowerCase(), payment.toLowerCase());
+    assert.equal(
+      config.drand.toLowerCase(),
+      addresses.Packs2DrandBeacon.toLowerCase()
+    );
+    assert.equal(
+      utils.keccak256(await rpc.getCode(config.drand)),
+      "0x2402f288cf7967abbf2a2301025df12c0ff415b63c02cd1489c6a7ba06fdf924"
+    );
+    const faucet = new Contract(addresses.Packs2PaymentFaucet, faucetAbi, rpc);
+    assert.equal((await faucet.token()).toLowerCase(), payment.toLowerCase());
+    const tokenAbi = [
+      "function decimals() view returns(uint8)",
+      "function symbol() view returns(string)",
+    ];
+    assert.equal(await new Contract(payment, tokenAbi, rpc).decimals(), 6);
+    const core = new Contract(addresses.BasqitPacks2, packsAbi, rpc);
+    assert.equal((await core.payToken()).toLowerCase(), payment.toLowerCase());
+    const contracts = [
+      `BasqitPacks2: {address: ${JSON.stringify(
+        addresses.BasqitPacks2
+      )}, abi: packsAbi}`,
+      `Packs2PaymentToken: {address: ${JSON.stringify(
+        payment
+      )}, abi: erc20Abi}`,
+      `Packs2PaymentFaucet: {address: ${JSON.stringify(
+        addresses.Packs2PaymentFaucet
+      )}, abi: faucetAbi}`,
+      `Packs2DrandBeacon: {address: ${JSON.stringify(
+        config.drand
+      )}, abi: beaconAbi}`,
+    ];
+    const stocks = [];
+    for (const ticker of ["NVDA", "AAPL", "META", "AMZN", "TSLA"]) {
+      const name =
+        ticker === "NVDA" ? "Packs2StockToken" : `Packs2Stock${ticker}`;
+      const address = addresses[name];
+      assert(
+        await factory.isAllowedToken(address),
+        `Unlisted shared stock ${ticker}`
+      );
+      const token = new Contract(address, tokenAbi, rpc);
+      assert.equal(await token.symbol(), `t${ticker}`);
+      assert.equal(await token.decimals(), 18);
+      stocks.push(address.toLowerCase());
+      contracts.push(
+        `${name}: {address: ${JSON.stringify(address)}, abi: erc20Abi}`
+      );
+    }
+    for (let kind = 1; kind <= 3; kind++) {
+      const pool = await core.stockPool(await core.currentConfigId(kind));
+      assert.deepEqual(
+        pool.map((stock) => stock.token.toLowerCase()).sort(),
+        [...stocks].sort()
+      );
+    }
+    networks.push(`${chain}: {${contracts.join(",")}}`);
+    continue;
+  }
   const path = `broadcast/DeployPacks2.s.sol/${chain}/run-latest.json`;
   if (!existsSync(root + path)) continue;
   const broadcast = read(path);
