@@ -165,22 +165,6 @@ export function GiftsDemo() {
       <p className="bq-demo-note">
         Stock Tokens bought at the current price and sealed in a gift. Buy one for yourself or send it to a friend.
       </p>
-      <label className="bq-demo-friend">
-        Send to a friend (optional)
-        <input
-          className="input"
-          placeholder="0x… friend’s address"
-          value={friend}
-          onChange={event => setFriend(event.target.value)}
-          aria-invalid={friendInvalid}
-          aria-describedby={friendInvalid ? "gift-friend-error" : undefined}
-        />
-      </label>
-      {friendInvalid && (
-        <p id="gift-friend-error" className="bq-demo-error" role="alert">
-          Enter a wallet address (0x followed by 40 characters). Gift contracts and the zero address cannot hold gifts.
-        </p>
-      )}
       <article className="bq-demo-card bq-demo-builder">
         <strong>Build your own</strong>
         <div className="bq-tabs" role="tablist" aria-label="How to fill the gift">
@@ -255,6 +239,23 @@ export function GiftsDemo() {
           <p className="bq-demo-note">This wallet holds none of the listed Stock Tokens.</p>
         )}
         {mode === "buy" && fee > 0n && <p className="bq-demo-note">Includes a {formatToken(fee, 6)} tUSDG fee.</p>}
+        <label className="bq-demo-friend">
+          Send to a friend (optional)
+          <input
+            className="input"
+            placeholder="0x… friend’s address"
+            value={friend}
+            onChange={event => setFriend(event.target.value)}
+            aria-invalid={friendInvalid}
+            aria-describedby={friendInvalid ? "gift-friend-error" : undefined}
+          />
+        </label>
+        {friendInvalid && (
+          <p id="gift-friend-error" className="bq-demo-error" role="alert">
+            Enter a wallet address (0x followed by 40 characters). Gift contracts and the zero address cannot hold
+            gifts.
+          </p>
+        )}
         <button
           className="btn btn-primary btn-sm"
           disabled={!canBuild || (mode === "buy" && cannotPay(total))}
