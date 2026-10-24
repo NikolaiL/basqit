@@ -4677,7 +4677,7 @@ a.bq-asset-row-details {
 }
 
 /* Shared sticker buttons for navigation and Discover ideas. */
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip) {
+:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip, .bq-discover-shell .bq-action-chip) {
   white-space: nowrap;
   min-height: 40px;
   flex-shrink: 0;
@@ -4833,7 +4833,7 @@ a.bq-asset-row-details {
   gap: 10px;
   margin-top: 14px;
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip) {
+:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip, .bq-discover-shell .bq-action-chip) {
   min-height: 40px;
   border: 0;
   border-radius: 12px;
@@ -4850,37 +4850,55 @@ a.bq-asset-row-details {
   transform: rotate(-1.5deg);
   transition: transform 0.15s;
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip):nth-child(even) {
+:is(
+  .bq-discover-shell .bq-discover-prompts button,
+  .bq-header .bq-nav-chip,
+  .bq-discover-shell .bq-action-chip
+):nth-child(even) {
   transform: rotate(1.5deg);
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip):nth-child(3n) {
+:is(
+  .bq-discover-shell .bq-discover-prompts button,
+  .bq-header .bq-nav-chip,
+  .bq-discover-shell .bq-action-chip
+):nth-child(3n) {
   transform: rotate(-0.5deg);
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip):hover {
+:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip, .bq-discover-shell .bq-action-chip):hover {
   background: var(--chip);
   transform: rotate(0) translateY(-2px);
 }
 
-.bq-header a.bq-nav-chip:not([aria-current="page"]):not(:hover):not(:focus-visible) {
+:is(.bq-header a.bq-nav-chip, .bq-discover-shell .bq-action-chip):not(.bq-action-primary):not(
+    [aria-current="page"]
+  ):not(:hover):not(:focus-visible) {
   background: color-mix(in srgb, #8992a0 25%, transparent);
   color: var(--bq-ink);
   box-shadow:
     0 2px 0 color-mix(in srgb, #8992a0 30%, transparent),
     0 4px 10px #2a1f8a0a;
 }
-.bq-header a.bq-nav-chip:is([aria-current="page"], :hover, :focus-visible) {
+:is(.bq-header a.bq-nav-chip, .bq-discover-shell .bq-action-chip):is([aria-current="page"], :hover, :focus-visible) {
   background: var(--chip);
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip):focus-visible {
+:is(
+  .bq-discover-shell .bq-discover-prompts button,
+  .bq-header .bq-nav-chip,
+  .bq-discover-shell .bq-action-chip
+):focus-visible {
   outline: 3px solid var(--bq-ink);
   outline-offset: 4px;
 }
-:is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip):active {
+:is(
+  .bq-discover-shell .bq-discover-prompts button,
+  .bq-header .bq-nav-chip,
+  .bq-discover-shell .bq-action-chip
+):active {
   transform: rotate(0) translateY(2px);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--chip) 62%, #000);
 }
 @media (prefers-reduced-motion: reduce) {
-  :is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip) {
+  :is(.bq-discover-shell .bq-discover-prompts button, .bq-header .bq-nav-chip, .bq-discover-shell .bq-action-chip) {
     transition: none;
   }
 }
@@ -4917,5 +4935,52 @@ a.bq-asset-row-details {
     min-height: 32px;
     padding: 0 12px;
     font-size: 12px;
+  }
+}
+
+/* Content-sized actions wrap naturally on narrow screens. */
+.bq-discover-shell .bq-discover-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 720px;
+  margin-inline: auto;
+}
+.bq-discover-shell .bq-discover-bottom .bq-action-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-size: 13px;
+  cursor: pointer;
+}
+.bq-discover-shell .bq-action-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.bq-share-earnings {
+  display: block;
+  margin: 10px auto 0;
+  font-size: 13px;
+}
+@media (max-width: 650px) {
+  .bq-discover-shell .bq-discover.has-results {
+    overflow-y: auto;
+  }
+  .bq-discover-shell .has-results .bq-discover-playground {
+    flex: none;
+  }
+  .bq-discover-shell .has-results .bq-discover-scene {
+    flex: none;
+    min-height: calc(var(--result-rows) * 88px + 210px);
+  }
+  .bq-discover-shell .has-results .bq-discover-coin:not(.is-match),
+  .bq-discover-shell .has-results .bq-discover-touch-zone {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .bq-discover-shell .has-results .bq-discover-actions {
+    top: calc(var(--result-rows) * 88px + 4px);
   }
 }

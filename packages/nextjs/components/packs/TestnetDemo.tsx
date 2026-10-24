@@ -60,7 +60,7 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
 
   if (!packsTestnet)
     return (
-      <section className="bq-demo">
+      <section id="testnet" className="bq-demo">
         <h2>{title}</h2>
         <p>The testnet demo is being deployed. Check back soon.</p>
       </section>
@@ -85,7 +85,7 @@ export function TestnetDemo({ kind }: { kind: "baskets" | "gifts" | "packs" }) {
   const canDrip = balances.data?.canDrip ?? true;
 
   return (
-    <section className="bq-demo" aria-labelledby="bq-demo-title">
+    <section id="testnet" className="bq-demo" aria-labelledby="bq-demo-title">
       <h2 id="bq-demo-title">{title}</h2>
       <p className="bq-soon-status">Testnet · Test tokens only</p>
       <p className="bq-demo-lead">

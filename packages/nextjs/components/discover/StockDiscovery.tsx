@@ -9,10 +9,12 @@ import { Arrow } from "~~/components/Arrow";
 import { DialogClose } from "~~/components/DialogClose";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { useMiniapp } from "~~/components/MiniappProvider";
+import { ShareEarningsInfo } from "~~/components/ShareEarningsInfo";
 import { StockLogo } from "~~/components/StockLogo";
 import { AssetDetails } from "~~/components/atlas/AssetDetails";
 import { BatchBuyDialog } from "~~/components/trading/BatchBuyDialog";
 import { TradeDialog, type TradeSelection } from "~~/components/trading/TradeDialog";
+import { WaitlistForm } from "~~/components/waitlist/WaitlistForm";
 import { trackDiscovery } from "~~/services/analytics/events";
 import type { DiscoveryAsset } from "~~/services/discover/catalog";
 import { type DiscoveryMatch, normalizeTheme } from "~~/services/discover/matching";
@@ -52,9 +54,10 @@ export function StockDiscovery({
   similar?: string;
   sharedSymbols?: string[];
 }) {
-  const { isMiniApp, composeCast, openLink } = useMiniapp();
+  const { composeCast, openLink } = useMiniapp();
   const { address } = useAccount();
-  const feeInfo = useRef<HTMLDialogElement>(null);
+  const actionPreview = useRef<HTMLDialogElement>(null);
+  const [preview, setPreview] = useState("Basket");
   const [theme, setTheme] = useState(initialTheme);
   const [result, setResult] = useState<{ theme: string; matches: DiscoveryMatch[] }>(() => ({
     theme: normalizeTheme(initialTheme) ?? "",
@@ -305,7 +308,10 @@ export function StockDiscovery({
   }
 
   return (
-    <main className="bq-discover">
+    <main
+      className={`bq-discover${matches.length ? " has-results" : ""}`}
+      style={{ "--result-rows": Math.ceil(matches.length / 4) } as CSSProperties}
+    >
       <section className="bq-discover-playground" aria-label="Explore Stock Tokens by theme">
         <h1 className="bq-discover-heading">
           <label htmlFor="bq-discover-theme">I&apos;m in the mood for</label>
@@ -339,33 +345,35 @@ export function StockDiscovery({
             </button>
           )}
         </div>
-        <div className="bq-discover-prompts">
-          {ideas.map(([idea, color]) => (
+        {!theme.trim() && (
+          <div className="bq-discover-prompts">
+            {ideas.map(([idea, color]) => (
+              <button
+                key={idea}
+                style={{ "--chip": color } as CSSProperties}
+                onClick={() => {
+                  entryMethod.current = "preset";
+                  trackDiscovery("preset", idea);
+                  setTheme(idea);
+                }}
+              >
+                {idea}
+              </button>
+            ))}
             <button
-              key={idea}
-              style={{ "--chip": color } as CSSProperties}
+              className="is-surprise"
               onClick={() => {
-                entryMethod.current = "preset";
-                trackDiscovery("preset", idea);
+                const options = surpriseIdeas.filter(idea => idea !== theme);
+                const idea = options[Math.floor(Math.random() * options.length)];
+                entryMethod.current = "surprise";
+                trackDiscovery("surprise", idea);
                 setTheme(idea);
               }}
             >
-              {idea}
+              ✦ Surprise me
             </button>
-          ))}
-          <button
-            className="is-surprise"
-            onClick={() => {
-              const options = surpriseIdeas.filter(idea => idea !== theme);
-              const idea = options[Math.floor(Math.random() * options.length)];
-              entryMethod.current = "surprise";
-              trackDiscovery("surprise", idea);
-              setTheme(idea);
-            }}
-          >
-            ✦ Surprise me
-          </button>
-        </div>
+          </div>
+        )}
         <div className="bq-discover-status" role="status" aria-live="polite">
           {error ||
             (loading
@@ -428,7 +436,8 @@ export function StockDiscovery({
             >
               <div className="bq-discover-bottom">
                 <button
-                  className="btn bq-discover-buy"
+                  className="bq-action-chip bq-action-primary"
+                  style={{ "--chip": "var(--color-primary)" } as CSSProperties}
                   disabled={loading || !!error || !matches.length}
                   onClick={() => {
                     const selected = matches.flatMap(match => assets.filter(asset => asset.symbol === match.symbol));
@@ -444,69 +453,89 @@ export function StockDiscovery({
                 >
                   Buy these
                 </button>
-                <div className="bq-discover-share">
+                {["Basket", "Gift", "Pack"].map(action => (
                   <button
-                    className="btn btn-secondary"
-                    disabled={!query || loading || !!error || !matches.length}
-                    onClick={() => void share("x")}
+                    key={action}
+                    className="bq-action-chip"
+                    style={
+                      {
+                        "--chip": action === "Basket" ? "#ec4899" : action === "Gift" ? "#f97316" : "#16a34a",
+                      } as CSSProperties
+                    }
+                    onClick={() => {
+                      setPreview(action);
+                      actionPreview.current?.showModal();
+                    }}
                   >
-                    {address ? (
-                      <>
-                        <span className="sm:hidden">Share &amp; earn</span>
-                        <span className="hidden sm:inline">Share and earn when friends trade</span>
-                      </>
-                    ) : (
-                      "Share My Stock Mood on X"
-                    )}
+                    {action} it
                   </button>
-                  {address && !shareStatus && (
-                    <button type="button" className="link" onClick={() => feeInfo.current?.showModal()}>
-                      More info
-                    </button>
-                  )}
-                </div>
+                ))}
                 <button
-                  className={`btn btn-secondary${isMiniApp ? "" : " btn-square"}`}
-                  disabled={!query || loading || !!error || !matches.length}
-                  onClick={() => void share(isMiniApp ? "farcaster" : "system")}
-                  aria-label={isMiniApp ? "Share on Farcaster" : "More sharing options"}
-                  title={isMiniApp ? "Share your stock mood on Farcaster" : "Share via your device, or copy the link"}
+                  className="bq-action-chip"
+                  disabled={loading || !!error}
+                  style={{ "--chip": "#141a2e" } as CSSProperties}
+                  onClick={() => void share("x")}
                 >
-                  {isMiniApp ? "Share on Farcaster" : <ShareIcon className="h-5 w-5" aria-hidden="true" />}
+                  Share on X
+                </button>
+                <button
+                  className="bq-action-chip"
+                  disabled={loading || !!error}
+                  style={{ "--chip": "#8b5cf6" } as CSSProperties}
+                  onClick={() => void share("farcaster")}
+                >
+                  Share on FC
+                </button>
+                <button
+                  className="bq-action-chip"
+                  style={{ "--chip": "#3b82f6" } as CSSProperties}
+                  disabled={loading || !!error}
+                  onClick={() => void share("system")}
+                >
+                  <ShareIcon className="h-4 w-4" aria-hidden="true" /> Share
                 </button>
               </div>
+              <ShareEarningsInfo />
               <span className="bq-discover-share-status" role="status">
                 {shareStatus}
               </span>
-              <dialog ref={feeInfo} className="modal" aria-labelledby="bq-fee-split-title">
-                <div className="modal-box bq-fee-info">
-                  <DialogClose label="Close" onClick={() => feeInfo.current?.close()} />
-                  <h2 id="bq-fee-split-title" className="text-lg font-bold">
-                    Share the link, we share the fees
-                  </h2>
-                  <ul className="list-disc space-y-2 pl-5 py-3">
-                    <li>Your link carries your wallet address.</li>
-                    <li>
-                      When someone opens it and buys or sells stocks on Basqit, you get half of the Basqit fee on that
-                      trade. The fee is shown before every trade.
-                    </li>
-                    <li>They pay the same fee either way.</li>
-                    <li>Your share goes to your wallet in the same onchain transaction. Nothing to claim.</li>
-                    <li>The last link they opened counts. Your own trades don&apos;t.</li>
-                    <li>For now this covers stock trades only.</li>
-                  </ul>
-                  <button className="btn btn-primary btn-sm" onClick={() => feeInfo.current?.close()}>
-                    Got it
-                  </button>
-                </div>
-                <form method="dialog" className="modal-backdrop">
-                  <button>Close</button>
-                </form>
-              </dialog>
             </div>
           )}
         </div>
       </section>
+      <dialog ref={actionPreview} className="modal" aria-labelledby="discovery-preview-title">
+        <div className="modal-box">
+          <DialogClose label="Close preview" onClick={() => actionPreview.current?.close()} />
+          <h2 id="discovery-preview-title" className="text-lg font-bold">
+            {preview} it · Coming soon
+          </h2>
+          <p>
+            Turn “{query}” into {preview === "Basket" ? "a basket" : preview === "Gift" ? "a gift" : "a pack"} featuring
+            your selected stocks.
+          </p>
+          <p>{matches.map(match => match.symbol).join(", ")}</p>
+          <p>This creation flow is not available yet.</p>
+          <p>
+            <Link
+              className="link"
+              href={`/${preview === "Basket" ? "baskets" : preview === "Gift" ? "gifts" : "packs"}#testnet`}
+              onClick={() => actionPreview.current?.close()}
+            >
+              Try {preview === "Basket" ? "Baskets" : preview === "Gift" ? "Gifts" : "Packs"} on testnet <Arrow />
+            </Link>
+            <small className="block">Test tokens only · no real value.</small>
+          </p>
+          <WaitlistForm
+            key={preview}
+            product={preview === "Basket" ? "baskets" : preview === "Gift" ? "gifts" : "packs"}
+            cta={`Get notified when ${preview === "Basket" ? "Baskets" : preview === "Gift" ? "Gifts" : "Packs"} open`}
+            confetti={matches.map(match => match.symbol)}
+          />
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>Close</button>
+        </form>
+      </dialog>
       {current && (
         <AssetDetails
           asset={current}
