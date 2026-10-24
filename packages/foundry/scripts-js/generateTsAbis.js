@@ -147,7 +147,10 @@ function getInheritedFunctions(mainArtifact) {
 }
 
 function processAllDeployments(broadcastPath) {
-  const scriptFolders = getDirectories(broadcastPath);
+  // Packs2 exports its own registry; its test tokens must not replace the original deployment aliases.
+  const scriptFolders = getDirectories(broadcastPath).filter(
+    (folder) => !folder.startsWith("DeployPacks2")
+  );
   const allDeployments = new Map();
 
   scriptFolders.forEach((scriptFolder) => {

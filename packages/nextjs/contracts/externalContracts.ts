@@ -1,3 +1,4 @@
+import packs2Contracts from "./packs2Contracts";
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
 /**
@@ -11,7 +12,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
  *   },
  * } as const;
  */
-const externalContracts = {} as const;
+const externalContracts = packs2Contracts;
 
 export default externalContracts satisfies GenericContractsDeclaration;
 

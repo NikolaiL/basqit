@@ -9,10 +9,16 @@ export function WaitlistForm({
   product,
   cta,
   confetti,
+  buttonLabel = "Join the list",
+  successMessage = "You’re on the list. We’ll email you when it opens.",
+  note = "Only launch news about Basqit. Unsubscribe any time.",
 }: {
   product: WaitlistProduct;
   cta: string;
   confetti: string[];
+  buttonLabel?: string;
+  successMessage?: string;
+  note?: string;
 }) {
   const id = useId();
   const [state, setState] = useState<{ status: "idle" | "sending" | "done" | "error"; message?: string }>({
@@ -22,7 +28,7 @@ export function WaitlistForm({
     return (
       <>
         <p className="bq-waitlist-done" role="status">
-          You’re on the list. We’ll email you when it opens.
+          {successMessage}
         </p>
         <SwapConfetti symbols={confetti} />
       </>
@@ -56,13 +62,13 @@ export function WaitlistForm({
           className="input"
         />
         <button className="btn btn-primary" disabled={state.status === "sending"}>
-          {state.status === "sending" ? "Joining…" : "Join the list"}
+          {state.status === "sending" ? "Joining…" : buttonLabel}
         </button>
       </div>
       {/* Honeypot for bots; hidden from people and assistive tech. */}
       <input name="website" tabIndex={-1} autoComplete="off" className="bq-waitlist-trap" aria-hidden="true" />
       <p className="bq-waitlist-note" role={state.status === "error" ? "alert" : undefined}>
-        {state.status === "error" ? state.message : "Only launch news about Basqit. Unsubscribe any time."}
+        {state.status === "error" ? state.message : note}
       </p>
     </form>
   );

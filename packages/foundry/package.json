@@ -17,6 +17,7 @@
     "postinstall": "shx cp -n .env.example .env",
     "lint": "make lint",
     "test": "forge test",
+    "validate:packs": "forge clean && forge build && openzeppelin-upgrades-core validate out/build-info --contract BasqitPacks2",
     "verify": "make verify RPC_URL=${1:-localhost}"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "toml": "~4.3.0"
   },
   "devDependencies": {
+    "@openzeppelin/upgrades-core": "1.46.0",
     "shx": "^0.3.4"
   }
 }

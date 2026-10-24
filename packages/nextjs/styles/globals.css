@@ -2704,7 +2704,8 @@ body:has(.bq-discover-shell) {
   background-image: radial-gradient(color-mix(in srgb, var(--bq-brand) 24%, transparent) 1.5px, transparent 1.6px);
   background-size: 22px 22px;
 }
-.bq-page-heading h1 {
+.bq-page-heading h1,
+.bq-page-title {
   font-family: var(--bq-display), sans-serif;
   font-size: clamp(38px, 4.5vw, 60px);
   font-weight: 800;

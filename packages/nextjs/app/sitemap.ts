@@ -5,7 +5,7 @@ import { baseUrl } from "~~/utils/scaffold-eth/getMetadata";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const pages = ["/discover", "/tokenized-stocks", "/atlas", "/corporate-events", "/baskets", "/gifts", "/packs"];
+  const pages = ["/discover", "/tokenized-stocks", "/atlas", "/corporate-events", "/baskets", "/gifts"];
   // A catalog outage must not take the sitemap down with it.
   const symbols = await discoveryCatalog().then(
     assets => assets.map(asset => asset.symbol),

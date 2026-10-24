@@ -15,9 +15,11 @@ Basqit is a fun way to find Stock Tokens. Type an idea — *companies with orang
 - **Baskets** — *testnet demo:* Anyone can create a basket of Stock Tokens, publish it with a name and a thesis, and earn a fee whenever someone buys or sells it. Every basket is fully collateralized, and its holdings are verifiable onchain. Try it on `/baskets`.
 - **Gifts** — *testnet demo:* a sealed gift of Stock Tokens with fixed contents, worth what you paid when you
   bought it; keep it or send it to a friend. Try it on `/gifts`.
-- **Packs** — *testnet demo:* a random mix of Stock Tokens for a small fixed price. Prizes are distributed by one draw
-  from [Dice Protocol](https://diceprotocol.world) ([docs](https://diceprotocol.world/docs/)). Try it on `/packs`.
-  Both run on Robinhood Chain testnet with test tokens that have no value, and wait for a legal review.
+- **Packs** — *testnet demo:* Bronze, Silver and Gold packs priced at 1, 10 and 100 test USDG.
+  A future drand evmnet round selects a fixed Stock Token payout; reveal and collection are separate.
+  The published table targets an 80% return at recorded calibration prices. Try it on `/packs`;
+  the earlier Dice demo remains at `/packs_old`.
+  These demos run on Robinhood Chain testnet with test tokens that have no value, and wait for legal review.
 
 ## Disclaimer
 

@@ -747,6 +747,33 @@ contract GiftsTest is Test {
 }
 
 contract TestnetFaucetTest is Test {
+    function test_LocalPacksRefillKeepsBalancesAndAllowsLargestBatch() public {
+        vm.warp(86400 + 123);
+        TestnetToken token = new TestnetToken("Test USDG", "tUSDG", 6, address(this));
+        BasqitTestnetFaucet old = new BasqitTestnetFaucet(address(token), 100e6, 1 days, 100_000e6);
+        token.setMinter(address(old), true);
+        address alice = makeAddr("alice");
+        vm.prank(alice);
+        old.drip();
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(BasqitTestnetFaucet.TooSoon.selector, 86400 + 123 + 1 days));
+        old.drip();
+        BasqitTestnetFaucet next = new BasqitTestnetFaucet(address(token), 10_000e6, 1 minutes, 1_000_000e6);
+        token.setMinter(address(next), true);
+        token.setMinter(address(old), false);
+        assertFalse(token.minters(address(old)));
+        assertEq(next.amount(), 100 * 100e6);
+        vm.startPrank(alice);
+        next.drip();
+        assertEq(token.balanceOf(alice), 10_100e6);
+        vm.expectRevert(abi.encodeWithSelector(BasqitTestnetFaucet.TooSoon.selector, 86400 + 123 + 60));
+        next.drip();
+        vm.warp(86400 + 123 + 60);
+        next.drip();
+        assertEq(token.balanceOf(alice), 20_100e6);
+        vm.stopPrank();
+    }
+
     function test_DripAndCooldown() public {
         MockUSDG usdg = new MockUSDG();
         BasqitTestnetFaucet faucet = new BasqitTestnetFaucet(address(usdg), 100e6, 1 days, 250e6);

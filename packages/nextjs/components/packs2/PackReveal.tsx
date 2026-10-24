@@ -1,0 +1,236 @@
+"use client";
+
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import { type Address, formatUnits } from "viem";
+import { DialogClose } from "~~/components/DialogClose";
+import { StockLogo } from "~~/components/StockLogo";
+import { PackFace } from "~~/components/packs2/PackFace";
+import { SwapConfetti } from "~~/components/trading/SwapConfetti";
+import { packPresentation } from "~~/services/packs/catalog";
+import { type PackPayout, payoutLevel } from "~~/services/packs/reveal";
+import { type PackStock, payoutStock } from "~~/services/packs/stocks";
+
+export type RevealLevel = { end: number; token: Address; amount: bigint; name: string; color: string };
+
+/** Presentation only: results arrive after the reveal transaction is confirmed. */
+export function PackReveal({
+  id,
+  quantity,
+  packPrice,
+  results,
+  levels,
+  stocks,
+  waiting,
+  controls,
+  preview = false,
+  onClose,
+}: {
+  id?: bigint;
+  quantity: number;
+  packPrice?: bigint;
+  results?: readonly PackPayout[];
+  levels: readonly RevealLevel[];
+  stocks: readonly PackStock[];
+  waiting?: string;
+  controls?: ReactNode;
+  preview?: boolean;
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [phase, setPhase] = useState<"sealed" | "tearing" | "revealed">("sealed");
+  const [index, setIndex] = useState(0);
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    dialog.current?.showModal();
+  }, []);
+  useEffect(() => {
+    if (phase !== "tearing") return;
+    const timer = setTimeout(() => setPhase("revealed"), 1100);
+    return () => clearTimeout(timer);
+  }, [phase]);
+  const prize = results?.[index];
+  const pack = packPresentation(packPrice);
+  const level = prize && payoutLevel(levels, prize);
+  const stock = prize && payoutStock(prize.token, stocks);
+  const eligibleStocks = [...new Set(levels.map(level => level.token.toLowerCase()))].map(token =>
+    payoutStock(token as Address, stocks),
+  );
+  const show = () => {
+    if (!results) return;
+    setPhase(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "revealed" : "tearing");
+  };
+  const revealed = phase === "revealed" && !!results;
+  return (
+    <dialog ref={dialog} className="modal bq-pack-dialog" aria-labelledby="pack-reveal-title" onClose={onClose}>
+      <div
+        className="modal-box bq-pack-theatre"
+        style={{ "--reveal-color": level?.color ?? "var(--bq-brand)", "--pack-color": pack.color } as CSSProperties}
+      >
+        <DialogClose label="Close opening" onClick={() => dialog.current?.close()} />
+        <div className="bq-pack-theatre-top">
+          <span className="badge badge-outline">
+            {preview ? `Sample preview · ${pack.name} ${pack.label}` : `Opening #${id} · ${pack.name}`}
+          </span>
+          <span>
+            {quantity} {quantity === 1 ? "pack" : "packs"} ·{" "}
+            {packPrice === undefined ? "Test tokens" : `${formatUnits(packPrice, 6)} tUSDG each`}
+          </span>
+        </div>
+        <h2 id="pack-reveal-title">
+          {revealed
+            ? all
+              ? "The whole collection."
+              : "A little piece. All yours."
+            : results
+              ? "Good things come sealed."
+              : "Your pack is on its way."}
+        </h2>
+        <p className="bq-pack-subtitle" role="status">
+          {preview
+            ? "Illustrative samples. No payment, selection, or tokens."
+            : revealed
+              ? "Result confirmed on-chain. Collect it whenever you’re ready."
+              : results
+                ? "Your result is fixed on-chain. The next part is just for fun."
+                : waiting}
+        </p>
+        <div className={`bq-pack-reveal-stage bq-pack-phase-${phase}${all ? " bq-pack-show-all" : ""}`}>
+          <div className="bq-pack-orbit bq-pack-orbit-one" aria-hidden="true">
+            ✦
+          </div>
+          <div className="bq-pack-orbit bq-pack-orbit-two" aria-hidden="true">
+            ✳
+          </div>
+          <div className="bq-pack-orbit bq-pack-orbit-three" aria-hidden="true">
+            +
+          </div>
+          {!revealed ? (
+            <button
+              className="bq-pack-wrapper"
+              disabled={!results || phase === "tearing"}
+              onClick={show}
+              aria-label={results ? "Tear seal and reveal card" : "Waiting for confirmed result"}
+            >
+              <span className="bq-pack-tear-strip">PULL FOR A LITTLE POSSIBILITY ↗</span>
+              <span className="bq-pack-wrapper-body">
+                <PackFace pack={pack} stocks={eligibleStocks} />
+              </span>
+            </button>
+          ) : all ? (
+            <div className="bq-pack-result-grid">
+              {results.map((result, i) => {
+                const band = payoutLevel(levels, result);
+                const stock = payoutStock(result.token, stocks);
+                return (
+                  <div
+                    key={i}
+                    className="bq-pack-mini-result"
+                    style={
+                      {
+                        "--reveal-color": band?.color ?? "var(--bq-brand)",
+                        animationDelay: `${Math.min(i, 10) * 45}ms`,
+                      } as CSSProperties
+                    }
+                  >
+                    <StockLogo symbol={stock.ticker} size={32} />
+                    <b>
+                      Pack {i + 1} · {band?.name ?? "Stock Tokens"}
+                    </b>
+                    <span>
+                      {formatUnits(result.amount, 18)} t{stock.ticker}
+                    </span>
+                    <small>{preview ? "Sample" : result.paid ? "Collected" : "Awaiting collection"}</small>
+                  </div>
+                );
+              })}
+            </div>
+          ) : prize ? (
+            <div key={index} className="bq-pack-result" role="status" aria-label={`Pack ${index + 1} result`}>
+              <div className="bq-pack-result-card">
+                <div className="bq-pack-result-face bq-pack-result-back" aria-hidden="true">
+                  <span>basqit.</span>
+                  <b>✦</b>
+                  <span>A PIECE OF POSSIBILITY</span>
+                </div>
+                <div className="bq-pack-result-face bq-pack-result-front">
+                  <div className="bq-pack-card-heading">
+                    <span>STOCK TOKEN</span>
+                    <b>{level?.name ?? "Stock Tokens"}</b>
+                  </div>
+                  <StockLogo symbol={stock!.ticker} size={88} />
+                  <strong>{stock!.ticker}</strong>
+                  <span className="bq-pack-card-company">A piece of {stock!.company}</span>
+                  <div className="bq-pack-card-amount">
+                    <b>{formatUnits(prize.amount, 18)}</b>
+                    <span>t{stock!.ticker}</span>
+                  </div>
+                  <div className="bq-pack-card-footer">
+                    <span>{preview ? "SAMPLE CARD" : `NUMBER ${prize.slot} / 999`}</span>
+                    <b>basqit.</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="bq-pack-theatre-actions">
+          {!results ? (
+            controls
+          ) : !revealed ? (
+            <>
+              <button className="btn btn-primary" onClick={show} disabled={phase === "tearing"}>
+                {phase === "tearing" ? "Opening the seal…" : "Tear it open ↗"}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setAll(true);
+                  setPhase("revealed");
+                }}
+              >
+                Skip animation · Show all
+              </button>
+            </>
+          ) : (
+            <>
+              {!all && (
+                <p className="bq-pack-progress">
+                  {index + 1} of {results.length} · {level?.name ?? "Stock Tokens"}
+                </p>
+              )}
+              {!all && index + 1 < results.length && (
+                <button className="btn btn-primary" onClick={() => setIndex(index + 1)}>
+                  Next card →
+                </button>
+              )}
+              {!all && results.length > 1 && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setAll(true)}>
+                  Show all {results.length} cards
+                </button>
+              )}
+              {controls}
+              {preview && (
+                <button className="btn btn-primary" onClick={() => dialog.current?.close()}>
+                  Nice. Back to packs.
+                </button>
+              )}
+            </>
+          )}
+        </div>
+        <p className="bq-pack-theatre-note">
+          {preview
+            ? "Sample cards demonstrate the animation, not the payout distribution."
+            : "You can close this window and resume from Your openings. Animation never changes a result."}
+        </p>
+      </div>
+      {revealed && (
+        <SwapConfetti
+          key={all ? "all" : index}
+          symbols={
+            all ? [...new Set(results!.map(result => payoutStock(result.token, stocks).ticker))] : [stock!.ticker]
+          }
+        />
+      )}
+    </dialog>
+  );
+}
