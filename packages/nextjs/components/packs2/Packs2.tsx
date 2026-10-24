@@ -10,6 +10,7 @@ import { useAccount, useBalance, useBlock, useSwitchChain } from "wagmi";
 import { Arrow } from "~~/components/Arrow";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { StockLogo } from "~~/components/StockLogo";
+import { DrandWait } from "~~/components/packs2/DrandWait";
 import { PackFace } from "~~/components/packs2/PackFace";
 import { PackReveal, type RevealLevel } from "~~/components/packs2/PackReveal";
 import { formatToken, formatUsd, useUsdPrices } from "~~/components/packs/usePacks";
@@ -1102,11 +1103,13 @@ function OpeningCard({
         onClose={onClose}
         controls={controls}
         waiting={
-          o.revealed
-            ? "Loading your confirmed result…"
-            : proof.data || cached
-              ? "Your future round is ready. Confirm the reveal to open your pack."
-              : `Waiting for drand round ${o.round}. You can come back later.`
+          o.revealed ? (
+            <span className="bq-pack-wait-state">
+              <LoadingBars small /> Loading your confirmed result…
+            </span>
+          ) : (
+            <DrandWait round={o.round} ready={!!proof.data || cached} />
+          )
         }
       />
     );

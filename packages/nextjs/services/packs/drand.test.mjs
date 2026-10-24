@@ -1,4 +1,4 @@
-import { fetchDrandProof } from "./drand.ts";
+import { drandWaitSeconds, fetchDrandProof, fetchLatestDrandRound } from "./drand.ts";
 import assert from "node:assert/strict";
 
 const originalFetch = globalThis.fetch;
@@ -29,3 +29,27 @@ try {
 } finally {
   globalThis.fetch = originalFetch;
 }
+
+try {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, "https://api.drand.sh/v2/beacons/evmnet/rounds/latest");
+    assert.equal(options.cache, "no-store");
+    assert.ok(options.signal);
+    return Response.json({ round: 123 });
+  };
+  assert.equal(await fetchLatestDrandRound(), 123n);
+  for (const round of [0, -1, 1.5, "123", Number.MAX_SAFE_INTEGER + 1]) {
+    globalThis.fetch = async () => Response.json({ round });
+    await assert.rejects(fetchLatestDrandRound(), /Invalid drand round/);
+  }
+  globalThis.fetch = async url =>
+    url.endsWith("/latest") ? new Response("Unavailable", { status: 503 }) : Response.json({ round: 123, signature });
+  await assert.rejects(fetchLatestDrandRound(), /temporarily unavailable/);
+  assert.equal(await fetchDrandProof(123n), `0x${signature}`);
+} finally {
+  globalThis.fetch = originalFetch;
+}
+assert.equal(drandWaitSeconds(123n, 133n), 30n);
+assert.equal(drandWaitSeconds(132n, 133n), 3n);
+assert.equal(drandWaitSeconds(133n, 133n), 0n);
+assert.equal(drandWaitSeconds(134n, 133n), 0n);

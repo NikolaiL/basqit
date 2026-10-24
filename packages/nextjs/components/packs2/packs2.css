@@ -572,6 +572,31 @@
   max-width: 490px;
   min-height: 36px;
 }
+.bq-pack-wait {
+  display: grid;
+  gap: 8px;
+}
+.bq-pack-wait-rounds {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+.bq-pack-wait-rounds > span {
+  display: grid;
+  gap: 2px;
+  font-size: 10px;
+}
+.bq-pack-wait-rounds strong {
+  color: var(--bq-ink);
+  font-family: var(--bq-mono);
+  font-size: 14px;
+}
+.bq-pack-wait-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
 .bq-pack-reveal-stage {
   display: grid;
   place-items: center;

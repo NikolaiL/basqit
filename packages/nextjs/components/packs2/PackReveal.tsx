@@ -31,7 +31,7 @@ export function PackReveal({
   results?: readonly PackPayout[];
   levels: readonly RevealLevel[];
   stocks: readonly PackStock[];
-  waiting?: string;
+  waiting?: ReactNode;
   controls?: ReactNode;
   preview?: boolean;
   onClose: () => void;
