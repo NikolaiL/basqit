@@ -16,6 +16,7 @@ import { type Address, erc20Abi, formatUnits, isAddress, parseUnits, zeroAddress
 import { useAccount } from "wagmi";
 import { StockLogo } from "~~/components/StockLogo";
 import { packsClient, robinhoodTestnet, testnetAssets } from "~~/services/packs/testnet";
+import { balancePercentage } from "~~/services/trading/quote";
 
 type Item = { token: Address; amount: bigint };
 
@@ -222,6 +223,31 @@ export function GiftsDemo() {
                     value={inputs[token] ?? ""}
                     onChange={event => setInputs(current => ({ ...current, [token]: event.target.value }))}
                   />
+                  {mode === "wrap" && (
+                    <div
+                      className="bq-demo-balance-presets"
+                      role="group"
+                      aria-label={`${info?.symbol} balance portions`}
+                    >
+                      {[10, 25, 50, 100].map(value => (
+                        <button
+                          key={value}
+                          type="button"
+                          className="btn btn-xs btn-secondary"
+                          disabled={!!busy || !info}
+                          aria-label={`${value}% of ${info?.symbol} balance`}
+                          onClick={() =>
+                            setInputs(current => ({
+                              ...current,
+                              [token]: balancePercentage(balance, info!.decimals, value),
+                            }))
+                          }
+                        >
+                          {value}%
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </li>
               );
             })}

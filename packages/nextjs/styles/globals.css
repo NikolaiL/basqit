@@ -3584,6 +3584,12 @@ html [data-rk] {
 .bq-demo-builder-rows em.is-over {
   color: var(--bq-danger);
 }
+.bq-demo-balance-presets {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 /* Basket cards: list fills the card so price and actions line up across a row of cards. */
 .bq-basket-rules-line {

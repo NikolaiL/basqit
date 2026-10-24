@@ -61,6 +61,10 @@ assert.equal(balancePercentage(1234567890123456789n, 18, 100), "1.23456789012345
 assert.equal(balancePercentage(1234567n, 6, 0), "0");
 assert.equal(balancePercentage(0n, 18, 50), "0");
 assert.equal(balancePercentage(1n, 18, 50), "0");
+assert.deepEqual(
+  [10, 25, 50, 100].map(value => balancePercentage(168200000000000001n, 18, value)),
+  ["0.01682", "0.04205", "0.0841", "0.168200000000000001"],
+);
 assert.throws(() => balancePercentage(1n, 18, 101));
 console.log("Balance percentage: exact full balance, rounded-down half, zero and limits passed.");
 
