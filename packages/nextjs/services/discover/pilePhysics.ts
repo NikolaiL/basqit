@@ -375,6 +375,8 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
           x: previous.x + entry.origin.x * scale,
           y: previous.y + entry.origin.y * scale,
         });
+        // A resize restores sleeping bodies; returning logos must wake before gravity can move them.
+        Sleeping.set(entry.body, false);
         matchedPositions.delete(coin);
       } else if (!initializing || falling) {
         spawnLogo(
