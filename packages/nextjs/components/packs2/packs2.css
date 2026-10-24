@@ -635,15 +635,6 @@
   border-radius: 0 0 12px 12px;
   box-shadow: inset 0 0 0 4px #ffffff28;
 }
-.bq-pack-phase-tearing .bq-pack-wrapper {
-  animation: bq-pack-rattle 0.28s ease-in-out;
-}
-.bq-pack-phase-tearing .bq-pack-tear-strip {
-  animation: bq-pack-rip 0.6s 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.bq-pack-phase-tearing .bq-pack-wrapper-body {
-  animation: bq-pack-drop 0.55s 0.55s ease-in forwards;
-}
 .bq-pack-orbit {
   position: absolute;
   z-index: -1;
@@ -674,14 +665,18 @@
   width: 258px;
   height: 338px;
   perspective: 1100px;
-  animation: bq-pack-arrive 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .bq-pack-result-card {
   width: 100%;
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  animation: bq-pack-flip 0.95s 0.12s cubic-bezier(0.22, 0.65, 0.2, 1) both;
+}
+.bq-pack-phase-flipping .bq-pack-result-card {
+  animation: bq-pack-flip 0.95s cubic-bezier(0.22, 0.65, 0.2, 1) forwards;
+}
+.bq-pack-phase-revealed .bq-pack-result-card {
+  transform: rotateY(180deg);
 }
 .bq-pack-result-face {
   position: absolute;
@@ -692,25 +687,10 @@
   box-shadow: 9px 10px 0 color-mix(in srgb, var(--reveal-color) 24%, transparent);
 }
 .bq-pack-result-back {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 30px;
-  background: var(--bq-brand);
-  color: var(--bq-paper);
-}
-.bq-pack-result-back > span:first-child {
-  font-size: 30px;
-  font-weight: 800;
-}
-.bq-pack-result-back > b {
-  font-size: 85px;
-  line-height: 1;
-}
-.bq-pack-result-back > span:last-child {
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  display: grid;
+  place-items: center;
+  border: 0;
+  box-shadow: none;
 }
 .bq-pack-result-front {
   transform: rotateY(180deg);
@@ -850,26 +830,6 @@
   font-size: 9px;
   color: var(--bq-muted);
 }
-@keyframes bq-pack-rattle {
-  25% {
-    transform: rotate(-10deg);
-  }
-  75% {
-    transform: rotate(1deg);
-  }
-}
-@keyframes bq-pack-rip {
-  to {
-    transform: translate(90px, -110px) rotate(35deg);
-    opacity: 0;
-  }
-}
-@keyframes bq-pack-drop {
-  to {
-    transform: translateY(100px) rotate(-15deg) scale(0.85);
-    opacity: 0;
-  }
-}
 @keyframes bq-pack-arrive {
   from {
     opacity: 0;
@@ -882,10 +842,10 @@
 }
 @keyframes bq-pack-flip {
   from {
-    transform: rotateY(0) rotateZ(-5deg);
+    transform: rotateY(0);
   }
   to {
-    transform: rotateY(180deg) rotateZ(0);
+    transform: rotateY(180deg);
   }
 }
 @keyframes bq-pack-bob {
@@ -1128,9 +1088,6 @@
   .bq-pack-dialog *::after {
     animation: none !important;
     transition: none !important;
-  }
-  .bq-pack-result-card {
-    transform: rotateY(180deg);
   }
 }
 

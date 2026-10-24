@@ -37,17 +37,12 @@ export function PackReveal({
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const [phase, setPhase] = useState<"sealed" | "tearing" | "revealed">("sealed");
+  const [phase, setPhase] = useState<"sealed" | "flipping" | "revealed">("sealed");
   const [index, setIndex] = useState(0);
   const [all, setAll] = useState(false);
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
-  useEffect(() => {
-    if (phase !== "tearing") return;
-    const timer = setTimeout(() => setPhase("revealed"), 1100);
-    return () => clearTimeout(timer);
-  }, [phase]);
   const prize = results?.[index];
   const pack = packPresentation(packPrice);
   const level = prize && payoutLevel(levels, prize);
@@ -57,7 +52,7 @@ export function PackReveal({
   );
   const show = () => {
     if (!results) return;
-    setPhase(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "revealed" : "tearing");
+    setPhase(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "revealed" : "flipping");
   };
   const revealed = phase === "revealed" && !!results;
   return (
@@ -104,19 +99,7 @@ export function PackReveal({
           <div className="bq-pack-orbit bq-pack-orbit-three" aria-hidden="true">
             +
           </div>
-          {!revealed ? (
-            <button
-              className="bq-pack-wrapper"
-              disabled={!results || phase === "tearing"}
-              onClick={show}
-              aria-label={results ? "Tear seal and reveal card" : "Waiting for confirmed result"}
-            >
-              <span className="bq-pack-tear-strip">PULL FOR A LITTLE POSSIBILITY ↗</span>
-              <span className="bq-pack-wrapper-body">
-                <PackFace pack={pack} stocks={eligibleStocks} />
-              </span>
-            </button>
-          ) : all ? (
+          {all && results ? (
             <div className="bq-pack-result-grid">
               {results.map((result, i) => {
                 const band = payoutLevel(levels, result);
@@ -144,42 +127,58 @@ export function PackReveal({
                 );
               })}
             </div>
-          ) : prize ? (
-            <div key={index} className="bq-pack-result" role="status" aria-label={`Pack ${index + 1} result`}>
-              <div className="bq-pack-result-card">
-                <div className="bq-pack-result-face bq-pack-result-back" aria-hidden="true">
-                  <span>basqit.</span>
-                  <b>✦</b>
-                  <span>A PIECE OF POSSIBILITY</span>
+          ) : (
+            <div key={index} className="bq-pack-result" aria-label={revealed ? `Pack ${index + 1} result` : undefined}>
+              <div
+                className="bq-pack-result-card"
+                onAnimationEnd={event => {
+                  if (event.target === event.currentTarget && event.animationName === "bq-pack-flip")
+                    setPhase("revealed");
+                }}
+              >
+                <div className="bq-pack-result-face bq-pack-result-back" aria-hidden={revealed}>
+                  <button
+                    className="bq-pack-wrapper"
+                    disabled={!results || phase !== "sealed"}
+                    onClick={show}
+                    aria-label={results ? "Flip pack and reveal card" : "Waiting for confirmed result"}
+                  >
+                    <span className="bq-pack-tear-strip">A LITTLE POSSIBILITY. FLIP TO REVEAL ↗</span>
+                    <span className="bq-pack-wrapper-body">
+                      <PackFace pack={pack} stocks={eligibleStocks} />
+                    </span>
+                  </button>
                 </div>
-                <div className="bq-pack-result-face bq-pack-result-front">
-                  <div className="bq-pack-card-heading">
-                    <span>STOCK TOKEN</span>
-                    <b>{level?.name ?? "Stock Tokens"}</b>
+                {prize && (
+                  <div className="bq-pack-result-face bq-pack-result-front" aria-hidden={!revealed}>
+                    <div className="bq-pack-card-heading">
+                      <span>STOCK TOKEN</span>
+                      <b>{level?.name ?? "Stock Tokens"}</b>
+                    </div>
+                    <StockLogo symbol={stock!.ticker} size={88} />
+                    <strong>{stock!.ticker}</strong>
+                    <span className="bq-pack-card-company">A piece of {stock!.company}</span>
+                    <div className="bq-pack-card-amount">
+                      <b>{formatUnits(prize.amount, 18)}</b>
+                      <span>t{stock!.ticker}</span>
+                    </div>
+                    <div className="bq-pack-card-footer">
+                      <span>{preview ? "SAMPLE CARD" : `NUMBER ${prize.slot} / 999`}</span>
+                      <b>basqit.</b>
+                    </div>
                   </div>
-                  <StockLogo symbol={stock!.ticker} size={88} />
-                  <strong>{stock!.ticker}</strong>
-                  <span className="bq-pack-card-company">A piece of {stock!.company}</span>
-                  <div className="bq-pack-card-amount">
-                    <b>{formatUnits(prize.amount, 18)}</b>
-                    <span>t{stock!.ticker}</span>
-                  </div>
-                  <div className="bq-pack-card-footer">
-                    <span>{preview ? "SAMPLE CARD" : `NUMBER ${prize.slot} / 999`}</span>
-                    <b>basqit.</b>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
-          ) : null}
+          )}
         </div>
         <div className="bq-pack-theatre-actions">
           {!results ? (
             controls
           ) : !revealed ? (
             <>
-              <button className="btn btn-primary" onClick={show} disabled={phase === "tearing"}>
-                {phase === "tearing" ? "Opening the seal…" : "Tear it open ↗"}
+              <button className="btn btn-primary" onClick={show} disabled={phase === "flipping"}>
+                {phase === "flipping" ? "Revealing…" : "Flip to reveal ↗"}
               </button>
               <button
                 className="btn btn-ghost btn-sm"
@@ -199,7 +198,13 @@ export function PackReveal({
                 </p>
               )}
               {!all && index + 1 < results.length && (
-                <button className="btn btn-primary" onClick={() => setIndex(index + 1)}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setIndex(index + 1);
+                    show();
+                  }}
+                >
                   Next card →
                 </button>
               )}
