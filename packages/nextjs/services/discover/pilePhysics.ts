@@ -365,7 +365,7 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
           ? placeSettledLogo(coin.dataset.symbol!, width, height)
           : logoBody(coin.dataset.symbol!, size);
       const previous = matchedPositions.get(coin);
-      if (previous && !initializing) {
+      if (previous && !firstEntrance) {
         const scale = motion.matches ? 1 : previous.size / size;
         entry.returnScale = entry.scale = scale;
         entry.returnAt = engine.timing.timestamp;
@@ -441,6 +441,17 @@ export function attachPilePhysics(scene: HTMLElement, onDrop: (coin: HTMLElement
     measureAfter = performance.now() + 750;
     samples.length = 0;
     release();
+    // Clearing a theme changes the scene height; keep returning logos in flight across that rebuild.
+    if (nextWidth === width) {
+      for (const [coin, entry] of entries) {
+        if (entry.returnScale === 1 || engine.timing.timestamp - entry.returnAt >= 600) continue;
+        matchedPositions.set(coin, {
+          x: entry.body.position.x - entry.origin.x * entry.scale,
+          y: entry.body.position.y - entry.origin.y * entry.scale + headroom - nextHeadroom,
+          size: size * entry.scale,
+        });
+      }
+    }
     width = nextWidth;
     height = nextHeight;
     headroom = nextHeadroom;
