@@ -7,7 +7,8 @@ import { Address } from "@scaffold-ui/components";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Address as EthAddress, type Hex, formatUnits, parseEventLogs, parseUnits } from "viem";
 import { foundry } from "viem/chains";
-import { useAccount, useBlock, useSwitchChain } from "wagmi";
+import { useAccount, useBalance, useBlock, useSwitchChain } from "wagmi";
+import { Arrow } from "~~/components/Arrow";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { StockLogo } from "~~/components/StockLogo";
 import { PackFace } from "~~/components/packs2/PackFace";
@@ -239,6 +240,11 @@ function TestUsdgFaucet({ ready }: { ready: boolean }) {
 
 function Packs2Live() {
   const { address, chainId } = useAccount();
+  const { data: gasBalance } = useBalance({
+    address,
+    chainId: network.id,
+    query: { enabled: !!address, refetchInterval: 5000 },
+  });
   const { switchChainAsync } = useSwitchChain();
   const { openConnectModal } = useWalletConnectModal();
   const { data: deployed, isLoading } = useDeployedContractInfo({ contractName: "BasqitPacks2", chainId: network.id });
@@ -421,6 +427,51 @@ function Packs2Live() {
 
   return (
     <section className="bq-demo-block" aria-label="Packs experiment">
+      <section id="testnet" className="bq-demo bq-packs2-testnet" aria-labelledby="packs-testnet-title">
+        <h2 id="packs-testnet-title">Try Packs on testnet</h2>
+        <p className="bq-soon-status">Testnet · Test tokens only</p>
+        <p className="bq-demo-lead">
+          Everything below runs on {network.name} with test tokens that have no value. Packs use{" "}
+          <a href="https://docs.drand.love/developer/" target="_blank" rel="noreferrer">
+            drand evmnet <Arrow out />
+          </a>{" "}
+          for verifiable randomness. Reveal your result, then collect your Stock Tokens.
+        </p>
+        <ol className="bq-demo-steps">
+          <li>
+            <strong>{network.id === 31337 ? "Connect on local fork" : "Connect on testnet"}</strong>
+            {!address ? (
+              <button className="btn btn-primary btn-sm" onClick={openConnectModal}>
+                Connect wallet
+              </button>
+            ) : ready ? (
+              <span className="bq-demo-ok">Connected to {network.name}</span>
+            ) : (
+              <TxButton pending="Switching…" action={() => switchChainAsync({ chainId: network.id })}>
+                Switch to {network.name}
+              </TxButton>
+            )}
+          </li>
+          <li>
+            <strong>Get test ETH for gas</strong>
+            <span>
+              {gasBalance ? `${formatToken(gasBalance.value, 18)} ETH · ` : address ? "Loading ETH balance… · " : ""}
+              {network.id === 31337 ? (
+                "Use a funded local Anvil wallet."
+              ) : (
+                <a href={TESTNET_ETH_FAUCET} target="_blank" rel="noreferrer">
+                  Robinhood testnet faucet <Arrow out />
+                </a>
+              )}
+            </span>
+          </li>
+          <li>
+            <strong>Get test USDG</strong>
+            <span>{balance === undefined ? "— tUSDG" : `${formatToken(balance, 6)} tUSDG`}</span>
+            <TestUsdgFaucet ready={ready} />
+          </li>
+        </ol>
+      </section>
       <div className="bq-packs2-columns">
         <section
           className="bq-packs2-preview"
@@ -647,23 +698,9 @@ function Packs2Live() {
             )}
           </div>
           <p className="bq-demo-note">Some packs return less than their price. Network gas is additional.</p>
-          <details className="bq-packs2-wallet-setup">
-            <summary>Test wallet &amp; gas</summary>
-            <p>Your balance: {balance === undefined ? "—" : `${formatToken(balance, 6)} tUSDG`}</p>
-            <TestUsdgFaucet ready={ready} />
-            <p className="bq-demo-note">
-              {network.id === 31337 ? (
-                "Use a funded local Anvil wallet for gas."
-              ) : (
-                <a className="link" href={TESTNET_ETH_FAUCET} target="_blank" rel="noreferrer">
-                  Get gas from the Robinhood testnet faucet
-                </a>
-              )}
-            </p>
-            {balance !== undefined && balance < cost && (
-              <p className="bq-demo-note">Get more test USDG before opening.</p>
-            )}
-          </details>
+          {balance !== undefined && balance < cost && (
+            <p className="bq-demo-note">Get more test USDG before opening.</p>
+          )}
         </section>
       </div>
       <div className="bq-packs2-assurances">

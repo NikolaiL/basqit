@@ -20,6 +20,11 @@
   flex-shrink: 0;
   font-size: 13px;
 }
+.bq-packs2-testnet {
+  margin: 0 0 32px;
+  padding: 0;
+  border: 0;
+}
 .bq-packs2-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -390,12 +395,6 @@
   width: 100%;
   min-height: 46px;
   font-size: 15px;
-}
-.bq-packs2-wallet-setup {
-  font-size: 12px;
-  border-top: 1px solid var(--bq-line);
-  margin-top: 12px;
-  padding-top: 12px;
 }
 .bq-packs2-assurances {
   display: flex;
