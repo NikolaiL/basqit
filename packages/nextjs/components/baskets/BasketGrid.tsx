@@ -169,8 +169,8 @@ export function BasketGrid({
 export function useBasketTradeDialog(rows: BasketRow[], feesOn: boolean) {
   const { address } = useAccount();
   const { buy, sell } = useBasketTrades();
-  const usdgBalance = useTestUsdg(address).data;
   const [trading, setTrading] = useState<{ basket: Address; side: "buy" | "sell" }>();
+  const usdgBalance = useTestUsdg(trading ? address : undefined).data;
   const traded = rows.find(row => row.basket === trading?.basket);
   // Fees switched off on testnet are not charged, so they are not estimated either.
   const fee = traded && feesOn ? traded.feeBps : 0n;

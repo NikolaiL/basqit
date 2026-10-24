@@ -1,50 +1,50 @@
 import { deployment } from "../packs/usePacks";
-import { useQuery } from "@tanstack/react-query";
-import type { Address } from "viem";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Abi, Address } from "viem";
 import { basketAbi } from "~~/services/baskets/abi";
 import { valuePerShare } from "~~/services/baskets/value";
 import { packsClient, testnetAssets } from "~~/services/packs/testnet";
 
 type Part = { token: Address; unitsPerShare: bigint };
-const factory = { address: deployment.factory, abi: deployment.abis.factory } as const;
-const shop = { address: deployment.swapAdapter, abi: deployment.abis.swapAdapter } as const;
-const priceOf = (token: Address) =>
-  packsClient.readContract({ ...shop, functionName: "priceUsdG", args: [token] }) as Promise<bigint>;
+const factory = { address: deployment.factory, abi: deployment.abis.factory as Abi } as const;
+const shop = { address: deployment.swapAdapter, abi: deployment.abis.swapAdapter as Abi } as const;
 
 /** Every basket of the factory with its parts, live value per share, rules and `address`'s balance. */
 export function useBasketRows(address?: Address) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["packs-baskets", deployment.factory, address],
+    staleTime: 15_000,
     refetchInterval: 15_000,
     queryFn: async () => {
-      const [list, feesOn] = (await Promise.all([
-        packsClient.readContract({ ...factory, functionName: "allBaskets" }),
-        packsClient.readContract({ ...factory, functionName: "feesEnabled" }),
-      ])) as [Address[], boolean];
+      const [[list, feesOn], { usdg }] = await Promise.all([
+        packsClient.multicall({
+          allowFailure: false,
+          contracts: [
+            { ...factory, functionName: "allBaskets" },
+            { ...factory, functionName: "feesEnabled" },
+          ],
+        }) as Promise<[Address[], boolean]>,
+        queryClient.fetchQuery({
+          queryKey: ["packs-assets", deployment.factory],
+          staleTime: 60_000,
+          queryFn: testnetAssets,
+        }),
+      ]);
       const rows = await Promise.all(
         list.map(async basket => {
-          const b = { address: basket, abi: deployment.abis.basket } as const;
-          const [name, symbol, parts, supply, balance, fee] = await Promise.all([
-            packsClient.readContract({ ...b, functionName: "name" }) as Promise<string>,
-            packsClient.readContract({ ...b, functionName: "symbol" }) as Promise<string>,
-            packsClient.readContract({ ...b, functionName: "components" }) as Promise<Part[]>,
-            packsClient.readContract({ ...b, functionName: "totalSupply" }) as Promise<bigint>,
-            address
-              ? (packsClient.readContract({ ...b, functionName: "balanceOf", args: [address] }) as Promise<bigint>)
-              : Promise.resolve(0n),
-            packsClient.readContract({ ...factory, functionName: "creatorFee", args: [basket] }) as Promise<
-              readonly [Address, number]
-            >,
-          ]);
-          const { usdg } = await testnetAssets();
-          const prices = await Promise.all(parts.map(part => priceOf(part.token)));
-          // 0 when a price is missing: shown as "…", and the buy dialog refuses to price it.
-          const perShare =
-            valuePerShare(
-              parts,
-              Object.fromEntries(parts.map((part, i) => [part.token.toLowerCase(), prices[i]])),
-              usdg,
-            ) ?? 0n;
+          const b = { address: basket, abi: deployment.abis.basket as Abi } as const;
+          const [name, symbol, parts, supply, fee, balance = 0n] = (await packsClient.multicall({
+            allowFailure: false,
+            contracts: [
+              { ...b, functionName: "name", args: [] },
+              { ...b, functionName: "symbol", args: [] },
+              { ...b, functionName: "components", args: [] },
+              { ...b, functionName: "totalSupply", args: [] },
+              { ...factory, functionName: "creatorFee", args: [basket] },
+              ...(address ? [{ ...b, functionName: "balanceOf", args: [address] }] : []),
+            ],
+          })) as [string, string, Part[], bigint, readonly [Address, number], bigint?];
           const rules = { address: basket, abi: basketAbi } as const;
           const [manager, notice, slippage, readyAt, lastRebalanceAt] = await packsClient.multicall({
             allowFailure: false,
@@ -69,7 +69,6 @@ export function useBasketRows(address?: Address) {
             balance,
             creator: fee[0],
             feeBps: BigInt(fee[1]),
-            perShare,
             rules: { manager, noticeSeconds: Number(notice), maxSlippageBps: Number(slippage) },
             readyAt: Number(readyAt),
             lastRebalanceAt: Number(lastRebalanceAt),
@@ -77,9 +76,23 @@ export function useBasketRows(address?: Address) {
           };
         }),
       );
+      const tokens = [...new Set(rows.flatMap(row => row.parts.map(part => part.token.toLowerCase() as Address)))];
+      const prices = (await packsClient.multicall({
+        allowFailure: false,
+        contracts: tokens.map(token => ({ ...shop, functionName: "priceUsdG", args: [token] })),
+      })) as bigint[];
+      const pricesByToken = Object.fromEntries(tokens.map((token, i) => [token, prices[i]]));
       // Chain time, as the contract judges the notice window by it; the banner counts down on each refresh.
       const { timestamp } = await packsClient.getBlock();
-      return { rows, feesOn, checkedAt: Number(timestamp) };
+      return {
+        rows: rows.map(row => ({
+          ...row,
+          // Unknown prices stay unavailable; the trade dialog refuses to price them.
+          perShare: valuePerShare(row.parts, pricesByToken, usdg) ?? 0n,
+        })),
+        feesOn,
+        checkedAt: Number(timestamp),
+      };
     },
   });
 }

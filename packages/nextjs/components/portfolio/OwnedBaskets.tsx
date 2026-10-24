@@ -58,9 +58,9 @@ export function OwnedBaskets({ address }: { address: Address }) {
           const change = percentChange(row.perShare, summary.data?.[row.basket.toLowerCase()]?.refs["24h"] ?? null);
           const mine = row.creator.toLowerCase() === address.toLowerCase();
           return (
-            <div className="bq-asset-list-row bq-asset-action-row" key={row.basket}>
+            <div className="bq-asset-list-row bq-asset-action-row bq-basket-row" key={row.basket}>
               <Link
-                className="bq-asset-row-details"
+                className="bq-asset-row-details bq-basket-row-details"
                 href={`/baskets/${row.basket}`}
                 aria-label={`View ${row.name} basket`}
               >

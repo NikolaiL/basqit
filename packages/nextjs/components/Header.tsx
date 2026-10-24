@@ -1,20 +1,38 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { LoadingBars } from "~~/components/LoadingBars";
 import { SwitchTheme } from "~~/components/SwitchTheme";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth/RainbowKitCustomConnectButton";
 
 const pages = [
-  { href: "/discover", label: "Discover" },
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/atlas", label: "Assets" },
-  { href: "/corporate-events", label: "Corporate events" },
-  { href: "/baskets", label: "Baskets" },
-  { href: "/gifts", label: "Gifts" },
-  { href: "/packs", label: "Packs" },
+  { href: "/discover", label: "Discover", color: "#8b5cf6" },
+  { href: "/portfolio", label: "Portfolio", color: "#3b82f6" },
+  { href: "/baskets", label: "Baskets", color: "#ec4899" },
+  { href: "/gifts", label: "Gifts", color: "#f97316" },
+  { href: "/packs", label: "Packs", color: "#16a34a" },
 ];
+
+function MenuLabel({ label }: { label: string }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span className="relative inline-flex items-center justify-center" aria-busy={pending}>
+      <span className={pending ? "invisible" : ""}>{label}</span>
+      {pending && (
+        <span
+          className="absolute inset-0 flex items-center justify-center"
+          role="status"
+          aria-label={`Loading ${label}`}
+        >
+          <LoadingBars small />
+        </span>
+      )}
+    </span>
+  );
+}
 
 export const Header = () => {
   const pathname = usePathname();
@@ -31,34 +49,15 @@ export const Header = () => {
             <Link
               key={page.href}
               href={page.href}
-              className={pathname === page.href ? "bq-nav-active" : ""}
+              className="bq-nav-chip"
+              aria-label={page.label}
+              style={{ "--chip": page.color } as CSSProperties}
               aria-current={pathname === page.href ? "page" : undefined}
             >
-              {page.label}
+              <MenuLabel label={page.label} />
             </Link>
           ))}
         </nav>
-        <details className="dropdown dropdown-end bq-mobile-menu">
-          <summary className="btn btn-ghost btn-square" aria-label="Open navigation menu">
-            ☰
-          </summary>
-          <div className="dropdown-content menu bg-base-100 rounded-box shadow-lg">
-            <nav
-              aria-label="Mobile navigation"
-              onClick={event => {
-                if ((event.target as HTMLElement).closest("a"))
-                  event.currentTarget.closest("details")?.removeAttribute("open");
-              }}
-            >
-              {pages.map(page => (
-                <Link key={page.href} href={page.href} aria-current={pathname === page.href ? "page" : undefined}>
-                  {page.label}
-                </Link>
-              ))}
-            </nav>
-            <SwitchTheme />
-          </div>
-        </details>
         <div className="bq-header-wallet">
           <RainbowKitCustomConnectButton />
         </div>

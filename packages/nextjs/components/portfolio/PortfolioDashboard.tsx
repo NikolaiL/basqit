@@ -273,7 +273,7 @@ export function PortfolioDashboard({
           <h1>{eventsPage ? "Corporate events" : "Your portfolio"}</h1>
           <p>
             {eventsPage
-              ? "Dividends, splits and multiplier updates across Stock Tokens."
+              ? "Understand company announcements and what they mean for your Stock Tokens."
               : "See what you hold. Understand what’s changing."}
           </p>
         </div>
@@ -298,24 +298,41 @@ export function PortfolioDashboard({
       {eventsPage && (
         <section className="bq-events-intro" aria-label="About corporate events">
           <p>
-            Companies sometimes pay dividends or split their shares. These events can change how much stock each Stock
-            Token represents.
+            A <strong>corporate event</strong> is an action taken by a company or fund that affects its shares. It is
+            different from an everyday price change. This page shows reported events and related Stock Token
+            adjustments.
+          </p>
+          <p>
+            For Robinhood Stock Tokens, these adjustments change the <strong>shares per token</strong>, also called the
+            multiplier. Your number of tokens stays the same; the amount of stock exposure each token represents can
+            change.
           </p>
           <details>
-            <summary>Read more</summary>
+            <summary>New to stocks? Learn what the events mean</summary>
             <p>
-              <strong>Dividends</strong> are payments a company makes to shareholders. For Robinhood Stock Tokens, the
-              adjustment is reflected in how much stock each token represents, rather than a cash payment to your
-              wallet.
+              <strong>Dividend:</strong> a payment a company or fund distributes to shareholders. For these Stock
+              Tokens, it is reflected through an adjustment to shares per token, not a separate cash payment to your
+              wallet. Not every company pays dividends, and future payments are not guaranteed.
             </p>
             <p>
-              <strong>Stock splits</strong> divide shares into smaller pieces. Think of cutting a pizza into more
-              slices: more pieces do not mean more pizza.
+              <strong>Stock split:</strong> a company divides its shares into smaller units. In a 2-for-1 split, one
+              share becomes two, each worth roughly half as much at the time of the split. Like cutting a pizza into
+              more slices, this alone does not create extra value. A reverse split combines shares instead.
             </p>
             <p>
-              Your token count can stay the same. A number called the <strong>multiplier</strong> tracks how many
-              underlying shares each token represents. For example, 10 tokens with a multiplier of 1.02 represent
-              exposure to 10.2 shares.
+              <strong>Shares per token:</strong> imagine you hold 10 tokens. At a multiplier of 1, they track the
+              equivalent of 10 shares. At 1.02, the same 10 tokens track 10.2 shares. This is an illustration, not a
+              promised return. The share price can still fall, and tokens do not give you ownership of those shares.
+            </p>
+            <p>
+              <strong>How to read this page:</strong> “In progress” means the event is still being processed;
+              “Processed” means the data provider reports it as completed. Open an event to see its dates and any
+              available before-and-after values. An estimate is a calculation, not a confirmed adjustment.
+            </p>
+            <p>
+              You do not need to claim a separate dividend payment here. If a value is unavailable, it means we cannot
+              confirm it from the data we have — not that nothing changed. Use “All Stock Tokens” to browse without a
+              wallet, or connect and sign in to filter events to your holdings.
             </p>
             <a
               className="link"
@@ -435,7 +452,7 @@ export function PortfolioDashboard({
                   <div className="skeleton bq-holdings-link-loading" aria-label="Loading holdings" />
                 ) : (
                   <Link className="link" href="/atlas">
-                    Buy another asset <Arrow />
+                    Explore assets <Arrow />
                   </Link>
                 )}
               </div>
