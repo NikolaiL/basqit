@@ -6,7 +6,6 @@ import "./packs2.css";
 import { Address } from "@scaffold-ui/components";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Address as EthAddress, type Hex, formatUnits, parseEventLogs, parseUnits } from "viem";
-import { foundry } from "viem/chains";
 import { useAccount, useBalance, useBlock, useSwitchChain } from "wagmi";
 import { Arrow } from "~~/components/Arrow";
 import { LoadingBars } from "~~/components/LoadingBars";
@@ -32,7 +31,7 @@ import { PACK_STOCKS, packStocks, payoutStock } from "~~/services/packs/stocks";
 import { TESTNET_ETH_FAUCET, robinhoodTestnet } from "~~/services/packs/testnet";
 import { getParsedError } from "~~/utils/scaffold-eth";
 
-const network = process.env.NODE_ENV === "development" ? foundry : robinhoodTestnet;
+const network = robinhoodTestnet;
 const readOptions = { chainId: network.id, watch: false, query: { refetchInterval: 5000 } } as const;
 const registry = packs2Contracts as Record<number, Record<string, { address: EthAddress }>>;
 const registered = registry[network.id];
@@ -445,7 +444,7 @@ function Packs2Live() {
         </p>
         <ol className="bq-demo-steps">
           <li>
-            <strong>{network.id === 31337 ? "Connect on local fork" : "Connect on testnet"}</strong>
+            <strong>Connect on testnet</strong>
             {!address ? (
               <button className="btn btn-primary btn-sm" onClick={openConnectModal}>
                 Connect wallet
@@ -462,13 +461,9 @@ function Packs2Live() {
             <strong>Get test ETH for gas</strong>
             <span>
               {gasBalance ? `${formatToken(gasBalance.value, 18)} ETH · ` : address ? "Loading ETH balance… · " : ""}
-              {network.id === 31337 ? (
-                "Use a funded local Anvil wallet."
-              ) : (
-                <a href={TESTNET_ETH_FAUCET} target="_blank" rel="noreferrer">
-                  Robinhood testnet faucet <Arrow out />
-                </a>
-              )}
+              <a href={TESTNET_ETH_FAUCET} target="_blank" rel="noreferrer">
+                Robinhood testnet faucet <Arrow out />
+              </a>
             </span>
           </li>
           <li>
@@ -680,7 +675,7 @@ function Packs2Live() {
                     {
                       onBlockConfirmation: receipt => {
                         const [event] = parseEventLogs({
-                          abi: packs2Contracts[foundry.id].BasqitPacks2.abi,
+                          abi: packs2Contracts[network.id].BasqitPacks2.abi,
                           eventName: "OpenRequested",
                           logs: receipt.logs.filter(
                             log => log.address.toLowerCase() === deployed.address.toLowerCase(),
@@ -854,10 +849,7 @@ function Packs2Live() {
       <details className="bq-packs2-panel">
         <summary>Contract, vault &amp; test funding</summary>
         <div className="bq-packs2-network">
-          <span className="badge badge-outline">
-            {network.name}
-            {network.id === 31337 && " · RH fork"}
-          </span>
+          <span className="badge badge-outline">{network.name}</span>
           <Address address={deployed.address} chain={network} />
         </div>
         <label className="bq-packs2-input">
