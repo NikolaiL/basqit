@@ -2,6 +2,18 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Compact quantity presets under the stepper
+
+The 1/5/10 shortcuts now sit directly below the minus/input/plus control as small underlined actions.
+They use 24px-high targets, 16px horizontal spacing, no filled background or raised edge, and purple
+text for the current preset. The main stepper retains its 44px controls and editable numeric field.
+This replaces the earlier separate preset button row while preserving keyboard focus, pressed states,
+purchase locking and total updates.
+
+Validation: browser assertions at 1280, 320, 390 and 430px confirmed the links sit below the stepper,
+use underlined text without background/shadow, and cause no horizontal overflow. Clicks, keyboard
+activation, stepper interaction and total updates passed. Frontend build passed.
+
 ### 2026-10-25 — Rounded pack quantity selector hover states
 
 The 1/5/10 presets now use separate buttons with 8px spacing and consistent 12px corners. Removing

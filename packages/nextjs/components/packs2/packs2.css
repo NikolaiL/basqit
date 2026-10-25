@@ -361,11 +361,6 @@
   color: var(--bq-brand);
 }
 .bq-packs2-quantity {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 14px;
-  justify-content: space-between;
   margin-top: 20px;
 }
 .bq-packs2-input {
@@ -377,16 +372,16 @@
 }
 .bq-packs2-presets {
   display: flex;
-  gap: 8px;
+  gap: 16px;
 }
 .bq-packs2-presets .btn {
-  border-radius: 12px;
+  min-height: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--bq-muted);
 }
-@media (hover: hover) {
-  .bq-packs2-presets .btn-ghost:hover:not(:disabled) {
-    background: var(--bq-lilac);
-    border-color: transparent;
-  }
+.bq-packs2-presets .btn[aria-pressed="true"] {
+  color: var(--bq-brand);
 }
 .bq-packs2-input .input {
   width: min(100%, 240px);
@@ -406,11 +401,9 @@
   align-items: center;
   gap: 8px;
 }
-.bq-packs2-quantity .btn {
+.bq-packs2-stepper .btn {
   min-height: 44px;
   height: 44px;
-}
-.bq-packs2-stepper .btn {
   width: 44px;
   min-width: 44px;
   padding: 0;

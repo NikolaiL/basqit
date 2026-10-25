@@ -611,20 +611,6 @@ function Packs2Live() {
             move.
           </p>
           <div className="bq-packs2-quantity">
-            <div className="bq-packs2-presets" aria-label="Quick pack quantities">
-              {[1, 5, 10].map(value => (
-                <button
-                  type="button"
-                  key={value}
-                  className={`btn btn-sm ${count === value ? "btn-secondary" : "btn-ghost"}`}
-                  aria-pressed={count === value}
-                  disabled={purchaseBusy}
-                  onClick={() => setQuantity(String(value))}
-                >
-                  {value} {value === 1 ? "pack" : "packs"}
-                </button>
-              ))}
-            </div>
             <div className="bq-packs2-input">
               <label htmlFor="packs2-quantity">Quantity</label>
               <div className="bq-packs2-stepper">
@@ -671,6 +657,20 @@ function Packs2Live() {
                 >
                   <span aria-hidden="true">+</span>
                 </button>
+              </div>
+              <div className="bq-packs2-presets" aria-label="Quick pack quantities">
+                {[1, 5, 10].map(value => (
+                  <button
+                    type="button"
+                    key={value}
+                    className="btn btn-link btn-xs"
+                    aria-pressed={count === value}
+                    disabled={purchaseBusy}
+                    onClick={() => setQuantity(String(value))}
+                  >
+                    {value} {value === 1 ? "pack" : "packs"}
+                  </button>
+                ))}
               </div>
               <output className="sr-only">{validCount ? `${count} packs selected` : ""}</output>
             </div>
