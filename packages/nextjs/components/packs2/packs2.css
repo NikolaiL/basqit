@@ -375,6 +375,19 @@
   font-size: 12px;
   font-weight: 600;
 }
+.bq-packs2-presets {
+  display: flex;
+  gap: 8px;
+}
+.bq-packs2-presets .btn {
+  border-radius: 12px;
+}
+@media (hover: hover) {
+  .bq-packs2-presets .btn-ghost:hover:not(:disabled) {
+    background: var(--bq-lilac);
+    border-color: transparent;
+  }
+}
 .bq-packs2-input .input {
   width: min(100%, 240px);
 }

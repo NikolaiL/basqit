@@ -2,6 +2,18 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Rounded pack quantity selector hover states
+
+The 1/5/10 presets now use separate buttons with 8px spacing and consistent 12px corners. Removing
+the joined-segment styling prevents square middle buttons and shared edges on hover. Unselected
+buttons use a flat lilac hover, while the selected option keeps its raised sticker treatment.
+Existing keyboard focus, pressed states, 44px tap targets and quantity behavior are preserved.
+
+Validation: actual hover and keyboard-selected states showed a flat lilac hover beside a raised
+selected button. Browser assertions at 1280, 320, 390 and 430px confirmed all four corners remain 12px,
+spacing remains 8px, targets remain at least 44px and the page has no horizontal overflow. Frontend
+build passed.
+
 ### 2026-10-25 — Tappable pack quantity controls
 
 Quantity now has minus and plus buttons beside its editable field. Controls use Basqit's secondary

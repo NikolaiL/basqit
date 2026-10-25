@@ -611,12 +611,12 @@ function Packs2Live() {
             move.
           </p>
           <div className="bq-packs2-quantity">
-            <div className="join" aria-label="Quick pack quantities">
+            <div className="bq-packs2-presets" aria-label="Quick pack quantities">
               {[1, 5, 10].map(value => (
                 <button
                   type="button"
                   key={value}
-                  className={`btn btn-sm join-item ${count === value ? "btn-secondary" : "btn-ghost"}`}
+                  className={`btn btn-sm ${count === value ? "btn-secondary" : "btn-ghost"}`}
                   aria-pressed={count === value}
                   disabled={purchaseBusy}
                   onClick={() => setQuantity(String(value))}
