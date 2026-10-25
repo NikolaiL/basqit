@@ -2,6 +2,17 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Hide reveal action while waiting
+
+The opening dialog hides the Reveal results button until the target signature or cached randomness is
+available. Its layout space stays reserved, so the button appears without moving the pack or footer.
+Countdown completion alone still cannot enable reveal; the existing proof and wallet checks apply.
+Connection and signature errors remain visible while waiting.
+
+Validation: simulated proof arrival with the real opening dialog and waiting component at 1280, 320,
+390 and 430px widths preserved panel, heading, status, pack, action and footer geometry. The waiting
+action was hidden and disabled, then visible and enabled after proof availability. Frontend build passed.
+
 ### 2026-10-25 — Revealed pack amounts and USD references
 
 Revealed cards and the Show all collection display stock quantities with up to six decimal places,

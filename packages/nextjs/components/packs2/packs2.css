@@ -817,6 +817,9 @@
   width: 100%;
   margin: 0;
 }
+.bq-pack-theatre-actions[data-waiting="true"] button {
+  visibility: hidden;
+}
 .bq-pack-progress {
   width: 100%;
   font-size: 12px;

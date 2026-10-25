@@ -194,7 +194,7 @@ export function PackReveal({
             </div>
           )}
         </div>
-        <div className="bq-pack-theatre-actions">
+        <div className="bq-pack-theatre-actions" data-waiting={!results && !readyToReveal}>
           {!results ? (
             controls
           ) : !revealed ? (
