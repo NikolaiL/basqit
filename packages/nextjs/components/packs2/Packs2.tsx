@@ -32,6 +32,7 @@ import { openWithApproval } from "~~/services/packs/purchase";
 import { type PackPayout, confirmedPayouts } from "~~/services/packs/reveal";
 import { PACK_STOCKS, packStocks, payoutStock } from "~~/services/packs/stocks";
 import { TESTNET_ETH_FAUCET, robinhoodTestnet } from "~~/services/packs/testnet";
+import { amount as displayAmount } from "~~/services/portfolio/format";
 import { getParsedError } from "~~/utils/scaffold-eth";
 
 const network = robinhoodTestnet;
@@ -386,7 +387,7 @@ function Packs2Live() {
   const amountLabel = (amount: bigint, token: EthAddress = fundingToken) => {
     const stock = stockInfo(token);
     const usd = tokenPrices[token.toLowerCase()];
-    return `${formatUnits(amount, 18)} t${stock.ticker} · ${usd ? `${formatUsd((Number(amount) / 1e18) * usd)} reference value` : "USD reference unavailable"}`;
+    return `${displayAmount(formatUnits(amount, 18), 6)} t${stock.ticker} · ${usd ? `${formatUsd((Number(amount) / 1e18) * usd)} reference value` : "USD reference unavailable"}`;
   };
   const count = /^\d+$/.test(quantity) ? Number(quantity) : 0;
   const validCount = Number.isSafeInteger(count) && count >= 1 && count <= 100;

@@ -1,6 +1,12 @@
-import { type Address } from "viem";
+import { type Address, formatUnits } from "viem";
 
 export type PackPayout = { token: Address; amount: bigint; slot: number; paid: boolean };
+
+export function payoutValueUsd(amount: bigint, price: number | undefined) {
+  if (price === undefined || !Number.isFinite(price) || price <= 0) return undefined;
+  const value = Number(formatUnits(amount, 18)) * price;
+  return Number.isFinite(value) ? value : undefined;
+}
 
 // A partial or stale read must never start a result animation.
 export function confirmedPayouts(

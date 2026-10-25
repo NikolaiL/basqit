@@ -5,10 +5,12 @@ import { type Address, formatUnits } from "viem";
 import { DialogClose } from "~~/components/DialogClose";
 import { StockLogo } from "~~/components/StockLogo";
 import { PackFace } from "~~/components/packs2/PackFace";
+import { formatUsd, useUsdPrices } from "~~/components/packs/usePacks";
 import { SwapConfetti } from "~~/components/trading/SwapConfetti";
 import { packPresentation } from "~~/services/packs/catalog";
-import { type PackPayout, payoutLevel } from "~~/services/packs/reveal";
+import { type PackPayout, payoutLevel, payoutValueUsd } from "~~/services/packs/reveal";
 import { type PackStock, payoutStock } from "~~/services/packs/stocks";
+import { amount as displayAmount } from "~~/services/portfolio/format";
 
 export type RevealLevel = { end: number; token: Address; amount: bigint; name: string; color: string };
 const READY_TITLE = "Your pack is ready to be revealed.";
@@ -50,6 +52,11 @@ export function PackReveal({
   const pack = packPresentation(packPrice);
   const level = prize && payoutLevel(levels, prize);
   const stock = prize && payoutStock(prize.token, stocks);
+  const prices = useUsdPrices(stocks.map(stock => stock.ticker));
+  const usdLabel = (amount: bigint, ticker: string) => {
+    const value = payoutValueUsd(amount, prices.data?.[ticker]);
+    return value === undefined ? "USD reference unavailable" : `${formatUsd(value)} USD reference`;
+  };
   const eligibleStocks = [...new Set(levels.map(level => level.token.toLowerCase()))].map(token =>
     payoutStock(token as Address, stocks),
   );
@@ -132,8 +139,9 @@ export function PackReveal({
                       Pack {i + 1} · {band?.name ?? "Stock Tokens"}
                     </b>
                     <span>
-                      {formatUnits(result.amount, 18)} t{stock.ticker}
+                      {displayAmount(formatUnits(result.amount, 18), 6)} t{stock.ticker}
                     </span>
+                    <small>{usdLabel(result.amount, stock.ticker)}</small>
                     <small>{preview ? "Sample" : result.paid ? "Collected" : "Awaiting collection"}</small>
                   </div>
                 );
@@ -171,8 +179,10 @@ export function PackReveal({
                     <strong>{stock!.ticker}</strong>
                     <span className="bq-pack-card-company">A piece of {stock!.company}</span>
                     <div className="bq-pack-card-amount">
-                      <b>{formatUnits(prize.amount, 18)}</b>
-                      <span>t{stock!.ticker}</span>
+                      <b>
+                        {displayAmount(formatUnits(prize.amount, 18), 6)} t{stock!.ticker}
+                      </b>
+                      <span>{usdLabel(prize.amount, stock!.ticker)}</span>
                     </div>
                     <div className="bq-pack-card-footer">
                       <span>{preview ? "SAMPLE CARD" : `NUMBER ${prize.slot} / 999`}</span>

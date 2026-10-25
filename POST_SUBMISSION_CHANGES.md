@@ -2,6 +2,17 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Revealed pack amounts and USD references
+
+Revealed cards and the Show all collection display stock quantities with up to six decimal places,
+without trailing zeros. Positive quantities below that precision display as `<0.000001` instead of zero.
+Both views also show a USD reference based on the actual payout stock and the existing live price feed.
+The calculation uses the full on-chain quantity, with an unavailable message when a quote is missing.
+Stock labels in collection rows use the same six-decimal formatting. Transaction amounts are unchanged.
+
+Validation: frontend build and 15 Packs/formatting checks pass; individual and Show all cards were
+checked at mobile and desktop widths without horizontal overflow.
+
 ### 2026-10-25 — Packs ready-to-reveal state
 
 When the opening's target signature or cached randomness is available, the heading changes to
