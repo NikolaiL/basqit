@@ -27,7 +27,8 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
     return () => clearInterval(timer);
   }, [latest.data, source, ready]);
   // A target signature proves that the published round has reached at least this opening's round.
-  const current = ready && (latest.data === undefined || latest.data < round) ? round : latest.data;
+  const confirmedAhead = ready && (latest.data === undefined || latest.data < round);
+  const current = confirmedAhead ? round : latest.data;
   const seconds =
     current === undefined ? undefined : drandWaitSeconds(current, round, clock.source === source ? clock.elapsedMs : 0);
   const unavailable = latest.isError || latest.fetchStatus === "paused";
@@ -35,7 +36,11 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
     <span className="bq-pack-wait">
       <span className="bq-pack-wait-rounds">
         <span>
-          {unavailable && latest.data !== undefined ? "Last seen round" : "Current round"}
+          {confirmedAhead
+            ? "Confirmed through round"
+            : unavailable && latest.data !== undefined
+              ? "Last seen round"
+              : "Current round"}
           <strong>{current?.toString() ?? "…"}</strong>
         </span>
         <span>
