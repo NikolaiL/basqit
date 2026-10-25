@@ -575,12 +575,18 @@
   visibility: hidden;
 }
 .bq-pack-subtitle {
+  display: grid;
+  align-content: center;
+  gap: 8px;
   font-size: 12px;
   text-align: center;
   color: var(--bq-muted);
   margin: 0 auto;
   max-width: 490px;
   min-height: 90px;
+}
+.bq-pack-subtitle .bq-demo-note {
+  margin: 0;
 }
 .bq-pack-wait {
   display: grid;
@@ -816,9 +822,6 @@
 .bq-pack-theatre-actions .bq-demo-note {
   width: 100%;
   margin: 0;
-}
-.bq-pack-theatre-actions[data-waiting="true"] button {
-  visibility: hidden;
 }
 .bq-pack-progress {
   width: 100%;

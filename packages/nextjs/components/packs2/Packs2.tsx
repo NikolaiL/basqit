@@ -1047,6 +1047,11 @@ function OpeningCard({
   });
   if (!o) return <p>Loading opening #{String(id)}…</p>;
   const canReveal = !!proof.data || cached;
+  const proofError = !cached && proof.error && (
+    <p className="bq-demo-note" role="status">
+      {proof.error.message} Checking again automatically.
+    </p>
+  );
   const controls = !o.revealed ? (
     <>
       <TxButton
@@ -1056,11 +1061,7 @@ function OpeningCard({
       >
         Reveal results
       </TxButton>
-      {!cached && proof.error && (
-        <p className="bq-demo-note" role="status">
-          {proof.error.message} Checking again automatically.
-        </p>
-      )}
+      {proofError}
     </>
   ) : (
     <>
@@ -1132,10 +1133,13 @@ function OpeningCard({
               <LoadingBars small /> Loading your confirmed result…
             </span>
           ) : (
-            <DrandWait round={o.round} ready={canReveal} />
+            <>
+              <DrandWait round={o.round} ready={canReveal} />
+              {proofError}
+            </>
           )
         }
-        readyToReveal={canReveal}
+        readyToReveal={!o.revealed && canReveal}
       />
     );
   return (

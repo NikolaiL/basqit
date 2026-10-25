@@ -45,9 +45,15 @@ export function PackReveal({
   const [phase, setPhase] = useState<"sealed" | "flipping" | "revealed">("sealed");
   const [index, setIndex] = useState(0);
   const [all, setAll] = useState(false);
+  const autoOpened = useRef(false);
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
+  useEffect(() => {
+    if (preview || !results?.length || autoOpened.current) return;
+    autoOpened.current = true;
+    setPhase(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "revealed" : "flipping");
+  }, [preview, results]);
   const prize = results?.[index];
   const pack = packPresentation(packPrice);
   const level = prize && payoutLevel(levels, prize);
@@ -99,15 +105,17 @@ export function PackReveal({
             </span>
           )}
         </h2>
-        <p className="bq-pack-subtitle" role="status">
+        <div className="bq-pack-subtitle" role="status">
           {preview
             ? "Illustrative samples. No payment, selection, or tokens."
             : revealed
               ? "Result confirmed on-chain. Collect it whenever you’re ready."
               : results
                 ? "Your result is fixed on-chain. The next part is just for fun."
-                : waiting}
-        </p>
+                : readyToReveal
+                  ? controls
+                  : waiting}
+        </div>
         <div className={`bq-pack-reveal-stage bq-pack-phase-${phase}${all ? " bq-pack-show-all" : ""}`}>
           <div className="bq-pack-orbit bq-pack-orbit-one" aria-hidden="true">
             ✦
@@ -194,56 +202,56 @@ export function PackReveal({
             </div>
           )}
         </div>
-        <div className="bq-pack-theatre-actions" data-waiting={!results && !readyToReveal}>
-          {!results ? (
-            controls
-          ) : !revealed ? (
-            <>
-              <button className="btn btn-primary" onClick={show} disabled={phase === "flipping"}>
-                {phase === "flipping" ? "Revealing…" : "Flip to reveal ↗"}
-              </button>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setAll(true);
-                  setPhase("revealed");
-                }}
-              >
-                Skip animation · Show all
-              </button>
-            </>
-          ) : (
-            <>
-              {!all && (
-                <p className="bq-pack-progress">
-                  {index + 1} of {results.length} · {level?.name ?? "Stock Tokens"}
-                </p>
-              )}
-              {!all && index + 1 < results.length && (
+        {results && (preview || revealed) && (
+          <div className="bq-pack-theatre-actions">
+            {!revealed ? (
+              <>
+                <button className="btn btn-primary" onClick={show} disabled={phase === "flipping"}>
+                  {phase === "flipping" ? "Revealing…" : "Flip to reveal ↗"}
+                </button>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => {
-                    setIndex(index + 1);
-                    show();
+                    setAll(true);
+                    setPhase("revealed");
                   }}
                 >
-                  Next card →
+                  Skip animation · Show all
                 </button>
-              )}
-              {!all && results.length > 1 && (
-                <button className="btn btn-ghost btn-sm" onClick={() => setAll(true)}>
-                  Show all {results.length} cards
-                </button>
-              )}
-              {controls}
-              {preview && (
-                <button className="btn btn-primary" onClick={() => dialog.current?.close()}>
-                  Nice. Back to packs.
-                </button>
-              )}
-            </>
-          )}
-        </div>
+              </>
+            ) : (
+              <>
+                {!all && (
+                  <p className="bq-pack-progress">
+                    {index + 1} of {results.length} · {level?.name ?? "Stock Tokens"}
+                  </p>
+                )}
+                {!all && index + 1 < results.length && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setIndex(index + 1);
+                      show();
+                    }}
+                  >
+                    Next card →
+                  </button>
+                )}
+                {!all && results.length > 1 && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => setAll(true)}>
+                    Show all {results.length} cards
+                  </button>
+                )}
+                {controls}
+                {preview && (
+                  <button className="btn btn-primary" onClick={() => dialog.current?.close()}>
+                    Nice. Back to packs.
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
         <p className="bq-pack-theatre-note">
           {preview
             ? "Sample cards demonstrate the animation, not the payout distribution."

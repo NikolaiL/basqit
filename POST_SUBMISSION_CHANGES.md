@@ -2,6 +2,22 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Reveal action in the countdown area and automatic first card
+
+The ready opening replaces its countdown area with the Reveal results action. Waiting openings no
+longer reserve an action below the pack. The header, status area and pack keep their positions.
+After confirmed on-chain results arrive, the first card opens automatically without a second click.
+Additional cards still use Next card or Show all; sample previews retain their manual opening.
+Reduced-motion preferences show the result immediately. Payout refreshes do not restart the animation.
+Proof errors, wallet rejection and transaction failures keep their existing handling. Reveal still
+requires a user-confirmed transaction, and payouts are collected separately.
+
+Validation: browser assertions at 1280, 320, 390 and 430px confirmed stable waiting-to-ready geometry,
+the action inside the status area and no lower placeholder. Simulated confirmed results opened the
+first single/multiple card automatically; Next card, Show all, payout refresh and manual sample preview
+checks passed without a wallet transaction. Frontend build, type checks and all 14 Packs service test
+entries passed.
+
 ### 2026-10-25 — Hide reveal action while waiting
 
 The opening dialog hides the Reveal results button until the target signature or cached randomness is
