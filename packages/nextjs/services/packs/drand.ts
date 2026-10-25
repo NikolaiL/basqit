@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 
 export async function fetchLatestDrandRound(): Promise<bigint> {
-  const response = await fetch("https://api.drand.sh/v2/beacons/evmnet/rounds/latest", {
+  const response = await fetch(`https://api.drand.sh/v2/beacons/evmnet/rounds/latest?t=${Date.now()}`, {
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
@@ -11,9 +11,11 @@ export async function fetchLatestDrandRound(): Promise<bigint> {
   return BigInt(result.round);
 }
 
-export function drandWaitSeconds(currentRound: bigint, targetRound: bigint) {
+export function drandWaitSeconds(currentRound: bigint, targetRound: bigint, elapsedMs = 0) {
   // The Packs initializer pins evmnet's three-second period.
-  return targetRound > currentRound ? (targetRound - currentRound) * 3n : 0n;
+  const remaining = targetRound > currentRound ? (targetRound - currentRound) * 3n : 0n;
+  const elapsed = BigInt(Math.max(0, Math.floor(elapsedMs / 1000)));
+  return remaining > elapsed ? remaining - elapsed : 0n;
 }
 
 export async function fetchDrandProof(round: bigint): Promise<Hex | null> {

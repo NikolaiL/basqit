@@ -6,7 +6,8 @@ import "./packs2.css";
 import { Address } from "@scaffold-ui/components";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type Address as EthAddress, type Hex, formatUnits, parseEventLogs, parseUnits } from "viem";
-import { useAccount, useBalance, useBlock, useSwitchChain } from "wagmi";
+import { useAccount, useBalance, useBlock, useConfig, useSwitchChain } from "wagmi";
+import { getAccount } from "wagmi/actions";
 import { Arrow } from "~~/components/Arrow";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { StockLogo } from "~~/components/StockLogo";
@@ -27,6 +28,7 @@ import {
 } from "~~/services/packs/catalog";
 import { fetchDrandProof } from "~~/services/packs/drand";
 import { faucetAvailability } from "~~/services/packs/faucet";
+import { openWithApproval } from "~~/services/packs/purchase";
 import { type PackPayout, confirmedPayouts } from "~~/services/packs/reveal";
 import { PACK_STOCKS, packStocks, payoutStock } from "~~/services/packs/stocks";
 import { TESTNET_ETH_FAUCET, robinhoodTestnet } from "~~/services/packs/testnet";
@@ -240,6 +242,7 @@ function TestUsdgFaucet({ ready }: { ready: boolean }) {
 
 function Packs2Live() {
   const { address, chainId } = useAccount();
+  const walletConfig = useConfig();
   const { data: gasBalance } = useBalance({
     address,
     chainId: network.id,
@@ -260,6 +263,7 @@ function Packs2Live() {
   const [offset, setOffset] = useState(0);
   const [activeOpening, setActiveOpening] = useState<bigint>();
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [purchaseStep, setPurchaseStep] = useState("");
   const payment = useScaffoldWriteContract({ contractName: "Packs2PaymentToken", chainId: network.id });
   const stock = useScaffoldWriteContract({ contractName: fundingAsset.contract, chainId: network.id });
   const core = useScaffoldWriteContract({ contractName: "BasqitPacks2", chainId: network.id });
@@ -283,7 +287,7 @@ function Packs2Live() {
   const price = config?.price;
   const referencePrice = config?.referencePriceUsdG;
   const pack = price === undefined ? PACK_TYPES[packType - 1] : packPresentation(price);
-  const purchaseBusy = core.isPending || core.isMining || payment.isPending || payment.isMining;
+  const purchaseBusy = !!purchaseStep || core.isPending || core.isMining || payment.isPending || payment.isMining;
   const { data: paused } = useScaffoldReadContract({
     ...readOptions,
     contractName: "BasqitPacks2",
@@ -347,7 +351,7 @@ function Packs2Live() {
     args: [address],
     query: walletQuery,
   });
-  const { data: allowance } = useScaffoldReadContract({
+  const { refetch: refetchAllowance } = useScaffoldReadContract({
     ...readOptions,
     contractName: "Packs2PaymentToken",
     functionName: "allowance",
@@ -650,46 +654,64 @@ function Packs2Live() {
               <button className="btn btn-primary" disabled>
                 Checking payout table…
               </button>
-            ) : allowance !== undefined && allowance < cost ? (
-              <TxButton
-                pending="Approving…"
-                disabled={!validCount || price === undefined || paused}
-                action={() => payment.writeContractAsync({ functionName: "approve", args: [deployed.address, cost] })}
-              >
-                Approve {formatToken(cost, 6)} tUSDG
-              </TxButton>
             ) : (
               <TxButton
-                pending="Opening…"
+                pending={purchaseStep || "Checking approval…"}
                 disabled={
+                  purchaseBusy ||
                   !validCount ||
                   !configId ||
                   price === undefined ||
-                  allowance === undefined ||
                   balance === undefined ||
                   balance < cost ||
                   paused
                 }
-                action={() =>
-                  core.writeContractAsync(
-                    { functionName: "openPack", args: [packType, count, configId!] },
-                    {
-                      onBlockConfirmation: receipt => {
-                        const [event] = parseEventLogs({
-                          abi: packs2Contracts[network.id].BasqitPacks2.abi,
-                          eventName: "OpenRequested",
-                          logs: receipt.logs.filter(
-                            log => log.address.toLowerCase() === deployed.address.toLowerCase(),
-                          ),
-                        });
-                        if (event) {
-                          setOffset(0);
-                          setActiveOpening(event.args.id);
-                        }
+                action={async () => {
+                  const checkWallet = () => {
+                    const current = getAccount(walletConfig);
+                    if (current.address !== address || current.chainId !== network.id)
+                      throw new Error("Wallet changed. Please start the pack opening again.");
+                  };
+                  try {
+                    await openWithApproval({
+                      cost,
+                      onStep: setPurchaseStep,
+                      readAllowance: async () => {
+                        checkWallet();
+                        const result = await refetchAllowance({ throwOnError: true });
+                        if (result.data === undefined) throw new Error("Unable to check tUSDG approval.");
+                        return result.data;
                       },
-                    },
-                  )
-                }
+                      approve: () => {
+                        checkWallet();
+                        return payment.writeContractAsync({ functionName: "approve", args: [deployed.address, cost] });
+                      },
+                      open: () => {
+                        checkWallet();
+                        return core.writeContractAsync(
+                          { functionName: "openPack", args: [packType, count, configId!] },
+                          {
+                            onBlockConfirmation: receipt => {
+                              const [event] = parseEventLogs({
+                                abi: packs2Contracts[network.id].BasqitPacks2.abi,
+                                eventName: "OpenRequested",
+                                logs: receipt.logs.filter(
+                                  log => log.address.toLowerCase() === deployed.address.toLowerCase(),
+                                ),
+                              });
+                              if (event) {
+                                setOffset(0);
+                                setActiveOpening(event.args.id);
+                              }
+                            },
+                          },
+                        );
+                      },
+                    });
+                  } finally {
+                    setPurchaseStep("");
+                  }
+                }}
               >
                 {paused
                   ? "New openings paused"

@@ -3359,6 +3359,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@number-flow/react@npm:0.6.2":
+  version: 0.6.2
+  resolution: "@number-flow/react@npm:0.6.2"
+  dependencies:
+    esm-env: "npm:^1.1.4"
+    number-flow: "npm:0.6.2"
+  peerDependencies:
+    react: ^18 || ^19
+    react-dom: ^18 || ^19
+  checksum: 10/8fb734a8ad645117dc58715f1ad7aaee2a2bcd642aa65a5278b2ac9265729da15560f7d9ac84b121008aee273ec815e415c5df9e4b001189eb33b66b7b101370
+  languageName: node
+  linkType: hard
+
 "@oclif/core@npm:^4, @oclif/core@npm:^4.13.0":
   version: 4.14.0
   resolution: "@oclif/core@npm:4.14.0"
@@ -4285,6 +4298,7 @@ __metadata:
     "@farcaster/miniapp-wagmi-connector": "npm:^2.0.0"
     "@heroicons/react": "npm:~2.2.0"
     "@neondatabase/serverless": "npm:^1.1.0"
+    "@number-flow/react": "npm:0.6.2"
     "@rainbow-me/rainbowkit": "npm:2.2.11"
     "@react-native-async-storage/async-storage": "npm:~2.2.0"
     "@scaffold-ui/components": "npm:^0.1.12"
@@ -10020,6 +10034,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"esm-env@npm:^1.1.4":
+  version: 1.2.2
+  resolution: "esm-env@npm:1.2.2"
+  checksum: 10/caf5f3cc2bc7107494585b4e38835787f48ef77b670aeb2d765a5b6b64c41102d20bbdd34bda32474291b6b8d819d4d02ce92570a0886baca6cef70f5fe689f3
+  languageName: node
+  linkType: hard
+
 "espree@npm:^10.0.1, espree@npm:^10.4.0":
   version: 10.4.0
   resolution: "espree@npm:10.4.0"
@@ -13964,6 +13985,15 @@ __metadata:
   version: 1.1.10
   resolution: "nprogress-v2@npm:1.1.10"
   checksum: 10/ed2560a890c6c0214f6bd79359f9700160d0c38d636ed7c227bc04a37c6743e59cdd5a4cdacc58893af145d21eaeb3b6967926ffa969488f7bf53d472219eb17
+  languageName: node
+  linkType: hard
+
+"number-flow@npm:0.6.2":
+  version: 0.6.2
+  resolution: "number-flow@npm:0.6.2"
+  dependencies:
+    esm-env: "npm:^1.1.4"
+  checksum: 10/be62e3429944594db585aedacb8f8706351749d767b7e03ce4884222e28642073dc0dc44bbe4c77cb9f8c5e2c06e0a047863bab1979c128862087718bf5147d8
   languageName: node
   linkType: hard
 

@@ -32,7 +32,9 @@ try {
 
 try {
   globalThis.fetch = async (url, options) => {
-    assert.equal(url, "https://api.drand.sh/v2/beacons/evmnet/rounds/latest");
+    const latest = new URL(url);
+    assert.equal(`${latest.origin}${latest.pathname}`, "https://api.drand.sh/v2/beacons/evmnet/rounds/latest");
+    assert.ok(Number(latest.searchParams.get("t")) > 0);
     assert.equal(options.cache, "no-store");
     assert.ok(options.signal);
     return Response.json({ round: 123 });
@@ -43,7 +45,9 @@ try {
     await assert.rejects(fetchLatestDrandRound(), /Invalid drand round/);
   }
   globalThis.fetch = async url =>
-    url.endsWith("/latest") ? new Response("Unavailable", { status: 503 }) : Response.json({ round: 123, signature });
+    new URL(url).pathname.endsWith("/latest")
+      ? new Response("Unavailable", { status: 503 })
+      : Response.json({ round: 123, signature });
   await assert.rejects(fetchLatestDrandRound(), /temporarily unavailable/);
   assert.equal(await fetchDrandProof(123n), `0x${signature}`);
 } finally {
@@ -53,3 +57,7 @@ assert.equal(drandWaitSeconds(123n, 133n), 30n);
 assert.equal(drandWaitSeconds(132n, 133n), 3n);
 assert.equal(drandWaitSeconds(133n, 133n), 0n);
 assert.equal(drandWaitSeconds(134n, 133n), 0n);
+assert.equal(drandWaitSeconds(123n, 133n, 999), 30n);
+assert.equal(drandWaitSeconds(123n, 133n, 1000), 29n);
+assert.equal(drandWaitSeconds(123n, 133n, 31000), 0n);
+assert.equal(drandWaitSeconds(124n, 133n, 0), 27n);
