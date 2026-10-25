@@ -2,6 +2,19 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Average payout information popup
+
+The Average payout card and its full return explanation are now in a popup opened by the information
+icon immediately after Payout chances. The main purchase card shows the payout levels followed by
+quantity controls. The popup identifies the selected pack and retains the same live reference value,
+estimated return, calibration and long-run-average explanation. It uses the shared receipt dialog and
+close button, with keyboard activation, Escape/backdrop dismissal and native focus restoration.
+
+Validation: real-page browser checks confirmed all prior explanation text remains in the popup,
+Bronze/Gold context and values update, the closed information block is hidden, and keyboard opening,
+close button, Escape, backdrop form and focus return work. Popup checks at 1280, 320, 390 and 430px
+found no horizontal overflow. Frontend build passed.
+
 ### 2026-10-25 — Compact quantity presets under the stepper
 
 The 1/5/10 shortcuts now sit directly below the minus/input/plus control as small underlined actions.

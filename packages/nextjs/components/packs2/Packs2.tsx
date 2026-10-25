@@ -8,7 +8,9 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { type Address as EthAddress, type Hex, formatUnits, parseEventLogs, parseUnits } from "viem";
 import { useAccount, useBalance, useBlock, useConfig, useSwitchChain } from "wagmi";
 import { getAccount } from "wagmi/actions";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Arrow } from "~~/components/Arrow";
+import { DialogClose } from "~~/components/DialogClose";
 import { LoadingBars } from "~~/components/LoadingBars";
 import { StockLogo } from "~~/components/StockLogo";
 import { DrandWait } from "~~/components/packs2/DrandWait";
@@ -254,6 +256,7 @@ function Packs2Live() {
   const { data: deployed, isLoading } = useDeployedContractInfo({ contractName: "BasqitPacks2", chainId: network.id });
   const [quantity, setQuantity] = useState("1");
   const quantityInput = useRef<HTMLInputElement>(null);
+  const payoutInfo = useRef<HTMLDialogElement>(null);
   const [selectedTier, setSelectedTier] = useState(4);
   const [packType, setPackType] = useState(1);
   const [fundingStock, setFundingStock] = useState(0);
@@ -573,7 +576,46 @@ function Packs2Live() {
             </div>
             <strong>{price === undefined ? "…" : `${formatToken(price, 6)} tUSDG`}</strong>
           </div>
-          <h3 className="bq-packs2-eyebrow">Payout chances</h3>
+          <div className="bq-packs2-payout-heading">
+            <h3 className="bq-packs2-eyebrow">Payout chances</h3>
+            <button
+              type="button"
+              className="btn btn-ghost btn-circle bq-packs2-info-trigger"
+              aria-label="About average payout"
+              title="About average payout"
+              aria-haspopup="dialog"
+              aria-controls="packs2-payout-info"
+              onClick={() => payoutInfo.current?.showModal()}
+            >
+              <InformationCircleIcon aria-hidden="true" />
+            </button>
+          </div>
+          <dialog ref={payoutInfo} id="packs2-payout-info" className="modal" aria-labelledby="packs2-payout-info-title">
+            <div className="modal-box bq-packs2-info">
+              <DialogClose label="Close payout information" onClick={() => payoutInfo.current?.close()} />
+              <h2 id="packs2-payout-info-title">Average payout</h2>
+              <div className="bq-packs2-average">
+                <div>
+                  <span>{pack.name}</span>
+                  <small>At current Stock Token reference prices</small>
+                </div>
+                <strong>{average === undefined ? "—" : formatUsd(average)}</strong>
+              </div>
+              <p className="bq-demo-note">
+                {currentReturn === undefined
+                  ? "Live return estimate unavailable."
+                  : `${currentReturn.toFixed(2)}% current estimated return before gas.`}{" "}
+                {calibratedReturn
+                  ? `Calibrated to ${calibratedReturn}% using the recorded stock reference prices.`
+                  : "Calibration reference unavailable."}{" "}
+                This is a long-run average, not a promised payout. Fixed token amounts change in reference value as
+                prices move.
+              </p>
+            </div>
+            <form method="dialog" className="modal-backdrop">
+              <button>Close</button>
+            </form>
+          </dialog>
           <div className="bq-packs2-probability" aria-hidden="true">
             {tiers?.map((tier, index) => (
               <span
@@ -593,23 +635,6 @@ function Packs2Live() {
               </li>
             ))}
           </ul>
-          <div className="bq-packs2-average">
-            <div>
-              <span>Average payout</span>
-              <small>At current Stock Token reference prices</small>
-            </div>
-            <strong>{average === undefined ? "—" : formatUsd(average)}</strong>
-          </div>
-          <p className="bq-demo-note">
-            {currentReturn === undefined
-              ? "Live return estimate unavailable."
-              : `${currentReturn.toFixed(2)}% current estimated return before gas.`}{" "}
-            {calibratedReturn
-              ? `Calibrated to ${calibratedReturn}% using the recorded stock reference prices.`
-              : "Calibration reference unavailable."}{" "}
-            This is a long-run average, not a promised payout. Fixed token amounts change in reference value as prices
-            move.
-          </p>
           <div className="bq-packs2-quantity">
             <div className="bq-packs2-input">
               <label htmlFor="packs2-quantity">Quantity</label>

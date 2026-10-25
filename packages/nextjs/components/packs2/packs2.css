@@ -335,6 +335,30 @@
 .bq-packs2-legend strong {
   font-size: 13px;
 }
+.bq-packs2-payout-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.bq-packs2-payout-heading h3 {
+  margin: 0;
+}
+.bq-packs2-info-trigger.btn {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 6px;
+  color: var(--bq-brand);
+}
+.bq-packs2-info-trigger svg {
+  width: 20px;
+  height: 20px;
+}
+.bq-packs2-info h2 {
+  padding-right: 44px;
+  margin-bottom: 16px;
+}
 .bq-packs2-average {
   display: flex;
   gap: 12px;
