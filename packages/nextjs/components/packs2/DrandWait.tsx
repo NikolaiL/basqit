@@ -10,6 +10,7 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
   const latest = useQuery({
     queryKey: ["packs2-drand-latest"],
     queryFn: fetchLatestDrandRound,
+    enabled: !ready,
     staleTime: 2000,
     refetchInterval: 3000,
     refetchOnMount: "always",
@@ -26,9 +27,8 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
     const timer = setInterval(() => setClock({ source, elapsedMs: performance.now() - start }), 1000);
     return () => clearInterval(timer);
   }, [latest.data, source, ready]);
-  // A target signature proves that the published round has reached at least this opening's round.
-  const confirmedAhead = ready && (latest.data === undefined || latest.data < round);
-  const current = confirmedAhead ? round : latest.data;
+  if (ready) return <span className="bq-pack-wait-state">Ready to reveal. Confirm below to open your pack.</span>;
+  const current = latest.data;
   const seconds =
     current === undefined ? undefined : drandWaitSeconds(current, round, clock.source === source ? clock.elapsedMs : 0);
   const unavailable = latest.isError || latest.fetchStatus === "paused";
@@ -36,11 +36,7 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
     <span className="bq-pack-wait">
       <span className="bq-pack-wait-rounds">
         <span>
-          {confirmedAhead
-            ? "Confirmed through round"
-            : unavailable && latest.data !== undefined
-              ? "Last seen round"
-              : "Current round"}
+          {unavailable && latest.data !== undefined ? "Last seen round" : "Current round"}
           <strong>{current?.toString() ?? "…"}</strong>
         </span>
         <span>
@@ -48,11 +44,9 @@ export function DrandWait({ round, ready }: { round: bigint; ready: boolean }) {
         </span>
       </span>
       <span className="bq-pack-wait-state">
-        {!ready && <LoadingBars small />}
+        <LoadingBars small />
         <span>
-          {ready ? (
-            "Ready to reveal. Confirm below to open your pack."
-          ) : latest.fetchStatus === "paused" ? (
+          {latest.fetchStatus === "paused" ? (
             "Connection interrupted. Waiting to reconnect…"
           ) : latest.isError ? (
             "Live round unavailable. Retrying automatically…"

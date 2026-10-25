@@ -559,12 +559,20 @@
   color: var(--bq-muted);
 }
 .bq-pack-theatre h2 {
+  display: grid;
   font-size: clamp(24px, 4vw, 36px);
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -0.035em;
   margin: 26px 0 8px;
   text-align: center;
+}
+.bq-pack-theatre h2 > span {
+  grid-area: 1 / 1;
+  align-self: center;
+}
+.bq-pack-title-reserve {
+  visibility: hidden;
 }
 .bq-pack-subtitle {
   font-size: 12px;

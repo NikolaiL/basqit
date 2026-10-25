@@ -11,6 +11,7 @@ import { type PackPayout, payoutLevel } from "~~/services/packs/reveal";
 import { type PackStock, payoutStock } from "~~/services/packs/stocks";
 
 export type RevealLevel = { end: number; token: Address; amount: bigint; name: string; color: string };
+const READY_TITLE = "Your pack is ready to be revealed.";
 
 /** Presentation only: results arrive after the reveal transaction is confirmed. */
 export function PackReveal({
@@ -21,6 +22,7 @@ export function PackReveal({
   levels,
   stocks,
   waiting,
+  readyToReveal = false,
   controls,
   preview = false,
   onClose,
@@ -32,6 +34,7 @@ export function PackReveal({
   levels: readonly RevealLevel[];
   stocks: readonly PackStock[];
   waiting?: ReactNode;
+  readyToReveal?: boolean;
   controls?: ReactNode;
   preview?: boolean;
   onClose: () => void;
@@ -72,13 +75,22 @@ export function PackReveal({
           </span>
         </div>
         <h2 id="pack-reveal-title">
-          {revealed
-            ? all
-              ? "The whole collection."
-              : "A little piece. All yours."
-            : results
-              ? "Good things come sealed."
-              : "Your pack is on its way."}
+          <span>
+            {revealed
+              ? all
+                ? "The whole collection."
+                : "A little piece. All yours."
+              : results
+                ? "Good things come sealed."
+                : readyToReveal
+                  ? READY_TITLE
+                  : "Your pack is on its way."}
+          </span>
+          {!preview && (
+            <span className="bq-pack-title-reserve" aria-hidden="true">
+              {READY_TITLE}
+            </span>
+          )}
         </h2>
         <p className="bq-pack-subtitle" role="status">
           {preview

@@ -1045,11 +1045,12 @@ function OpeningCard({
     queryFn: () => fetchDrandProof(o!.round),
   });
   if (!o) return <p>Loading opening #{String(id)}…</p>;
+  const canReveal = !!proof.data || cached;
   const controls = !o.revealed ? (
     <>
       <TxButton
         pending="Verifying signature…"
-        disabled={!ready || (!proof.data && !cached)}
+        disabled={!ready || !canReveal}
         action={() => core.writeContractAsync({ functionName: "reveal", args: [id, cached ? "0x" : proof.data!] })}
       >
         Reveal results
@@ -1130,9 +1131,10 @@ function OpeningCard({
               <LoadingBars small /> Loading your confirmed result…
             </span>
           ) : (
-            <DrandWait round={o.round} ready={!!proof.data || cached} />
+            <DrandWait round={o.round} ready={canReveal} />
           )
         }
+        readyToReveal={canReveal}
       />
     );
   return (
