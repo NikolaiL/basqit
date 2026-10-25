@@ -2,6 +2,22 @@
 
 ## FounderHouse Singapore Post Submissions
 
+### 2026-10-25 — Tappable pack quantity controls
+
+Quantity now has minus and plus buttons beside its editable field. Controls use Basqit's secondary
+sticker buttons, typography and focus styling, with 44×44px tap targets and 8px spacing. Quick quantity
+presets also have 44px target height. Buttons stop at the existing 1–100 limits and lock during a
+purchase. Native number stepping preserves typed input and arrow-key support; the field uses a numeric
+mobile keyboard and 16px text. Buttons have descriptive accessible names, and an output announces
+quantity changes. Redundant step buttons stay outside the Tab sequence while remaining touch/voice
+accessible, following the [W3C quantity pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/examples/quantity-spinbutton/)
+and [target-size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html).
+
+Validation: real-page browser checks covered increment/decrement, 1/100 bounds, empty-field recovery,
+manual typing, native arrow keys, presets, total updates and announcement text. All quantity buttons
+met 44px targets at 1280, 320, 390 and 430px widths with no horizontal overflow. Frontend build and all
+14 Packs service test entries passed. Wallet signing and physical assistive devices were not retested.
+
 ### 2026-10-25 — Reveal action in the countdown area and automatic first card
 
 The ready opening replaces its countdown area with the Reveal results action. Waiting openings no

@@ -253,6 +253,7 @@ function Packs2Live() {
   const { openConnectModal } = useWalletConnectModal();
   const { data: deployed, isLoading } = useDeployedContractInfo({ contractName: "BasqitPacks2", chainId: network.id });
   const [quantity, setQuantity] = useState("1");
+  const quantityInput = useRef<HTMLInputElement>(null);
   const [selectedTier, setSelectedTier] = useState(4);
   const [packType, setPackType] = useState(1);
   const [fundingStock, setFundingStock] = useState(0);
@@ -624,19 +625,55 @@ function Packs2Live() {
                 </button>
               ))}
             </div>
-            <label className="bq-packs2-input">
-              Quantity
-              <input
-                className="input input-bordered"
-                type="number"
-                min="1"
-                max="100"
-                step="1"
-                value={quantity}
-                disabled={purchaseBusy}
-                onChange={event => setQuantity(event.target.value)}
-              />
-            </label>
+            <div className="bq-packs2-input">
+              <label htmlFor="packs2-quantity">Quantity</label>
+              <div className="bq-packs2-stepper">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  aria-label="Remove one pack"
+                  title="Remove one pack"
+                  aria-controls="packs2-quantity"
+                  tabIndex={-1}
+                  disabled={purchaseBusy || count <= 1}
+                  onClick={() => {
+                    quantityInput.current?.stepDown();
+                    setQuantity(quantityInput.current?.value ?? "1");
+                  }}
+                >
+                  <span aria-hidden="true">−</span>
+                </button>
+                <input
+                  ref={quantityInput}
+                  id="packs2-quantity"
+                  className="input input-bordered"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max="100"
+                  step="1"
+                  value={quantity}
+                  disabled={purchaseBusy}
+                  onChange={event => setQuantity(event.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  aria-label="Add one pack"
+                  title="Add one pack"
+                  aria-controls="packs2-quantity"
+                  tabIndex={-1}
+                  disabled={purchaseBusy || count >= 100}
+                  onClick={() => {
+                    quantityInput.current?.stepUp();
+                    setQuantity(quantityInput.current?.value ?? "1");
+                  }}
+                >
+                  <span aria-hidden="true">+</span>
+                </button>
+              </div>
+              <output className="sr-only">{validCount ? `${count} packs selected` : ""}</output>
+            </div>
           </div>
           <div className="bq-packs2-total">
             <span>Total</span>
